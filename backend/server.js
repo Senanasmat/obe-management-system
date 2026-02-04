@@ -6,7 +6,11 @@ const connectDB = require('./config/db');
 dotenv.config();
 
 // Connect to Database
-connectDB();
+if (!process.env.MONGO_URI) {
+    console.error('CRITICAL ERROR: MONGO_URI is not defined in environment variables.');
+} else {
+    connectDB().catch(err => console.error('Initial DB Connection Error:', err));
+}
 
 const app = express();
 
