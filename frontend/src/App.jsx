@@ -5,10 +5,10 @@ import Login from './pages/Login';
 
 import AdminDashboard from './pages/admin/AdminDashboard';
 import Students from './pages/admin/Students';
+import Faculty from './pages/admin/Faculty';
 import Courses from './pages/admin/Courses';
 import PLOs from './pages/admin/PLOs';
 import CLOs from './pages/admin/CLOs';
-// Placeholder only for Faculty
 import FacultyDashboard from './pages/faculty/FacultyDashboard';
 import CourseView from './pages/faculty/CourseView';
 import AssessmentCreation from './pages/faculty/AssessmentCreation';
@@ -54,6 +54,11 @@ function App() {
             <Route path="admin/courses" element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <Courses />
+              </ProtectedRoute>
+            } />
+            <Route path="admin/faculty" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Faculty />
               </ProtectedRoute>
             } />
             <Route path="admin/plos" element={
