@@ -37,6 +37,8 @@ const Faculty = () => {
     const [currentId, setCurrentId] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
+        email: '',
+        password: '',
         department: DEPARTMENTS[0],
         designation: DESIGNATIONS[0]
     });
@@ -63,6 +65,8 @@ const Faculty = () => {
             setCurrentId(member._id);
             setFormData({
                 name: member.name,
+                email: member.email || '',
+                password: '',
                 department: member.department || DEPARTMENTS[0],
                 designation: member.designation || DESIGNATIONS[0]
             });
@@ -71,6 +75,8 @@ const Faculty = () => {
             setCurrentId(null);
             setFormData({
                 name: '',
+                email: '',
+                password: '',
                 department: DEPARTMENTS[0],
                 designation: DESIGNATIONS[0]
             });
@@ -210,6 +216,42 @@ const Faculty = () => {
                                     </Form.Group>
                                 </Col>
                                 <Col md={12}>
+                                <Form.Group>
+                                    <Form.Label className="small fw-bold text-muted">Email</Form.Label>
+                                    <div className="position-relative">
+                                        <Form.Control
+                                            type="email"
+                                            required
+                                            value={formData.email}
+                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                            className="ps-5 py-2 border-light bg-light bg-opacity-50 shadow-none"
+                                        />
+                                        <Mail className="position-absolute text-muted" size={18}
+                                            style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }}
+                                        />
+                                    </div>
+                                </Form.Group>
+                                </Col>
+                                <Col md={12}>
+                                    {!isEditing && (
+                                        <Form.Group>
+                                            <Form.Label className="small fw-bold text-muted">Password</Form.Label>
+                                            <div className="position-relative">
+                                                <Form.Control
+                                                    type="password"
+                                                    required
+                                                    value={formData.password}
+                                                    onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                                    className="ps-5 py-2 border-light bg-light bg-opacity-50 shadow-none"
+                                                />
+                                                <Lock className="position-absolute text-muted" size={18}
+                                                    style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }}
+                                                />
+                                            </div>
+                                        </Form.Group>
+                                    )}
+                                </Col>
+                                <Col md={12}>
                                     <Form.Group>
                                         <Form.Label className="small fw-bold text-muted">Department</Form.Label>
                                         <Form.Select
@@ -238,7 +280,7 @@ const Faculty = () => {
                         <Modal.Footer className="border-0 p-4 pt-0">
                             <Button variant="light" onClick={() => setShowModal(false)} className="px-4 border-0">Cancel</Button>
                             <Button variant="primary" type="submit" className="px-5 shadow-sm border-0 py-2 fw-semibold" disabled={loading}>
-                                {loading ? 'Processing...' : (isEditing ? 'Save Changes' : 'Confirm Registration')}
+                                {loading ? 'Processing...' : (isEditing ? 'Save Changes' : 'Register')}
                             </Button>
                         </Modal.Footer>
                     </Form>

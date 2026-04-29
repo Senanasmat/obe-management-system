@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 const ploSchema = mongoose.Schema({
-    code: { type: String, required: true, unique: true }, // e.g., PLO-1
+    code: { type: String, required: true, unique: true }, // PLO-1
+    title: { type: String, required: true },              // Engineering Knowledge
     description: { type: String, required: true }
 });
 

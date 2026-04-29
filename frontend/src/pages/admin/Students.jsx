@@ -106,7 +106,7 @@ const Students = () => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'students_import_template.csv';
+        a.download = 'Students List.csv';
         a.click();
         URL.revokeObjectURL(url);
     };
@@ -190,18 +190,44 @@ const Students = () => {
                             <div className="position-relative flex-grow-1" style={{ maxWidth: '400px' }}>
                                 <Form.Control
                                     type="text"
-                                    placeholder="Search by name, reg no, or batch..."
+                                    placeholder="Search students..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="ps-5 border-0 shadow-none bg-white py-2"
+                                    className="ps-5 py-2 bg-white rounded-3"
+                                    style={{
+                                        border: '1px solid #e2e8f0',
+                                        boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                    onFocus={(e) => {
+                                        e.target.style.boxShadow = '0 0 0 2px rgba(13,110,253,0.15)';
+                                        e.target.style.border = '1px solid #0d6efd';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.target.style.boxShadow = '0 2px 6px rgba(0,0,0,0.05)';
+                                        e.target.style.border = '1px solid #e2e8f0';
+                                    }}
                                 />
                                 <Search className="position-absolute text-muted" size={18} style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
                             </div>
                             <Form.Select
                                 value={batchFilter}
                                 onChange={e => setBatchFilter(e.target.value)}
-                                className="ms-3 border-0 shadow-none bg-white py-2 fw-medium text-muted"
-                                style={{ maxWidth: '200px' }}
+                                className="ms-3 py-2 fw-medium text-muted rounded-3"
+                                style={{
+                                    maxWidth: '200px',
+                                    border: '1px solid #e2e8f0',
+                                    boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+                                    transition: 'all 0.2s ease'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.boxShadow = '0 0 0 2px rgba(13,110,253,0.15)';
+                                    e.target.style.border = '1px solid #0d6efd';
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.boxShadow = '0 2px 6px rgba(0,0,0,0.05)';
+                                    e.target.style.border = '1px solid #e2e8f0';
+                                }}
                             >
                                 <option value="">All Batches</option>
                                 {uniqueBatches.map(batch => (

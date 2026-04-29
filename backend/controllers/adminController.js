@@ -308,51 +308,59 @@ const getFaculty = async (req, res) => {
 
 const createFacultyMember = async (req, res) => {
     try {
-        const { name, email, role, department, designation, password } = req.body;
+        const { name, email, password, department, designation } = req.body;
 
-        const member = await User.create({
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email & Password required' });
+        }
+
+        const exists = await User.findOne({ email });
+        if (exists) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
+
+        const user = await User.create({
             name,
             email,
             password,
-            role: role || 'faculty',
+            role: 'faculty',
             department,
             designation
         });
 
-        res.status(201).json({
-            _id: member._id,
-            name: member.name,
-            email: member.email,
-            role: member.role,
-            department: member.department,
-            designation: member.designation
-        });
-    } catch (error) { res.status(400).json({ message: error.message }); }
+        res.status(201).json(user);
+
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 };
 
 const updateFacultyMember = async (req, res) => {
     try {
-        const { name, email, password, role, department, designation } = req.body;
-        const member = await User.findById(req.params.id);
-        if (!member) return res.status(404).json({ message: 'Faculty member not found' });
+        const { name, email, password, department, designation } = req.body;
 
-        if (name) member.name = name;
-        if (email) member.email = email;
-        if (role) member.role = role;
-        if (department) member.department = department;
-        if (designation) member.designation = designation;
-        if (password) member.password = password; // Role hook will hash it if modified
+        const user = await User.findById(req.params.id);
 
-        await member.save();
-        res.json({
-            _id: member._id,
-            name: member.name,
-            email: member.email,
-            role: member.role,
-            department: member.department,
-            designation: member.designation
-        });
-    } catch (error) { res.status(400).json({ message: error.message }); }
+        if (!user) {
+            return res.status(404).json({ message: 'Not found' });
+        }
+
+        user.name = name || user.name;
+        user.email = email || user.email;
+        user.department = department || user.department;
+        user.designation = designation || user.designation;
+
+        if (password && password.trim() !== '') {
+            user.password = password;
+        }
+
+        await user.save();
+
+        res.json(user);
+
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 };
 
 const deleteFacultyMember = async (req, res) => {

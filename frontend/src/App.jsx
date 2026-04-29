@@ -2,6 +2,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
+import Profile from './pages/Profile';
+
+import CourseAssignment from './pages/admin/CourseAssignment';
 
 import AdminDashboard from './pages/admin/AdminDashboard';
 import Students from './pages/admin/Students';
@@ -13,6 +16,8 @@ import FacultyDashboard from './pages/faculty/FacultyDashboard';
 import CourseView from './pages/faculty/CourseView';
 import AssessmentCreation from './pages/faculty/AssessmentCreation';
 import MarksEntry from './pages/faculty/MarksEntry';
+import ClassActivities from './pages/faculty/ClassActivities';
+import CoursesList from './pages/faculty/CoursesList';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
@@ -39,6 +44,12 @@ function App() {
 
           <Route path="/" element={<Layout />}>
             <Route index element={<RootRedirect />} />
+
+            <Route path="profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
 
             {/* Admin Routes */}
             <Route path="admin" element={
@@ -71,6 +82,11 @@ function App() {
                 <CLOs />
               </ProtectedRoute>
             } />
+            <Route path="admin/course-assignment" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <CourseAssignment />
+              </ProtectedRoute>
+            } />
 
             {/* Faculty Routes */}
             <Route path="faculty" element={
@@ -83,6 +99,11 @@ function App() {
                 <CourseView />
               </ProtectedRoute>
             } />
+            <Route path="faculty/courses" element={
+              <ProtectedRoute allowedRoles={['faculty']}>
+                <CoursesList />
+              </ProtectedRoute>
+            } />
             <Route path="faculty/courses/:courseId/create-assessment" element={
               <ProtectedRoute allowedRoles={['faculty']}>
                 <AssessmentCreation />
@@ -91,6 +112,11 @@ function App() {
             <Route path="faculty/courses/:courseId/marks/:assessmentId" element={
               <ProtectedRoute allowedRoles={['faculty']}>
                 <MarksEntry />
+              </ProtectedRoute>
+            } />
+            <Route path="faculty/courses/:courseId/class-activities" element={
+              <ProtectedRoute allowedRoles={['faculty']}>
+                <ClassActivities />
               </ProtectedRoute>
             } />
 

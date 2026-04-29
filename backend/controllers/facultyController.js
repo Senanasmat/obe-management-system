@@ -1,25 +1,27 @@
-const { Course, CLO, PLO } = require('../models/academicModels');
+const CourseAssignment = require('../models/courseAssignmentModel');
 const { Assessment, Result } = require('../models/assessmentModel');
 
-// @desc    Get courses assigned to the logged-in faculty
-// @route   GET /api/faculty/courses
+// GET ASSIGNED COURSES
 const getAssignedCourses = async (req, res) => {
     try {
-        const courses = await Course.find({ faculty: req.user._id })
-            .populate('clos')
-            .populate('students');
-        res.json(courses);
+        const assignments = await CourseAssignment.find({
+            faculty: req.user._id
+        })
+        .populate('course', 'name code creditHours')
+        .populate('faculty', 'name email')
+        .sort({ createdAt: -1 });
+
+        res.json(assignments);
+
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-// @desc    Create a new assessment
-// @route   POST /api/faculty/assessments
+// CREATE ASSESSMENT
 const createAssessment = async (req, res) => {
     try {
         const { title, type, courseId, totalMarks, questions } = req.body;
-        // questions array expects objects with { questionText, maxMarks, clo: cloId }
 
         const assessment = await Assessment.create({
             title,
@@ -30,19 +32,21 @@ const createAssessment = async (req, res) => {
         });
 
         res.status(201).json(assessment);
+
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
 };
 
-// @desc    Enter or update marks for a student
-// @route   POST /api/faculty/marks
+// ENTER MARKS
 const enterMarks = async (req, res) => {
     try {
         const { studentId, assessmentId, obtainedMarks } = req.body;
-        // obtainedMarks: [{ questionIndex: 0, marks: 5 }, ...]
 
-        let result = await Result.findOne({ student: studentId, assessment: assessmentId });
+        let result = await Result.findOne({
+            student: studentId,
+            assessment: assessmentId
+        });
 
         if (result) {
             result.obtainedMarks = obtainedMarks;
@@ -56,36 +60,38 @@ const enterMarks = async (req, res) => {
         }
 
         res.json(result);
+
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
 };
 
-// @desc    Get analytics for a specific course (CLO & PLO Achievement)
-// @route   GET /api/faculty/analytics/:courseId
+// GET ANALYTICS (UNCHANGED - OK)
 const getCourseAnalytics = async (req, res) => {
     const { courseId } = req.params;
 
     try {
-        // 1. Fetch all assessments for this course
-        const assessments = await Assessment.find({ course: courseId }).populate('questions.clo');
+        const assessments = await Assessment.find({ course: courseId })
+            .populate('questions.clo');
 
-        // 2. Fetch all results for these assessments
         const assessmentIds = assessments.map(a => a._id);
-        const results = await Result.find({ assessment: { $in: assessmentIds } }).populate('assessment');
 
-        // Helper to track CLO totals
-        // cloMap = { cloId: { totalMax: 0, totalObtained: 0, code: 'CLO-1', ploId: '...' } }
+        const results = await Result.find({
+            assessment: { $in: assessmentIds }
+        }).populate('assessment');
+
         let cloMap = {};
 
-        // 3. Aggregate Scores
         results.forEach(result => {
-            // For each student result
-            const assessment = assessments.find(a => a._id.toString() === result.assessment.toString());
+            const assessment = assessments.find(
+                a => a._id.toString() === result.assessment.toString()
+            );
+
             if (!assessment) return;
 
             result.obtainedMarks.forEach(om => {
                 const question = assessment.questions[om.questionIndex];
+
                 if (question && question.clo) {
                     const cloId = question.clo._id.toString();
 
@@ -104,13 +110,15 @@ const getCourseAnalytics = async (req, res) => {
             });
         });
 
-        // 4. Calculate % for CLOs
         let cloStats = [];
         let ploMap = {};
 
         for (const cloId in cloMap) {
             const data = cloMap[cloId];
-            const percentage = data.totalMax > 0 ? (data.totalObtained / data.totalMax) * 100 : 0;
+            const percentage =
+                data.totalMax > 0
+                    ? (data.totalObtained / data.totalMax) * 100
+                    : 0;
 
             cloStats.push({
                 cloCode: data.code,
@@ -118,21 +126,24 @@ const getCourseAnalytics = async (req, res) => {
                 plo: data.plo
             });
 
-            // Aggregate for PLO
             if (data.plo) {
                 const ploId = data.plo.toString();
-                if (!ploMap[ploId]) ploMap[ploId] = { sum: 0, count: 0 };
-                ploMap[ploId].sum += percentage; // Simple avg of CLO percentages
+
+                if (!ploMap[ploId]) {
+                    ploMap[ploId] = { sum: 0, count: 0 };
+                }
+
+                ploMap[ploId].sum += percentage;
                 ploMap[ploId].count += 1;
             }
         }
 
-        // 5. Calculate % for PLOs
         let ploStats = [];
+
         for (const ploId in ploMap) {
             const data = ploMap[ploId];
             const avg = data.count > 0 ? data.sum / data.count : 0;
-            // Fetch PLO details if needed, for now just ID
+
             ploStats.push({
                 ploId,
                 percentage: parseFloat(avg.toFixed(2))
@@ -146,15 +157,19 @@ const getCourseAnalytics = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: error.message });
     }
 };
 
+// GET COURSE ASSESSMENTS
 const getCourseAssessments = async (req, res) => {
     try {
-        const assessments = await Assessment.find({ course: req.params.courseId });
+        const assessments = await Assessment.find({
+            course: req.params.courseId
+        });
+
         res.json(assessments);
+
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

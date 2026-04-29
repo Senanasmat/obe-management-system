@@ -35,6 +35,7 @@ const CourseView = () => {
     const tabs = [
         { key: 'assessments', label: 'Assessments', icon: ClipboardList },
         { key: 'analytics', label: 'OBE Analytics', icon: BarChart2 },
+        { key: 'activities', label: 'Class Activities', icon: FileText }
     ];
 
     return (
@@ -113,6 +114,32 @@ const CourseView = () => {
                                     </Col>
                                 )}
                             </Row>
+                        </motion.div>
+                    )}
+
+                    {activeTab === 'activities' && (
+                        <motion.div
+                            key="activities"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                        >
+                            <Card className="border-0 shadow-sm rounded-4 p-4">
+                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 className="fw-bold mb-0">Class Activities</h5>
+
+                                    <Link to={`/faculty/courses/${courseId}/class-activities`}>
+                                        <Button variant="primary" className="d-flex align-items-center gap-2">
+                                            <PlusCircle size={16} />
+                                            Manage Activities
+                                        </Button>
+                                    </Link>
+                                </div>
+
+                                <p className="text-muted mb-0">
+                                    Create quizzes, assignments, attendance and track student performance.
+                                </p>
+                            </Card>
                         </motion.div>
                     )}
 

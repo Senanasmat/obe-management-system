@@ -21,7 +21,7 @@ const PLOs = () => {
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [currentId, setCurrentId] = useState(null);
-    const [formData, setFormData] = useState({ code: '', description: '' });
+    const [formData, setFormData] = useState({ code: '', title: '', description: '' });
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
 
@@ -43,11 +43,11 @@ const PLOs = () => {
         if (plo) {
             setIsEditing(true);
             setCurrentId(plo._id);
-            setFormData({ code: plo.code, description: plo.description });
+            setFormData({ code: plo.code, title: plo.title, description: plo.description });
         } else {
             setIsEditing(false);
             setCurrentId(null);
-            setFormData({ code: '', description: '' });
+            setFormData({ code: '', title: '', description: '' });
         }
         setShowModal(true);
     };
@@ -109,7 +109,8 @@ const PLOs = () => {
                     <Table hover responsive striped={false} className="mb-0">
                         <thead className="bg-white border-bottom">
                             <tr>
-                                <th className="px-4 py-3 text-muted small text-uppercase" style={{ width: '180px' }}>PLO ID</th>
+                                <th className="px-4 py-3 text-muted small text-uppercase" style={{ width: '180px' }}>PLO Code</th>
+                                <th className="px-4 py-3 text-muted small text-uppercase">Title</th>
                                 <th className="px-4 py-3 text-muted small text-uppercase">Description</th>
                                 <th className="px-4 py-3 text-muted small text-uppercase text-end">Actions</th>
                             </tr>
@@ -132,6 +133,11 @@ const PLOs = () => {
                                                     <Target size={16} />
                                                 </div>
                                                 <span className="fw-bold text-dark">{plo.code}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 align-middle">
+                                            <div className="d-flex align-items-center gap-2">
+                                                <span className="fw-bold text-dark">{plo.title}</span>
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 align-middle text-muted lead fs-6" style={{ fontWeight: '400' }}>{plo.description}</td>
@@ -180,9 +186,27 @@ const PLOs = () => {
                                         required
                                         value={formData.code}
                                         onChange={e => setFormData({ ...formData, code: e.target.value })}
-                                        className="ps-5 py-2 border-light bg-light bg-opacity-50 shadow-none"
+                                        className="ps-5 py-2 border border-2 border-secondary-subtle rounded-3 shadow-sm"
                                     />
                                     <Hash className="position-absolute text-muted" size={18} style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
+                                </div>
+                            </Form.Group>
+                            <Form.Group className="mb-4">
+                                <Form.Label className="small fw-bold text-muted">Outcome Title</Form.Label>
+                                <div className="position-relative">
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="e.g. Engineering Knowledge"
+                                        required
+                                        value={formData.title}
+                                        onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                        className="ps-5 py-2 border border-2 border-secondary-subtle rounded-3 shadow-sm"
+                                    />
+                                    <Target
+                                        className="position-absolute text-muted"
+                                        size={18}
+                                        style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }}
+                                    />
                                 </div>
                             </Form.Group>
                             <Form.Group>
@@ -195,7 +219,7 @@ const PLOs = () => {
                                         required
                                         value={formData.description}
                                         onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                        className="ps-5 py-2 border-light bg-light bg-opacity-50 shadow-none"
+                                        className="ps-5 py-2 border border-2 border-secondary-subtle rounded-3 shadow-sm"
                                     />
                                     <FileText className="position-absolute text-muted" size={18} style={{ left: '15px', top: '12px' }} />
                                 </div>

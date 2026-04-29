@@ -13,6 +13,7 @@ const Sidebar = ({ role }) => {
         { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
         { name: 'Faculty', path: '/admin/faculty', icon: Users },
         { name: 'Courses', path: '/admin/courses', icon: BookOpen },
+        { name: 'Course Assignment', path: '/admin/course-assignment', icon: BookOpen },
         { name: 'Students', path: '/admin/students', icon: Users },
         { name: 'PLOs', path: '/admin/plos', icon: GraduationCap },
         { name: 'CLOs', path: '/admin/clos', icon: FileText },
@@ -60,17 +61,6 @@ const Sidebar = ({ role }) => {
                 })}
             </ListGroup>
 
-            <div className="p-3 border-top mt-auto">
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <button
-                        onClick={logout}
-                        className="btn btn-light w-100 d-flex align-items-center justify-content-start gap-3 py-3 border-0 rounded-3 text-danger fw-600 bg-danger-subtle bg-opacity-25"
-                    >
-                        <LogOut size={20} />
-                        <span>Sign Out</span>
-                    </button>
-                </motion.div>
-            </div>
         </motion.div>
     );
 };
