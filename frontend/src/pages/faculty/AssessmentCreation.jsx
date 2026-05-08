@@ -1,247 +1,478 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, Trash2, FileText, Hash, Link2, Save } from 'lucide-react';
-import { Container, Card, Form, Button, Row, Col } from 'react-bootstrap';
-import { toast, showError } from '../../utils/notifications';
+import { Container, Form, Row, Col, Button, Breadcrumb } from 'react-bootstrap';
+import { Calendar, X, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const containerVariants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
+const today = () => new Date().toISOString().slice(0, 10);
+
+const formatDisplayDate = (iso) => {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return `${d}-${m}-${y}`;
 };
 
+const emptyQuestion = (index) => ({
+    questionName: `Q${index + 1}`,
+    maxMarks: '',
+    obeWeight: '0.00',
+    complexity: '',
+    clo: '',
+    notForOBE: false,
+    questionText: '',
+});
+
 const AssessmentCreation = () => {
-    const { courseId } = useParams();
+    const { courseId, assessmentId } = useParams();
+    const isEditMode = Boolean(assessmentId);
     const navigate = useNavigate();
     const { user } = useAuth();
+
     const [clos, setClos] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [showDatePicker, setShowDatePicker] = useState(false);
 
-    const [title, setTitle] = useState('');
-    const [type, setType] = useState('Quiz');
-    const [totalMarks, setTotalMarks] = useState(0);
-    const [questions, setQuestions] = useState([
-        { questionText: 'Q1', maxMarks: 0, clo: '' }
-    ]);
+    // Top-level fields
+    const [method, setMethod] = useState('');
+    const [name, setName] = useState('');
+    const [date, setDate] = useState(today());
+    const [gpaWeight, setGpaWeight] = useState('0.00');
+    const [activityNature, setActivityNature] = useState('None');
+    const [includeForGPA, setIncludeForGPA] = useState(true);
 
+    // Sub-activities / questions
+    const [questions, setQuestions] = useState([emptyQuestion(0)]);
+
+    const totalMarks = questions.reduce((sum, q) => sum + (Number(q.maxMarks) || 0), 0);
+
+    // Auto-sync GPA Weight with Total Marks
     useEffect(() => {
-        const fetchCourse = async () => {
-            try {
-                const config = { headers: { Authorization: `Bearer ${user.token}` } };
-                const { data } = await axios.get('/api/faculty/courses', config);
-                const course = data.find(c => c._id === courseId);
-                if (course) setClos(course.clos);
-            } catch (error) {
-                console.error(error);
-            }
-        };
-        fetchCourse();
+        setGpaWeight(totalMarks.toFixed(2));
+    }, [totalMarks]);
+
+    // Fetch CLOs for this course
+    useEffect(() => {
+        const config = { headers: { Authorization: `Bearer ${user.token}` } };
+        axios.get('/api/assignments/my', config)
+            .then(({ data }) => {
+                const found = data.find(a => a.course._id === courseId);
+                if (found?.course?.clos) setClos(found.course.clos);
+            })
+            .catch(console.error);
     }, [courseId, user.token]);
 
+    // In edit mode — load existing assessment data
+    useEffect(() => {
+        if (!isEditMode) return;
+        const config = { headers: { Authorization: `Bearer ${user.token}` } };
+        axios.get(`/api/faculty/assessments/${assessmentId}`, config)
+            .then(({ data }) => {
+                setMethod(data.type || '');
+                setName(data.title || '');
+                setDate(data.date ? new Date(data.date).toISOString().slice(0, 10) : today());
+                setActivityNature(data.activityNature || 'None');
+                setIncludeForGPA(data.includeForGPA !== undefined ? data.includeForGPA : true);
+                if (data.questions?.length) {
+                    setQuestions(data.questions.map(q => ({
+                        questionName: q.questionName || '',
+                        maxMarks: q.maxMarks ?? '',
+                        obeWeight: q.obeWeight ?? '0.00',
+                        complexity: q.complexity || '',
+                        clo: q.clo || '',
+                        notForOBE: q.notForOBE || false,
+                        questionText: q.questionText || '',
+                    })));
+                }
+            })
+            .catch(console.error);
+    }, [assessmentId, isEditMode, user.token]);
+
     const handleQuestionChange = (index, field, value) => {
-        const newQuestions = [...questions];
-        newQuestions[index][field] = value;
-        setQuestions(newQuestions);
-        if (field === 'maxMarks') {
-            setTotalMarks(newQuestions.reduce((sum, q) => sum + Number(q.maxMarks), 0));
-        }
+        setQuestions(prev => prev.map((q, i) => {
+            if (i !== index) return q;
+            const updated = { ...q, [field]: value };
+            // Auto-sync OBE Weight with Max Marks
+            if (field === 'maxMarks') updated.obeWeight = value;
+            return updated;
+        }));
     };
 
-    const addQuestion = () => {
-        setQuestions([...questions, { questionText: `Q${questions.length + 1}`, maxMarks: 0, clo: '' }]);
-    };
+    const addLine = () => setQuestions(prev => [...prev, emptyQuestion(prev.length)]);
 
-    const removeQuestion = (index) => {
-        const newQuestions = questions.filter((_, i) => i !== index);
-        setQuestions(newQuestions);
-        setTotalMarks(newQuestions.reduce((sum, q) => sum + Number(q.maxMarks), 0));
+    const removeLine = (index) => {
+        setQuestions(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!method) return alert('Please select an Activity/Assessment Method.');
         setLoading(true);
+        const payload = {
+            title: name,
+            type: method,
+            courseId,
+            totalMarks,
+            gpaWeight: parseFloat(gpaWeight) || 0,
+            activityNature,
+            includeForGPA,
+            date,
+            questions: questions.map(q => ({
+                questionName: q.questionName,
+                questionText: q.questionText,
+                maxMarks: Number(q.maxMarks) || 0,
+                obeWeight: parseFloat(q.obeWeight) || 0,
+                complexity: q.complexity,
+                clo: q.clo || undefined,
+                notForOBE: q.notForOBE,
+            }))
+        };
         try {
-            const payload = { title, type, courseId, totalMarks, questions: questions.map(q => ({ ...q, maxMarks: Number(q.maxMarks) })) };
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            await axios.post('/api/faculty/assessments', payload, config);
-            toast.fire({ icon: 'success', title: 'Assessment created!', text: 'Redirecting to course view...' });
-            setTimeout(() => navigate(`/faculty/courses/${courseId}`), 1500);
-        } catch (error) {
-            showError('Error', error.response?.data?.message || 'Failed to create assessment');
+            if (isEditMode) {
+                await axios.put(`/api/faculty/assessments/${assessmentId}`, payload, config);
+            } else {
+                await axios.post('/api/faculty/assessments', payload, config);
+            }
+            navigate(`/faculty/courses/${courseId}?tab=Activities`);
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to save assessment.');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <motion.div initial="hidden" animate="visible" variants={containerVariants}>
-            <Container fluid className="py-4 px-4">
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h2 className="mb-0 text-dark fw-bold display-6 fs-3">Create Assessment</h2>
-                        <p className="text-muted small mb-0">Define questions and map them to CLOs for OBE tracking</p>
-                    </div>
-                    <div className="bg-primary-subtle text-primary rounded-3 p-2">
-                        <FileText size={28} />
-                    </div>
-                </div>
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+            <Container fluid className="py-4 px-4 bg-white min-vh-100">
+
+                {/* Page title + breadcrumb */}
+                <h4 className="fw-normal text-dark mb-1">Course Section</h4>
+                <Breadcrumb className="small mb-4" style={{ fontSize: '0.85rem' }}>
+                    <Breadcrumb.Item linkAs={Link} linkProps={{ to: '/faculty' }} className="text-decoration-none text-muted">Home</Breadcrumb.Item>
+                    <Breadcrumb.Item linkAs={Link} linkProps={{ to: '/faculty/courses' }} className="text-decoration-none text-muted">Course Sections</Breadcrumb.Item>
+                    <Breadcrumb.Item linkAs={Link} linkProps={{ to: `/faculty/courses/${courseId}?tab=Activities` }} className="text-decoration-none text-muted">Activities</Breadcrumb.Item>
+                    <Breadcrumb.Item active className="text-muted">{isEditMode ? 'Edit Activity' : 'Add Class Activity'}</Breadcrumb.Item>
+                </Breadcrumb>
 
                 <Form onSubmit={handleSubmit}>
-                    {/* Basic Info Card */}
-                    <Card className="shadow-sm border-0 rounded-4 mb-4">
-                        <Card.Body className="p-4">
-                            <h6 className="fw-bold text-muted text-uppercase small mb-4">Assessment Details</h6>
-                            <Row className="g-4">
-                                <Col md={5}>
-                                    <Form.Group>
-                                        <Form.Label className="small fw-bold text-muted">Title</Form.Label>
-                                        <div className="position-relative">
-                                            <Form.Control
-                                                type="text"
-                                                placeholder="e.g. Quiz 1 - Chapter 3"
-                                                value={title}
-                                                onChange={e => setTitle(e.target.value)}
-                                                required
-                                                className="ps-5 py-2 border-light bg-light bg-opacity-50 shadow-none"
-                                            />
-                                            <FileText className="position-absolute text-muted" size={18} style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
-                                        </div>
-                                    </Form.Group>
-                                </Col>
-                                <Col md={4}>
-                                    <Form.Group>
-                                        <Form.Label className="small fw-bold text-muted">Type</Form.Label>
-                                        <div className="position-relative">
-                                            <Form.Select
-                                                value={type}
-                                                onChange={e => setType(e.target.value)}
-                                                className="ps-5 py-2 border-light bg-light bg-opacity-50 shadow-none"
-                                            >
-                                                <option>Quiz</option>
-                                                <option>Assignment</option>
-                                                <option>Midterm</option>
-                                                <option>Final</option>
-                                                <option>Project</option>
-                                            </Form.Select>
-                                            <Hash className="position-absolute text-muted" size={18} style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
-                                        </div>
-                                    </Form.Group>
-                                </Col>
-                                <Col md={3}>
-                                    <Form.Group>
-                                        <Form.Label className="small fw-bold text-muted">Total Marks</Form.Label>
-                                        <Form.Control
-                                            type="number"
-                                            value={totalMarks}
-                                            readOnly
-                                            className="py-2 bg-light text-muted border-light fw-bold shadow-none text-center"
-                                        />
-                                    </Form.Group>
-                                </Col>
-                            </Row>
-                        </Card.Body>
-                    </Card>
 
-                    {/* Questions Card */}
-                    <Card className="shadow-sm border-0 rounded-4">
-                        <Card.Body className="p-4">
-                            <div className="d-flex justify-content-between align-items-center mb-4">
-                                <div>
-                                    <h6 className="fw-bold text-muted text-uppercase small mb-0">Questions & CLO Mapping</h6>
-                                    <p className="text-muted smaller mb-0">{questions.length} question(s) defined</p>
-                                </div>
-                                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                                    <Button variant="outline-primary" onClick={addQuestion} className="d-flex align-items-center gap-2 border-0 bg-primary-subtle text-primary fw-semibold small px-3 py-2 rounded-3">
-                                        <Plus size={16} /> Add Question
-                                    </Button>
-                                </motion.div>
+                    {/* ── Top fields ── */}
+                    <Row className="g-3 mb-3">
+                        {/* Activity / Assessment Method */}
+                        <Col md={4}>
+                            <Form.Label className="small text-dark mb-1">Activity/Assesment Method</Form.Label>
+                            <Form.Select
+                                value={method}
+                                onChange={e => setMethod(e.target.value)}
+                                style={{ borderColor: '#a0b4d6' }}
+                            >
+                                <option value="">- Select -</option>
+                                <option value="Quiz">Quiz</option>
+                                <option value="Assignment">Assignment</option>
+                                <option value="Midterm">Midterm</option>
+                                <option value="Final">Final</option>
+                                <option value="Project">Project</option>
+                            </Form.Select>
+                        </Col>
+
+                        {/* Name */}
+                        <Col md={4}>
+                            <Form.Label className="small text-dark mb-1">Name</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={name}
+                                onChange={e => setName(e.target.value)}
+                                style={{ borderColor: '#a0b4d6' }}
+                            />
+                        </Col>
+
+                        {/* Date */}
+                        <Col md={4}>
+                            <Form.Label className="small text-dark mb-1">Date</Form.Label>
+                            <div className="d-flex align-items-center border rounded-2 overflow-hidden" style={{ borderColor: '#a0b4d6' }}>
+                                <button
+                                    type="button"
+                                    className="btn btn-light px-2 py-2 border-end rounded-0"
+                                    onClick={() => setShowDatePicker(v => !v)}
+                                    style={{ borderColor: '#a0b4d6' }}
+                                >
+                                    <Calendar size={16} className="text-secondary" />
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-light px-2 py-2 border-end rounded-0"
+                                    onClick={() => setDate(today())}
+                                    style={{ borderColor: '#a0b4d6' }}
+                                >
+                                    <X size={16} className="text-secondary" />
+                                </button>
+                                <input
+                                    type="date"
+                                    value={date}
+                                    onChange={e => setDate(e.target.value)}
+                                    className="form-control border-0 shadow-none rounded-0"
+                                    style={{ minWidth: 0 }}
+                                />
                             </div>
+                        </Col>
+                    </Row>
 
-                            <div className="d-flex flex-column gap-3">
-                                <AnimatePresence>
-                                    {questions.map((q, index) => (
-                                        <motion.div
-                                            key={index}
-                                            initial={{ opacity: 0, y: -10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                            transition={{ duration: 0.2 }}
+                    {/* Second row */}
+                    <Row className="g-3 mb-3">
+                        {/* Total Marks (read-only) */}
+                        <Col md={4}>
+                            <Form.Label className="small text-dark mb-1">Total Marks</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={totalMarks.toFixed(2)}
+                                readOnly
+                                className="bg-light text-muted"
+                                style={{ borderColor: '#dde' }}
+                            />
+                        </Col>
+
+                        {/* GPA Weight — auto-synced with Total Marks */}
+                        <Col md={4}>
+                            <Form.Label className="small text-dark mb-1">
+                                GPA Weight <span className="text-muted fw-normal" style={{ fontSize: '0.75rem' }}>(auto)</span>
+                            </Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={gpaWeight}
+                                readOnly
+                                className="bg-light text-muted"
+                                style={{ borderColor: '#dde' }}
+                            />
+                        </Col>
+
+                        {/* Activity Nature */}
+                        <Col md={4}>
+                            <Form.Label className="small text-dark mb-1">Activity Nature</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={activityNature}
+                                onChange={e => setActivityNature(e.target.value)}
+                                style={{ borderColor: '#a0b4d6' }}
+                            />
+                        </Col>
+                    </Row>
+
+                    {/* Include for GPA checkbox */}
+                    <div className="d-flex align-items-center gap-2 mb-4">
+                        <div
+                            onClick={() => setIncludeForGPA(v => !v)}
+                            className="d-flex align-items-center justify-content-center rounded-2 cursor-pointer"
+                            style={{
+                                width: 22, height: 22, backgroundColor: includeForGPA ? '#6d28d9' : '#fff',
+                                border: `2px solid ${includeForGPA ? '#6d28d9' : '#aaa'}`,
+                                cursor: 'pointer', flexShrink: 0
+                            }}
+                        >
+                            {includeForGPA && (
+                                <svg width="13" height="10" viewBox="0 0 13 10" fill="none">
+                                    <path d="M1 5L5 9L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                            )}
+                        </div>
+                        <span className="small text-dark fw-medium" style={{ cursor: 'pointer' }} onClick={() => setIncludeForGPA(v => !v)}>
+                            Include for GPA Calculation
+                        </span>
+                    </div>
+
+                    {/* ── Sub Activities / Questions ── */}
+                    <div className="border rounded-3 p-3" style={{ borderColor: '#ccc' }}>
+                        <h6 className="fw-semibold text-dark mb-3">Sub Activities/ Questions</h6>
+
+                        <AnimatePresence>
+                            {questions.map((q, index) => (
+                                <motion.div
+                                    key={index}
+                                    initial={{ opacity: 0, y: -8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
+                                    transition={{ duration: 0.2 }}
+                                    className="border rounded-3 mb-3 overflow-hidden"
+                                    style={{ borderColor: '#ddd', backgroundColor: '#f9f9f9' }}
+                                >
+                                    {/* Line header */}
+                                    <div className="d-flex justify-content-between align-items-center px-3 py-2" style={{ backgroundColor: '#f0f0f0', borderBottom: '1px solid #ddd' }}>
+                                        <span className="fw-semibold text-dark" style={{ fontSize: '0.95rem' }}>
+                                            Line # {index + 1}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            className="btn btn-sm"
+                                            style={{ border: '1.5px solid #dc3545', color: '#dc3545', borderRadius: '6px', padding: '2px 8px', lineHeight: 1 }}
+                                            onClick={() => removeLine(index)}
+                                            disabled={questions.length === 1}
                                         >
-                                            <Row className="align-items-center g-3 bg-light rounded-4 p-3 mx-0">
-                                                <Col xs="auto">
-                                                    <div className="bg-white border rounded-3 px-3 py-2 fw-bold text-muted small" style={{ minWidth: '40px', textAlign: 'center' }}>
-                                                        {index + 1}
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+
+                                    <div className="p-3">
+                                        {/* Row 1: Name | Max Marks | %OBE Weight | Complexity */}
+                                        <Row className="g-3 mb-3">
+                                            <Col md={3}>
+                                                <Form.Label className="small text-dark mb-1">Name</Form.Label>
+                                                <Form.Control
+                                                    type="text"
+                                                    placeholder={`Q${index + 1}`}
+                                                    value={q.questionName}
+                                                    onChange={e => handleQuestionChange(index, 'questionName', e.target.value)}
+                                                    className="bg-white"
+                                                    style={{ borderColor: '#ccc' }}
+                                                />
+                                            </Col>
+                                            <Col md={3}>
+                                                <Form.Label className="small text-dark mb-1">Max Marks</Form.Label>
+                                                <Form.Control
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.5"
+                                                    value={q.maxMarks}
+                                                    onChange={e => handleQuestionChange(index, 'maxMarks', e.target.value)}
+                                                    className="bg-white"
+                                                    style={{ borderColor: '#ccc' }}
+                                                />
+                                            </Col>
+                                            <Col md={3}>
+                                                <Form.Label className="small text-dark mb-1">
+                                                    %OBE Weight <span className="text-muted fw-normal" style={{ fontSize: '0.72rem' }}>(auto)</span>
+                                                </Form.Label>
+                                                <Form.Control
+                                                    type="text"
+                                                    value={q.obeWeight}
+                                                    readOnly
+                                                    className="bg-light text-muted"
+                                                    style={{ borderColor: '#dde' }}
+                                                />
+                                            </Col>
+                                            <Col md={3}>
+                                                <Form.Label className="small text-dark mb-1">Complexity</Form.Label>
+                                                <Form.Select
+                                                    value={q.complexity}
+                                                    onChange={e => handleQuestionChange(index, 'complexity', e.target.value)}
+                                                    className="bg-white"
+                                                    style={{ borderColor: '#ccc' }}
+                                                >
+                                                    <option value="">- Select -</option>
+                                                    <option value="Low">Low</option>
+                                                    <option value="Medium">Medium</option>
+                                                    <option value="High">High</option>
+                                                </Form.Select>
+                                            </Col>
+                                        </Row>
+
+                                        {/* Row 2: CLOs | Not for OBE */}
+                                        <Row className="g-3 mb-3 align-items-end">
+                                            <Col md={8}>
+                                                <Form.Label className="small text-dark mb-1">CLOs</Form.Label>
+                                                <Form.Select
+                                                    value={q.clo}
+                                                    onChange={e => handleQuestionChange(index, 'clo', e.target.value)}
+                                                    className="bg-white"
+                                                    style={{ borderColor: '#ccc' }}
+                                                >
+                                                    <option value="">- Select CLO -</option>
+                                                    {clos.map(clo => (
+                                                        <option key={clo._id} value={clo._id}>
+                                                            {clo.code} — {clo.description?.slice(0, 60)}
+                                                        </option>
+                                                    ))}
+                                                </Form.Select>
+                                            </Col>
+                                            <Col md={4}>
+                                                <div className="d-flex align-items-center gap-2 pb-1">
+                                                    <div
+                                                        onClick={() => handleQuestionChange(index, 'notForOBE', !q.notForOBE)}
+                                                        className="d-flex align-items-center justify-content-center rounded-2"
+                                                        style={{
+                                                            width: 20, height: 20, flexShrink: 0, cursor: 'pointer',
+                                                            backgroundColor: q.notForOBE ? '#6d28d9' : '#fff',
+                                                            border: `2px solid ${q.notForOBE ? '#6d28d9' : '#aaa'}`
+                                                        }}
+                                                    >
+                                                        {q.notForOBE && (
+                                                            <svg width="11" height="9" viewBox="0 0 13 10" fill="none">
+                                                                <path d="M1 5L5 9L12 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                            </svg>
+                                                        )}
                                                     </div>
-                                                </Col>
-                                                <Col>
-                                                    <Form.Control
-                                                        type="text"
-                                                        placeholder="Question text (e.g. Q1, Part A)"
-                                                        value={q.questionText}
-                                                        onChange={e => handleQuestionChange(index, 'questionText', e.target.value)}
-                                                        className="border-0 bg-white shadow-none py-2"
-                                                    />
-                                                </Col>
-                                                <Col md={2}>
-                                                    <Form.Control
-                                                        type="number"
-                                                        placeholder="Marks"
-                                                        value={q.maxMarks}
-                                                        min={0}
-                                                        onChange={e => handleQuestionChange(index, 'maxMarks', e.target.value)}
-                                                        required
-                                                        className="border-0 bg-white shadow-none py-2 text-center fw-bold"
-                                                    />
-                                                </Col>
-                                                <Col md={3}>
-                                                    <div className="position-relative">
-                                                        <Form.Select
-                                                            value={q.clo}
-                                                            onChange={e => handleQuestionChange(index, 'clo', e.target.value)}
-                                                            required
-                                                            className="ps-5 border-0 bg-white shadow-none py-2"
-                                                        >
-                                                            <option value="">Map to CLO...</option>
-                                                            {clos.map(clo => (
-                                                                <option key={clo._id} value={clo._id}>{clo.code}</option>
-                                                            ))}
-                                                        </Form.Select>
-                                                        <Link2 className="position-absolute text-muted" size={16} style={{ left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
-                                                    </div>
-                                                </Col>
-                                                <Col xs="auto">
-                                                    <motion.div whileHover={{ scale: 1.1 }}>
-                                                        <Button
-                                                            variant="light"
-                                                            size="sm"
-                                                            onClick={() => removeQuestion(index)}
-                                                            className="border-0 bg-danger-subtle text-danger p-2 rounded-3"
-                                                            disabled={questions.length === 1}
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </Button>
-                                                    </motion.div>
-                                                </Col>
-                                            </Row>
-                                        </motion.div>
-                                    ))}
-                                </AnimatePresence>
-                            </div>
-                        </Card.Body>
-                        <Card.Footer className="bg-white border-0 p-4 pt-0 d-flex justify-content-between align-items-center">
-                            <Button variant="light" onClick={() => navigate(`/faculty/courses/${courseId}`)} className="px-4 border-0">
-                                Cancel
-                            </Button>
-                            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                                <Button type="submit" variant="primary" className="d-flex align-items-center gap-2 px-5 shadow-sm border-0 py-2 fw-semibold" disabled={loading}>
-                                    <Save size={18} />
-                                    {loading ? 'Saving...' : 'Save Assessment'}
-                                </Button>
-                            </motion.div>
-                        </Card.Footer>
-                    </Card>
+                                                    <span
+                                                        className="small text-dark"
+                                                        style={{ cursor: 'pointer' }}
+                                                        onClick={() => handleQuestionChange(index, 'notForOBE', !q.notForOBE)}
+                                                    >
+                                                        Not for OBE
+                                                    </span>
+                                                </div>
+                                            </Col>
+                                        </Row>
+
+                                        {/* Row 3: Question guideline textarea */}
+                                        <Form.Group className="mb-3">
+                                            <Form.Label className="small mb-1" style={{ color: '#6d28d9', fontWeight: 500 }}>
+                                                Question<span className="text-muted fw-normal">(Guideline for Question)</span>
+                                            </Form.Label>
+                                            <Form.Control
+                                                as="textarea"
+                                                rows={3}
+                                                value={q.questionText}
+                                                onChange={e => handleQuestionChange(index, 'questionText', e.target.value)}
+                                                className="bg-white"
+                                                style={{ borderColor: '#ccc', resize: 'vertical' }}
+                                            />
+                                        </Form.Group>
+
+                                        {/* Row 4: File upload */}
+                                        <Form.Group>
+                                            <Form.Control
+                                                type="file"
+                                                className="bg-white"
+                                                style={{ borderColor: '#ccc' }}
+                                            />
+                                        </Form.Group>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
+
+                        {/* Add Line button */}
+                        <Button
+                            type="button"
+                            variant="outline-secondary"
+                            size="sm"
+                            className="d-flex align-items-center gap-1 mt-1"
+                            onClick={addLine}
+                        >
+                            <Plus size={15} /> Add Line
+                        </Button>
+                    </div>
+
+                    {/* ── Footer actions ── */}
+                    <div className="d-flex justify-content-between align-items-center mt-4">
+                        <Button
+                            type="button"
+                            variant="light"
+                            className="px-4 border"
+                            onClick={() => navigate(`/faculty/courses/${courseId}?tab=Activities`)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            size="sm"
+                            className="px-5 py-2 border-0 fw-semibold"
+                            style={{ backgroundColor: '#4c1d95' }}
+                            disabled={loading}
+                        >
+                            {loading ? 'Saving...' : isEditMode ? 'Update Assessment' : 'Save Assessment'}
+                        </Button>
+                    </div>
+
                 </Form>
             </Container>
         </motion.div>

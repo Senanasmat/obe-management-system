@@ -7,7 +7,7 @@ if (process.env.NODE_ENV !== 'production') {
     dotenv.config();
 }
 
-// Connect to Database
+// database connection
 if (!process.env.MONGO_URI) {
     console.error('CRITICAL ERROR: MONGO_URI is not defined in environment variables.');
 } else {

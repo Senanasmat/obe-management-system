@@ -109,6 +109,11 @@ function App() {
                 <AssessmentCreation />
               </ProtectedRoute>
             } />
+            <Route path="faculty/courses/:courseId/edit-assessment/:assessmentId" element={
+              <ProtectedRoute allowedRoles={['faculty']}>
+                <AssessmentCreation />
+              </ProtectedRoute>
+            } />
             <Route path="faculty/courses/:courseId/marks/:assessmentId" element={
               <ProtectedRoute allowedRoles={['faculty']}>
                 <MarksEntry />

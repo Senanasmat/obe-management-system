@@ -1,5 +1,6 @@
 const CourseAssignment = require('../models/courseAssignmentModel');
-const { Assessment, Result } = require('../models/assessmentModel');
+const { Result, ALL_MODELS, getModelByType, findAssessmentById } = require('../models/assessmentModel');
+const { CLO, Course } = require('../models/academicModels');
 
 // GET ASSIGNED COURSES
 const getAssignedCourses = async (req, res) => {
@@ -18,17 +19,29 @@ const getAssignedCourses = async (req, res) => {
     }
 };
 
-// CREATE ASSESSMENT
+// CREATE ASSESSMENT — routes to the correct collection by type
 const createAssessment = async (req, res) => {
     try {
-        const { title, type, courseId, totalMarks, questions } = req.body;
+        const { title, type, courseId, totalMarks, gpaWeight, activityNature, includeForGPA, date, questions } = req.body;
 
-        const assessment = await Assessment.create({
+        const Model = getModelByType(type);
+        if (!Model) return res.status(400).json({ message: `Unknown assessment type: ${type}` });
+
+        const assessment = await Model.create({
             title,
             type,
             course: courseId,
             totalMarks,
-            questions
+            gpaWeight: gpaWeight || 0,
+            activityNature: activityNature || 'None',
+            includeForGPA: includeForGPA !== undefined ? includeForGPA : true,
+            date: date || new Date(),
+            questions: questions.map(q => ({
+                ...q,
+                maxMarks: Number(q.maxMarks),
+                obeWeight: Number(q.obeWeight) || 0,
+                clo: q.clo || undefined
+            }))
         });
 
         res.status(201).json(assessment);
@@ -66,13 +79,15 @@ const enterMarks = async (req, res) => {
     }
 };
 
-// GET ANALYTICS (UNCHANGED - OK)
+// GET ANALYTICS
 const getCourseAnalytics = async (req, res) => {
     const { courseId } = req.params;
 
     try {
-        const assessments = await Assessment.find({ course: courseId })
-            .populate('questions.clo');
+        const allResults = await Promise.all(
+            ALL_MODELS.map(Model => Model.find({ course: courseId }).populate('questions.clo'))
+        );
+        const assessments = allResults.flat();
 
         const assessmentIds = assessments.map(a => a._id);
 
@@ -161,15 +176,103 @@ const getCourseAnalytics = async (req, res) => {
     }
 };
 
-// GET COURSE ASSESSMENTS
+// GET COURSE ASSESSMENTS — queries all collections and merges
 const getCourseAssessments = async (req, res) => {
     try {
-        const assessments = await Assessment.find({
-            course: req.params.courseId
-        });
+        const results = await Promise.all(
+            ALL_MODELS.map(Model => Model.find({ course: req.params.courseId }))
+        );
+        const all = results.flat().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        res.json(all);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
 
-        res.json(assessments);
+// GET RESULTS FOR AN ASSESSMENT
+const getAssessmentResults = async (req, res) => {
+    try {
+        const results = await Result.find({ assessment: req.params.id });
+        res.json(results);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
 
+// GET SINGLE ASSESSMENT — searches all collections
+const getAssessment = async (req, res) => {
+    try {
+        const found = await findAssessmentById(req.params.id);
+        if (!found) return res.status(404).json({ message: 'Assessment not found' });
+        res.json(found.doc);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// UPDATE ASSESSMENT — finds in the right collection, updates in place
+const updateAssessment = async (req, res) => {
+    try {
+        const { title, type, totalMarks, gpaWeight, activityNature, includeForGPA, date, questions } = req.body;
+        const found = await findAssessmentById(req.params.id);
+        if (!found) return res.status(404).json({ message: 'Assessment not found' });
+
+        const { doc } = found;
+        doc.title = title;
+        doc.type = type;
+        doc.totalMarks = totalMarks;
+        doc.gpaWeight = gpaWeight || 0;
+        doc.activityNature = activityNature || 'None';
+        doc.includeForGPA = includeForGPA !== undefined ? includeForGPA : true;
+        doc.date = date || doc.date;
+        doc.questions = questions.map(q => ({
+            ...q,
+            maxMarks: Number(q.maxMarks),
+            obeWeight: Number(q.obeWeight) || 0,
+            clo: q.clo || undefined
+        }));
+
+        await doc.save();
+        res.json(doc);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+// DELETE ASSESSMENT — finds and deletes from the right collection
+const deleteAssessment = async (req, res) => {
+    try {
+        const found = await findAssessmentById(req.params.id);
+        if (!found) return res.status(404).json({ message: 'Assessment not found' });
+        await found.Model.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Assessment deleted' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// CREATE CLO FOR COURSE
+const createCourseCLO = async (req, res) => {
+    try {
+        const { code, description } = req.body;
+        const { courseId } = req.params;
+
+        const clo = await CLO.create({ code, description });
+
+        await Course.findByIdAndUpdate(courseId, { $push: { clos: clo._id } });
+
+        res.status(201).json(clo);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+// REMOVE CLO FROM COURSE
+const removeCourseCLO = async (req, res) => {
+    try {
+        const { courseId, cloId } = req.params;
+        await Course.findByIdAndUpdate(courseId, { $pull: { clos: cloId } });
+        res.json({ message: 'CLO removed from course' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -180,5 +283,11 @@ module.exports = {
     createAssessment,
     enterMarks,
     getCourseAnalytics,
-    getCourseAssessments
+    getCourseAssessments,
+    getAssessment,
+    getAssessmentResults,
+    updateAssessment,
+    deleteAssessment,
+    createCourseCLO,
+    removeCourseCLO
 };

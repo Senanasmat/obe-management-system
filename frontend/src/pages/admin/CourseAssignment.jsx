@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Container, Card, Button, Table, Modal, Form } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus } from 'lucide-react';
+import { showSuccess, showError, showConfirm } from '../../utils/notifications';
 
 const CourseAssignment = () => {
     const { user } = useAuth();
@@ -77,7 +78,7 @@ const CourseAssignment = () => {
                 }, config);
             }
 
-            alert(isEditing ? "Updated successfully" : "Assigned successfully");
+            showSuccess('Success', isEditing ? "Updated successfully" : "Assigned successfully");
 
             setShowModal(false);
             setIsEditing(false);
@@ -89,23 +90,26 @@ const CourseAssignment = () => {
 
         } catch (error) {
             console.error(error.response?.data);
-            alert(error.response?.data?.message || "Error");
+            showError('Error', error.response?.data?.message || "Error");
         }
     };
 
     // 🔹 DELETE (Frontend function)
     const handleDelete = async (id) => {
-        if (window.confirm("Are you sure?")) {
+        const result = await showConfirm("Delete Assignment?", "Are you sure you want to delete this assignment?");
+        if (result.isConfirmed) {
             try {
                 const config = {
                     headers: { Authorization: `Bearer ${user.token}` }
                 };
 
                 await axios.delete(`/api/assignments/${id}`, config);
+                showSuccess('Deleted!', 'The assignment has been deleted.');
                 fetchData();
 
             } catch (error) {
                 console.error(error);
+                showError("Error", error.response?.data?.message || "Failed to delete");
             }
         }
     };

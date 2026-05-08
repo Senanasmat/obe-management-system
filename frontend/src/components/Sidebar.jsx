@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Users, GraduationCap, FileText, ChevronRight, LogOut } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Users, GraduationCap, FileText, ChevronRight, Settings, ListTodo, FileBarChart } from 'lucide-react';
 import { ListGroup } from 'react-bootstrap';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 const Sidebar = ({ role }) => {
     const location = useLocation();
     const { logout } = useAuth();
-    const isActive = (path) => location.pathname === path;
+    const isActive = (path) => location.pathname === path || (path !== '/faculty' && location.pathname.startsWith(path));
 
     const navItems = role === 'admin' ? [
         { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
@@ -18,8 +18,10 @@ const Sidebar = ({ role }) => {
         { name: 'PLOs', path: '/admin/plos', icon: GraduationCap },
         { name: 'CLOs', path: '/admin/clos', icon: FileText },
     ] : [
-        { name: 'Dashboard', path: '/faculty', icon: LayoutDashboard },
-        { name: 'My Courses', path: '/faculty/courses', icon: BookOpen },
+        { name: 'Dashboards', path: '/faculty', icon: FileBarChart },
+        { name: 'Operation', path: '/faculty/courses', icon: ListTodo },
+        { name: 'Reports', path: '/faculty/reports', icon: FileText },
+        { name: 'Settings', path: '/faculty/settings', icon: Settings },
     ];
 
     return (
@@ -27,34 +29,30 @@ const Sidebar = ({ role }) => {
             initial={{ x: -250 }}
             animate={{ x: 0 }}
             className="bg-white border-end shadow-sm"
-            style={{ width: '280px', minHeight: '100vh', display: 'flex', flexDirection: 'column', zIndex: 1000 }}
+            style={{ width: '100px', minHeight: '100vh', display: 'flex', flexDirection: 'column', zIndex: 1000 }}
         >
-            <div className="p-4 mb-2 d-flex align-items-center justify-content-center border-bottom bg-primary bg-opacity-10">
-                <div className="bg-primary rounded-circle p-2 me-3 shadow-sm d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
-                    <GraduationCap className="text-white" size={24} />
-                </div>
-                <span className="h5 mb-0 text-primary fw-bold tracking-tight">OBE DASHBOARD</span>
+            <div className="pt-3 pb-2 d-flex flex-column align-items-center justify-content-center">
+                {/* Optional logo area */}
             </div>
 
-            <ListGroup variant="flush" className="flex-grow-1 px-3 py-2 scrollbar-hide" style={{ overflowY: 'auto' }}>
-                <p className="text-muted small fw-bold text-uppercase px-3 mb-2 mt-3 opacity-50" style={{ fontSize: '0.7rem' }}>Navigation</p>
+            <ListGroup variant="flush" className="flex-grow-1 px-2 py-2 scrollbar-hide text-center" style={{ overflowY: 'auto' }}>
                 {navItems.map((item) => {
                     const Icon = item.icon;
                     const active = isActive(item.path);
                     return (
                         <motion.div
                             key={item.name}
-                            whileHover={{ x: 5 }}
-                            whileTap={{ scale: 0.98 }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="mb-3"
                         >
                             <Link
                                 to={item.path}
-                                className={`list-group-item list-group-item-action border-0 rounded-3 mb-2 d-flex align-items-center py-3 px-3 transition-all ${active ? 'bg-primary text-white shadow-sm' : 'text-muted'}`}
-                                style={{ fontSize: '0.95rem', fontWeight: active ? '600' : '500' }}
+                                className={`d-flex flex-column align-items-center py-2 px-1 text-decoration-none transition-all ${active ? '' : 'text-muted'}`}
+                                style={{ borderRight: active ? '3px solid #4c1d95' : '3px solid transparent', color: active ? '#4c1d95' : undefined }}
                             >
-                                <Icon className={`me-3 ${active ? 'text-white' : 'text-muted opacity-75'}`} size={20} />
-                                <span className="flex-grow-1">{item.name}</span>
-                                {active && <ChevronRight size={16} className="text-white opacity-75" />}
+                                <Icon className={`mb-1 ${active ? '' : 'text-muted'}`} size={24} style={{ color: active ? '#4c1d95' : undefined }} />
+                                <span style={{ fontSize: '0.75rem', fontWeight: active ? '600' : '400' }}>{item.name}</span>
                             </Link>
                         </motion.div>
                     );

@@ -1,6 +1,6 @@
 const { PLO, CLO, Course, Student } = require('../models/academicModels');
 const { parse } = require('csv-parse/sync');
-const { Assessment, Result } = require('../models/assessmentModel');
+const { Result, ALL_MODELS } = require('../models/assessmentModel');
 const User = require('../models/userModel');
 
 // --- PLO Operations ---
@@ -73,8 +73,23 @@ const getCourses = async (req, res) => {
     try {
         const courses = await Course.find({})
             .populate('faculty', 'name email')
-            .populate('clos');
+            .populate('clos')
+            .populate('students', 'name regNo batch');
         res.json(courses);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const enrollStudents = async (req, res) => {
+    try {
+        const { studentIds } = req.body;
+        const course = await Course.findById(req.params.id);
+        if (!course) return res.status(404).json({ message: 'Course not found' });
+        course.students = studentIds || [];
+        await course.save();
+        await course.populate('students', 'name regNo batch');
+        res.json(course);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -178,13 +193,15 @@ const bulkImportStudents = async (req, res) => {
 
 const getDashboardStats = async (req, res) => {
     try {
-        const [totalStudents, totalCourses, totalPLOs, totalFaculty, totalCLOs, totalAssessments] = await Promise.all([
+        const assessmentCounts = await Promise.all(ALL_MODELS.map(M => M.countDocuments()));
+        const totalAssessments = assessmentCounts.reduce((s, n) => s + n, 0);
+
+        const [totalStudents, totalCourses, totalPLOs, totalFaculty, totalCLOs] = await Promise.all([
             Student.countDocuments(),
             Course.countDocuments(),
             PLO.countDocuments(),
             User.countDocuments({ role: 'faculty' }),
             CLO.countDocuments(),
-            Assessment.countDocuments()
         ]);
 
         const plos = await PLO.find({});
@@ -192,7 +209,8 @@ const getDashboardStats = async (req, res) => {
 
         // Calculate CLO Achievements
         const cloAchievements = await Promise.all(clos.map(async (clo) => {
-            const assessments = await Assessment.find({ 'questions.clo': clo._id });
+            const perModel = await Promise.all(ALL_MODELS.map(M => M.find({ 'questions.clo': clo._id })));
+            const assessments = perModel.flat();
             let totalObtained = 0;
             let totalMax = 0;
 
@@ -321,7 +339,7 @@ const createFacultyMember = async (req, res) => {
 
         const user = await User.create({
             name,
-            email,
+            email: email || undefined,
             password,
             role: 'faculty',
             department,
@@ -337,7 +355,7 @@ const createFacultyMember = async (req, res) => {
 
 const updateFacultyMember = async (req, res) => {
     try {
-        const { name, email, password, department, designation } = req.body;
+        const { name, email, password, role, department, designation } = req.body;
 
         const user = await User.findById(req.params.id);
 
@@ -345,10 +363,11 @@ const updateFacultyMember = async (req, res) => {
             return res.status(404).json({ message: 'Not found' });
         }
 
-        user.name = name || user.name;
-        user.email = email || user.email;
-        user.department = department || user.department;
-        user.designation = designation || user.designation;
+        if (name) user.name = name;
+        if (email !== undefined) user.email = email || undefined;
+        if (role) user.role = role;
+        if (department) user.department = department;
+        if (designation) user.designation = designation;
 
         if (password && password.trim() !== '') {
             user.password = password;
@@ -373,7 +392,7 @@ const deleteFacultyMember = async (req, res) => {
 module.exports = {
     createPLO, getPLOs, updatePLO, deletePLO,
     createCLO, getCLOs, updateCLO, deleteCLO,
-    createCourse, getCourses, updateCourse, deleteCourse, assignFaculty,
+    createCourse, getCourses, updateCourse, deleteCourse, assignFaculty, enrollStudents,
     createStudent, getStudents, updateStudent, deleteStudent, bulkImportStudents,
     getFaculty, createFacultyMember, updateFacultyMember, deleteFacultyMember,
     getDashboardStats

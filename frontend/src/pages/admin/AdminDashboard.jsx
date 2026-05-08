@@ -21,31 +21,34 @@ const itemVariants = {
     visible: { y: 0, opacity: 1 }
 };
 
-const StatCard = ({ title, count, icon: Icon, color }) => (
-    <motion.div
-        variants={itemVariants}
-        whileHover={{ y: -5, transition: { duration: 0.2 } }}
-        className="h-100"
-        style={{ overflow: 'visible' }}
-    >
-        <Card className="h-100 shadow-sm border-0 position-relative group" style={{ minHeight: '140px', overflow: 'visible' }}>
-            <Card.Body className="d-flex flex-column p-4 h-100 justify-content-center" style={{ overflow: 'visible' }}>
-                <div className="d-flex align-items-center justify-content-between pt-1">
-                    <div className="text-truncate me-2" style={{ minWidth: 0 }}>
-                        <div className="text-muted mb-2 small text-uppercase ls-wide fw-bold" style={{ fontSize: '0.75rem', lineHeight: '1.4', letterSpacing: '0.05em' }}>{title}</div>
-                        <div className="fw-bold mb-0 text-dark" style={{ fontSize: '2.5rem', lineHeight: '1.2' }}>
-                            {count}
+const STAT_COLORS = {
+    'bg-purple':    { bg: '#ede9fe', icon: '#6d28d9', bar: '#4c1d95' },
+    'bg-success':   { bg: '#dcfce7', icon: '#16a34a', bar: '#16a34a' },
+    'bg-secondary': { bg: '#f1f5f9', icon: '#64748b', bar: '#64748b' },
+    'bg-warning':   { bg: '#fef9c3', icon: '#ca8a04', bar: '#ca8a04' },
+};
+
+const StatCard = ({ title, count, icon: Icon, color }) => {
+    const c = STAT_COLORS[color] || STAT_COLORS['bg-purple'];
+    return (
+        <motion.div variants={itemVariants} whileHover={{ y: -5, transition: { duration: 0.2 } }} className="h-100" style={{ overflow: 'visible' }}>
+            <Card className="h-100 shadow-sm border-0 position-relative" style={{ minHeight: '140px', overflow: 'visible' }}>
+                <Card.Body className="d-flex flex-column p-4 h-100 justify-content-center">
+                    <div className="d-flex align-items-center justify-content-between pt-1">
+                        <div className="text-truncate me-2" style={{ minWidth: 0 }}>
+                            <div className="text-muted mb-2 small text-uppercase fw-bold" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>{title}</div>
+                            <div className="fw-bold mb-0 text-dark" style={{ fontSize: '2.5rem', lineHeight: '1.2' }}>{count}</div>
+                        </div>
+                        <div className="p-3 rounded-3 flex-shrink-0" style={{ backgroundColor: c.bg }}>
+                            <Icon size={28} style={{ color: c.icon }} />
                         </div>
                     </div>
-                    <div className={`p-3 rounded-xl ${color} bg-opacity-10 text-${color.split('-')[1]} flex-shrink-0`}>
-                        <Icon size={28} />
-                    </div>
-                </div>
-            </Card.Body>
-            <div className={`position-absolute bottom-0 start-0 w-100 ${color}`} style={{ height: '4px', opacity: 0.6 }}></div>
-        </Card>
-    </motion.div>
-);
+                </Card.Body>
+                <div className="position-absolute bottom-0 start-0 w-100 rounded-bottom" style={{ height: '4px', backgroundColor: c.bar, opacity: 0.7 }} />
+            </Card>
+        </motion.div>
+    );
+};
 
 const AdminDashboard = () => {
     const { user } = useAuth();
@@ -83,7 +86,7 @@ const AdminDashboard = () => {
         }
     }, [user]);
 
-    const COLORS = ['#0d6efd', '#0dcaf0', '#198754', '#6c757d'];
+    const COLORS = ['#4c1d95', '#7c3aed', '#198754', '#6c757d'];
 
     const distributionData = useMemo(() => [
         { name: 'Students', value: stats.totalStudents },
@@ -126,7 +129,7 @@ const AdminDashboard = () => {
                             title="Total Students"
                             count={stats.totalStudents}
                             icon={Users}
-                            color="bg-primary"
+                            color="bg-purple"
                         />
                     </Col>
                     <Col xs={12} sm={6} md={4} lg>
@@ -134,7 +137,7 @@ const AdminDashboard = () => {
                             title="Active Faculty"
                             count={stats.totalFaculty}
                             icon={Users}
-                            color="bg-info"
+                            color="bg-purple"
                         />
                     </Col>
                     <Col xs={12} sm={6} md={4} lg>
@@ -142,7 +145,7 @@ const AdminDashboard = () => {
                             title="Active Courses"
                             count={stats.totalCourses}
                             icon={BookOpen}
-                            color="bg-success"
+                            color="bg-purple"
                         />
                     </Col>
                     <Col xs={12} sm={6} md={4} lg>
@@ -173,10 +176,10 @@ const AdminDashboard = () => {
                                 </Card.Header>
                                 <Card.Body className="p-4">
                                     <div className="d-flex flex-wrap gap-3">
-                                        <Button variant="primary" className="rounded-pill px-4 py-2 fw-bold shadow-sm" onClick={() => window.location.href = '/admin/students'}>
+                                        <Button className="rounded-pill px-4 py-2 fw-bold shadow-sm border-0" style={{ backgroundColor: '#4c1d95' }} onClick={() => window.location.href = '/admin/students'}>
                                             <UserPlus size={18} className="me-2" /> Register Student
                                         </Button>
-                                        <Button variant="info" className="text-white rounded-pill px-4 py-2 fw-bold shadow-sm" onClick={() => window.location.href = '/admin/faculty'}>
+                                        <Button className="rounded-pill px-4 py-2 fw-bold shadow-sm border-0" style={{ backgroundColor: '#6d28d9' }} onClick={() => window.location.href = '/admin/faculty'}>
                                             <UserPlus size={18} className="me-2" /> Register Faculty
                                         </Button>
                                         <Button variant="success" className="rounded-pill px-4 py-2 fw-bold shadow-sm" onClick={() => window.location.href = '/admin/courses'}>
@@ -231,7 +234,7 @@ const AdminDashboard = () => {
                                                 />
                                                 <Bar
                                                     dataKey="achievement"
-                                                    fill="#0d6efd"
+                                                    fill="#4c1d95"
                                                     radius={[6, 6, 0, 0]}
                                                     barSize={40}
                                                 />

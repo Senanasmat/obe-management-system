@@ -123,8 +123,7 @@ const Students = () => {
             formPayload.append('file', csvFile);
             const config = {
                 headers: {
-                    Authorization: `Bearer ${user.token}`,
-                    'Content-Type': 'multipart/form-data'
+                    Authorization: `Bearer ${user.token}`
                 }
             };
             const { data } = await axios.post('/api/admin/students/bulk-import', formPayload, config);
@@ -174,9 +173,9 @@ const Students = () => {
                         </motion.div>
                         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                             <Button
-                                variant="primary"
                                 onClick={() => handleOpenModal()}
                                 className="d-flex align-items-center gap-2 shadow-sm px-4 py-2 border-0"
+                                style={{ backgroundColor: '#4c1d95' }}
                             >
                                 <UserPlus size={18} /> Add New Student
                             </Button>
@@ -200,8 +199,8 @@ const Students = () => {
                                         transition: 'all 0.2s ease'
                                     }}
                                     onFocus={(e) => {
-                                        e.target.style.boxShadow = '0 0 0 2px rgba(13,110,253,0.15)';
-                                        e.target.style.border = '1px solid #0d6efd';
+                                        e.target.style.boxShadow = '0 0 0 2px rgba(109,40,217,0.15)';
+                                        e.target.style.border = '1px solid #6d28d9';
                                     }}
                                     onBlur={(e) => {
                                         e.target.style.boxShadow = '0 2px 6px rgba(0,0,0,0.05)';
@@ -221,8 +220,8 @@ const Students = () => {
                                     transition: 'all 0.2s ease'
                                 }}
                                 onFocus={(e) => {
-                                    e.target.style.boxShadow = '0 0 0 2px rgba(13,110,253,0.15)';
-                                    e.target.style.border = '1px solid #0d6efd';
+                                    e.target.style.boxShadow = '0 0 0 2px rgba(109,40,217,0.15)';
+                                    e.target.style.border = '1px solid #6d28d9';
                                 }}
                                 onBlur={(e) => {
                                     e.target.style.boxShadow = '0 2px 6px rgba(0,0,0,0.05)';
@@ -259,7 +258,7 @@ const Students = () => {
                                         >
                                             <td className="px-4 py-3 align-middle">
                                                 <div className="d-flex align-items-center gap-3">
-                                                    <div className="bg-primary-subtle text-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <div className="rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px', backgroundColor: '#ede9fe', color: '#6d28d9' }}>
                                                         <User size={20} />
                                                     </div>
                                                     <span className="fw-semibold text-dark">{student.name}</span>
@@ -274,7 +273,7 @@ const Students = () => {
                                             <td className="px-4 py-3 align-middle text-end">
                                                 <div className="d-flex justify-content-end gap-2">
                                                     <motion.div whileHover={{ scale: 1.1 }}>
-                                                        <Button variant="light" size="sm" onClick={() => handleOpenModal(student)} className="border-0 bg-primary-subtle text-primary p-2 rounded-lg">
+                                                        <Button variant="light" size="sm" onClick={() => handleOpenModal(student)} className="border-0 p-2 rounded-2" style={{ backgroundColor: '#ede9fe', color: '#6d28d9' }}>
                                                             <Edit size={16} />
                                                         </Button>
                                                     </motion.div>
@@ -335,7 +334,7 @@ const Students = () => {
                         </Modal.Body>
                         <Modal.Footer className="border-0 p-4 pt-0">
                             <Button variant="light" onClick={() => setShowModal(false)} className="px-4 border-0">Cancel</Button>
-                            <Button variant="primary" type="submit" className="px-5 shadow-sm border-0 py-2 fw-semibold" disabled={loading}>
+                            <Button type="submit" className="px-5 shadow-sm border-0 py-2 fw-semibold" style={{ backgroundColor: '#4c1d95' }} disabled={loading}>
                                 {loading ? 'Processing...' : (isEditing ? 'Save Changes' : 'Confirm Registration')}
                             </Button>
                         </Modal.Footer>
@@ -346,7 +345,7 @@ const Students = () => {
                 <Modal show={showImportModal} onHide={handleCloseImportModal} centered size="lg">
                     <Modal.Header closeButton className="border-0 pb-0">
                         <Modal.Title className="fw-bold d-flex align-items-center gap-2">
-                            <FileSpreadsheet size={22} className="text-primary" /> Bulk Import Students
+                            <FileSpreadsheet size={22} style={{ color: '#6d28d9' }} /> Bulk Import Students
                         </Modal.Title>
                     </Modal.Header>
                     <Modal.Body className="p-4">
@@ -355,15 +354,15 @@ const Students = () => {
                                 {/* Step 1: Download Template */}
                                 <div className="bg-light rounded-4 p-4 mb-4">
                                     <div className="d-flex align-items-start gap-3">
-                                        <div className="bg-primary-subtle text-primary rounded-3 p-2 mt-1">
+                                        <div className="rounded-circle rounded-3 p-2 mt-1">
                                             <Download size={20} />
                                         </div>
                                         <div className="flex-grow-1">
                                             <h6 className="fw-bold mb-1">Step 1 — Download the CSV Template</h6>
                                             <p className="text-muted small mb-3">
-                                                Use this template to fill in your student data. Required columns: <code>name</code>, <code>regNo</code>, <code>batch</code>. One student per row.
+                                                Use this template to fill in your student data. Required columns: <code>name</code>, <code>RegNo</code>, <code>Batch</code>. One student per row.
                                             </p>
-                                            <Button variant="outline-primary" size="sm" onClick={downloadTemplate} className="d-flex align-items-center gap-2">
+                                            <Button size="sm" onClick={downloadTemplate} className="d-flex align-items-center gap-2 border-0" style={{ backgroundColor: '#4c1d95' }}>
                                                 <Download size={15} /> Download Template (.csv)
                                             </Button>
                                         </div>

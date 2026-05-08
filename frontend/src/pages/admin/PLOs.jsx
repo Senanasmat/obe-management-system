@@ -99,7 +99,7 @@ const PLOs = () => {
                         <h2 className="mb-0 text-dark fw-bold display-6 fs-3">Program Learning Outcomes</h2>
                     </div>
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                        <Button variant="primary" onClick={() => handleOpenModal()} className="d-flex align-items-center gap-2 shadow-sm px-4 py-2 border-0">
+                        <Button style={{ backgroundColor: '#4c1d95', border: 'none' }} onClick={() => handleOpenModal()} className="d-flex align-items-center gap-2 shadow-sm px-4 py-2 border-0">
                             <PlusCircle size={18} /> Add New PLO
                         </Button>
                     </motion.div>
@@ -129,7 +129,7 @@ const PLOs = () => {
                                     >
                                         <td className="px-4 py-3 align-middle">
                                             <div className="d-flex align-items-center gap-2">
-                                                <div className="bg-primary-subtle text-primary rounded p-1">
+                                                <div className="rounded-2 p-1" style={{ backgroundColor: '#ede9fe', color: '#6d28d9' }}>
                                                     <Target size={16} />
                                                 </div>
                                                 <span className="fw-bold text-dark">{plo.code}</span>
@@ -144,7 +144,7 @@ const PLOs = () => {
                                         <td className="px-4 py-3 align-middle text-end">
                                             <div className="d-flex justify-content-end gap-2">
                                                 <motion.div whileHover={{ scale: 1.1 }}>
-                                                    <Button variant="light" size="sm" onClick={() => handleOpenModal(plo)} className="border-0 bg-primary-subtle text-primary p-2 rounded-lg">
+                                                    <Button variant="light" size="sm" onClick={() => handleOpenModal(plo)} className="border-0 p-2 rounded-2" style={{ backgroundColor: '#ede9fe', color: '#6d28d9' }}>
                                                         <Edit size={16} />
                                                     </Button>
                                                 </motion.div>
@@ -227,7 +227,7 @@ const PLOs = () => {
                         </Modal.Body>
                         <Modal.Footer className="border-0 p-4 pt-0">
                             <Button variant="light" onClick={() => setShowModal(false)} className="px-4 border-0">Cancel</Button>
-                            <Button variant="primary" type="submit" className="px-5 shadow-sm border-0 py-2 fw-semibold" disabled={loading}>
+                            <Button style={{ backgroundColor: '#4c1d95', border: 'none' }} type="submit" className="px-5 shadow-sm border-0 py-2 fw-semibold" disabled={loading}>
                                 {loading ? 'Processing...' : (isEditing ? 'Save Changes' : 'Confirm Entry')}
                             </Button>
                         </Modal.Footer>

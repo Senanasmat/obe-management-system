@@ -1,64 +1,54 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Container, Card, Row, Col } from 'react-bootstrap';
-import { BookOpen, Users, ArrowRight } from 'lucide-react';
+import { BookOpen, Users, FileText, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Dropdown } from 'react-bootstrap';
 
+const getInitials = (name) => {
+    if (!name) return '??';
+    const words = name.trim().split(/\s+/);
+    if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+};
+
 const CoursesList = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [assignments, setAssignments] = useState([]);
     const [semester, setSemester] = useState('');
 
-    // Fetch data
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const config = {
-                    headers: { Authorization: `Bearer ${user.token}` }
-                };
-
+                const config = { headers: { Authorization: `Bearer ${user.token}` } };
                 const { data } = await axios.get('/api/assignments/my', config);
                 setAssignments(data);
             } catch (err) {
                 console.error(err);
             }
         };
-
         if (user?.token) fetchData();
     }, [user?.token]);
 
-    // ✅ Unique + sorted semesters (latest first)
-    const semesters = [...new Set(assignments.map(a => a.semester))]
-        .sort()
-        .reverse();
+    const semesters = [...new Set(assignments.map(a => a.semester))].sort().reverse();
 
-    // ✅ Set default latest semester
     useEffect(() => {
-        if (semesters.length > 0) {
-            setSemester(semesters[0]);
-        }
+        if (semesters.length > 0) setSemester(semesters[0]);
     }, [assignments]);
 
-    // ✅ Filter only selected semester
     const filtered = assignments.filter(a => a.semester === semester);
 
     return (
         <Container fluid className="py-4 px-4">
 
-            {/* HEADER */}
+            {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
-
                 <h3 className="fw-bold mb-0">My Courses</h3>
-
-                {/* Semester Select */}
                 <div className="d-flex align-items-center gap-2">
-                    <span className="fw-semibold text-muted small">
-                        Select Semester
-                    </span>
-
+                    <span className="fw-semibold text-muted small">Select Semester</span>
                     <select
                         className="form-select w-auto"
                         value={semester}
@@ -71,120 +61,105 @@ const CoursesList = () => {
                 </div>
             </div>
 
-            {/* COURSES GRID */}
+            {/* Courses Grid */}
             <Row xs={1} md={2} lg={3} className="g-4">
                 {filtered.map(a => (
                     <Col key={a._id}>
-                        <motion.div whileHover={{ y: -5 }}>
-                                <Card className="shadow-sm border-0 rounded-4 h-100">
+                        <motion.div whileHover={{ y: -6, transition: { duration: 0.2 } }} className="h-100">
+                            <Card className="h-100 shadow-sm border-0 rounded-4 text-center p-4">
 
-                                    <div className="bg-primary text-white p-4">
-
-                                        <Link
-                                            to={`/faculty/courses/${a.course._id}`}
-                                            className="text-decoration-none"
-                                        >
-                                            <div className="d-flex align-items-center gap-3">
-                                                
-                                                {/* Icon */}
-                                                <div className="bg-white text-primary rounded-3 p-2">
-                                                    <BookOpen size={20} />
-                                                </div>
-
-                                                {/* Course Name */}
-                                                <div>
-                                                    <h6 className="fw-bold mb-0 text-white">
-                                                        {a.course.code} - {a.course.name}
-                                                    </h6>
-                                                </div>
-
-                                            </div>
-                                        </Link>
+                                {/* Avatar */}
+                                <div className="d-flex justify-content-center mb-3">
+                                    <div
+                                        className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                                        style={{ width: 68, height: 68, backgroundColor: '#637a62', fontSize: '1.3rem', letterSpacing: 1 }}
+                                    >
+                                        {getInitials(user.name)}
                                     </div>
+                                </div>
 
-                                    <Card.Body>
+                                {/* Course Title */}
+                                <h6 className="fw-bold mb-1" style={{ color: '#6d28d9' }}>
+                                    {a.course.code} - {a.course.name}
+                                </h6>
 
-                                        {/* Students */}
-                                        <p className="text-muted small mb-3">
-                                            <Users size={14} /> {a.course.students?.length || 0} Students Enrolled
-                                        </p>
+                                {/* Code + Semester */}
+                                <p className="mb-1" style={{ color: '#7c3aed', fontSize: '0.82rem' }}>
+                                    {a.course.code} - {a.semester}
+                                </p>
 
-                                        {/* ACTION BUTTONS */}
-                                        <div className="d-flex justify-content-between align-items-center">
+                                {/* Faculty Name */}
+                                <p className="mb-0 fw-medium text-dark" style={{ fontSize: '0.88rem' }}>
+                                    {user.name}
+                                </p>
 
-                                            {/* OPTIONS DROPDOWN */}
-                                            <Dropdown onClick={(e) => e.stopPropagation()}>
-                                                <Dropdown.Toggle
-                                                    variant="primary"
-                                                    size="sm"
-                                                    className="rounded-3"
-                                                >
-                                                    Options
-                                                </Dropdown.Toggle>
+                                {/* Department */}
+                                <p className="text-muted mb-3" style={{ fontSize: '0.82rem' }}>
+                                    {user.department || 'No Department'}
+                                </p>
 
-                                                <Dropdown.Menu>
-                                                    <Dropdown.Item
-                                                        onClick={() => console.log('Class Activities', a.course._id)}
-                                                    >
-                                                        Class Activities
-                                                    </Dropdown.Item>
+                                {/* Buttons */}
+                                <div className="d-flex justify-content-between mb-3">
+                                    <Dropdown onClick={(e) => e.stopPropagation()}>
+                                        <Dropdown.Toggle
+                                            size="sm"
+                                            style={{ backgroundColor: '#4c1d95', border: 'none', borderRadius: '6px' }}
+                                        >
+                                            Options
+                                        </Dropdown.Toggle>
+                                        <Dropdown.Menu>
+                                            <Dropdown.Item onClick={() => navigate(`/faculty/courses/${a.course._id}?tab=Activities`)}>
+                                                Class Activities
+                                            </Dropdown.Item>
+                                            <Dropdown.Item>Activity Weights</Dropdown.Item>
+                                        </Dropdown.Menu>
+                                    </Dropdown>
 
-                                                    <Dropdown.Item
-                                                        onClick={() => console.log('Activity Weights', a.course._id)}
-                                                    >
-                                                        Activity Weights
-                                                    </Dropdown.Item>
-                                                </Dropdown.Menu>
-                                            </Dropdown>
+                                    <Dropdown onClick={(e) => e.stopPropagation()}>
+                                        <Dropdown.Toggle
+                                            size="sm"
+                                            style={{ backgroundColor: '#d97706', border: 'none', borderRadius: '6px' }}
+                                        >
+                                            Reports
+                                        </Dropdown.Toggle>
+                                        <Dropdown.Menu align="end">
+                                            <Dropdown.Item>OBE Report</Dropdown.Item>
+                                            <Dropdown.Item>Student Report</Dropdown.Item>
+                                        </Dropdown.Menu>
+                                    </Dropdown>
+                                </div>
 
-                                            {/* REPORTS DROPDOWN */}
-                                            <Dropdown onClick={(e) => e.stopPropagation()}>
-                                                <Dropdown.Toggle
-                                                    variant="warning"
-                                                    size="sm"
-                                                    className="rounded-3"
-                                                >
-                                                    Reports
-                                                </Dropdown.Toggle>
+                                {/* Stats */}
+                                <div className="d-flex justify-content-around border-top pt-3" style={{ color: '#d97706' }}>
+                                    <div className="d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
+                                        <Users size={15} />
+                                        <span>{a.course.students?.length || 0} Students</span>
+                                    </div>
+                                    <div className="d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
+                                        <FileText size={15} />
+                                        <span>{a.course.clos?.length || 0} CLOs</span>
+                                    </div>
+                                    <div className="d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
+                                        <Clock size={15} />
+                                        <span>0 Classes</span>
+                                    </div>
+                                </div>
 
-                                                <Dropdown.Menu>
-                                                    <Dropdown.Item
-                                                        onClick={() => console.log('OBE Report', a.course._id)}
-                                                    >
-                                                        OBE Report
-                                                    </Dropdown.Item>
-
-                                                    <Dropdown.Item
-                                                        onClick={() => console.log('Student Report', a.course._id)}
-                                                    >
-                                                        Student Report
-                                                    </Dropdown.Item>
-                                                </Dropdown.Menu>
-                                            </Dropdown>
-
-                                        </div>
-
-                                        {/* VIEW BUTTON */}
-                                        <div className="mt-3">
-                                            <Link
-                                                to={`/faculty/courses/${a.course._id}`}
-                                                className="text-primary small fw-bold text-decoration-none"
-                                            >
-                                                View Course <ArrowRight size={14} />
-                                            </Link>
-                                        </div>
-
-                                    </Card.Body>
-
-                                </Card>
+                            </Card>
                         </motion.div>
                     </Col>
                 ))}
             </Row>
 
-            {/* EMPTY STATE */}
+            {/* Empty State */}
             {assignments.length === 0 && (
-                <p className="text-muted mt-4">No courses assigned yet.</p>
+                <div className="text-center py-5 bg-white rounded-4 shadow-sm mt-3">
+                    <div className="d-inline-block p-4 rounded-circle mb-3 bg-light">
+                        <BookOpen size={36} className="text-muted" />
+                    </div>
+                    <h5 className="fw-bold">No Courses Assigned</h5>
+                    <p className="text-muted">Contact your administrator to get courses assigned.</p>
+                </div>
             )}
         </Container>
     );

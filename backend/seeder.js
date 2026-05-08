@@ -24,9 +24,17 @@ const importData = async () => {
             role: 'faculty',
         });
 
+        const salmanUser = await User.create({
+            name: 'Salman Bangash',
+            email: 'salmanbangash@obe.com',
+            password: 'password123',
+            role: 'faculty',
+        });
+
         console.log('Data Imported!');
         console.log(`Admin Info: admin@obe.com / password123`);
         console.log(`Faculty Info: faculty@obe.com / password123`);
+        console.log(`Faculty Info (Salman): salmanbangash@obe.com / password123`);
 
         process.exit();
     } catch (error) {

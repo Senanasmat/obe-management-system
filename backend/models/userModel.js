@@ -8,8 +8,10 @@ const userSchema = mongoose.Schema({
     },
     email: {
         type: String,
-        unique: true,
-        sparse: true, // Allows multiple documents without an email
+        index: {
+            unique: true,
+            partialFilterExpression: { email: { $type: "string" } }
+        }
     },
     password: {
         type: String,

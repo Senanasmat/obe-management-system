@@ -5,7 +5,7 @@ const { protect, admin } = require('../middleware/authMiddleware');
 const {
     createPLO, getPLOs, deletePLO, updatePLO,
     createCLO, getCLOs, deleteCLO, updateCLO,
-    createCourse, getCourses, assignFaculty,
+    createCourse, getCourses, assignFaculty, enrollStudents,
     createStudent, getStudents, updateStudent, deleteStudent,
     bulkImportStudents,
     getDashboardStats,
@@ -25,6 +25,7 @@ router.route('/clos/:id').put(protect, admin, updateCLO).delete(protect, admin, 
 router.route('/courses').post(protect, admin, createCourse).get(protect, admin, getCourses);
 router.route('/courses/assign-faculty').post(protect, admin, assignFaculty);
 router.route('/courses/:id').put(protect, admin, updateCourse).delete(protect, admin, deleteCourse);
+router.put('/courses/:id/enroll', protect, admin, enrollStudents);
 
 router.route('/students').post(protect, admin, createStudent).get(protect, admin, getStudents);
 router.post('/students/bulk-import', protect, admin, upload.single('file'), bulkImportStudents);

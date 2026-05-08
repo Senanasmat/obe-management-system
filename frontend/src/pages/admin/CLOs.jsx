@@ -112,7 +112,7 @@ const CLOs = () => {
                         <p className="text-muted small mb-0">Map specific course objectives to program-level outcomes</p>
                     </div>
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                        <Button variant="info" onClick={() => handleOpenModal()} className="d-flex align-items-center gap-2 shadow-sm px-4 py-2 border-0 text-white">
+                        <Button style={{ backgroundColor: '#4c1d95', border: 'none' }} onClick={() => handleOpenModal()} className="d-flex align-items-center gap-2 shadow-sm px-4 py-2 border-0 text-white">
                             <PlusCircle size={18} /> Add New CLO
                         </Button>
                     </motion.div>
@@ -142,7 +142,7 @@ const CLOs = () => {
                                     >
                                         <td className="px-4 py-3 align-middle">
                                             <div className="d-flex align-items-center gap-2">
-                                                <div className="bg-info-subtle text-info rounded p-1">
+                                                <div className="rounded-2 p-1" style={{ backgroundColor: '#ede9fe', color: '#6d28d9' }}>
                                                     <Layers size={16} />
                                                 </div>
                                                 <span className="fw-bold text-dark">{clo.code}</span>
@@ -161,7 +161,7 @@ const CLOs = () => {
                                         <td className="px-4 py-3 align-middle text-end">
                                             <div className="d-flex justify-content-end gap-2">
                                                 <motion.div whileHover={{ scale: 1.1 }}>
-                                                    <Button variant="light" size="sm" onClick={() => handleOpenModal(clo)} className="border-0 bg-primary-subtle text-primary p-2 rounded-lg">
+                                                    <Button variant="light" size="sm" onClick={() => handleOpenModal(clo)} className="border-0 p-2 rounded-2" style={{ backgroundColor: '#ede9fe', color: '#6d28d9' }}>
                                                         <Edit size={16} />
                                                     </Button>
                                                 </motion.div>
@@ -249,7 +249,7 @@ const CLOs = () => {
                         </Modal.Body>
                         <Modal.Footer className="border-0 p-4 pt-0">
                             <Button variant="light" onClick={() => setShowModal(false)} className="px-4 border-0">Cancel</Button>
-                            <Button variant="info" type="submit" className="px-5 shadow-sm border-0 py-2 fw-semibold text-white" disabled={loading}>
+                            <Button style={{ backgroundColor: '#4c1d95', border: 'none' }} type="submit" className="px-5 shadow-sm border-0 py-2 fw-semibold text-white" disabled={loading}>
                                 {loading ? 'Processing...' : (isEditing ? 'Save Changes' : 'Confirm Entry')}
                             </Button>
                         </Modal.Footer>

@@ -1,16 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { Container, Table, Button, Form, Card, Badge } from 'react-bootstrap';
-import { ArrowLeft, Save, CheckCircle2, User } from 'lucide-react';
-import { toast, showError } from '../../utils/notifications';
+import { Container, Table, Button, Form, Breadcrumb } from 'react-bootstrap';
+import { ArrowLeft, Save, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-const containerVariants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
-};
 
 const MarksEntry = () => {
     const { courseId, assessmentId } = useParams();
@@ -19,173 +13,237 @@ const MarksEntry = () => {
 
     const [students, setStudents] = useState([]);
     const [assessment, setAssessment] = useState(null);
-    const [marks, setMarks] = useState({});
-    const [savedRows, setSavedRows] = useState({});
+    const [marks, setMarks] = useState({});   // { studentId: { qIdx: value } }
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [savedAt, setSavedAt] = useState(null);
 
     useEffect(() => {
-        const fetchData = async () => {
+        const load = async () => {
             try {
                 const config = { headers: { Authorization: `Bearer ${user.token}` } };
-                const assessRes = await axios.get(`/api/faculty/courses/${courseId}/assessments`, config);
-                const current = assessRes.data.find(a => a._id === assessmentId);
+                const [assessRes, assignRes, resultsRes] = await Promise.all([
+                    axios.get(`/api/faculty/assessments/${assessmentId}`, config),
+                    axios.get('/api/assignments/my', config),
+                    axios.get(`/api/faculty/assessments/${assessmentId}/results`, config),
+                ]);
+
+                const current = assessRes.data;
                 setAssessment(current);
 
-                const courseRes = await axios.get('/api/faculty/courses', config);
-                const course = courseRes.data.find(c => c._id === courseId);
-                if (course) setStudents(course.students);
-            } catch (error) {
-                console.error(error);
+                const assignment = assignRes.data.find(a => a.course._id === courseId);
+                const enrolledStudents = assignment?.course?.students || [];
+                setStudents(enrolledStudents);
+
+                // Initialise all marks to 0, then fill from saved results
+                const init = {};
+                enrolledStudents.forEach(s => {
+                    init[s._id] = {};
+                    current.questions.forEach((_, idx) => { init[s._id][idx] = ''; });
+                });
+                resultsRes.data.forEach(result => {
+                    const sId = result.student?._id || result.student;
+                    if (init[sId]) {
+                        result.obtainedMarks.forEach(om => {
+                            init[sId][om.questionIndex] = om.marks;
+                        });
+                    }
+                });
+                setMarks(init);
+                if (resultsRes.data.length > 0) setSavedAt('Previously saved');
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
             }
         };
-        fetchData();
+        load();
     }, [courseId, assessmentId, user.token]);
 
     const handleMarkChange = (studentId, qIndex, value) => {
+        setSavedAt(null);
         setMarks(prev => ({
             ...prev,
-            [studentId]: { ...prev[studentId], [qIndex]: Number(value) }
+            [studentId]: { ...prev[studentId], [qIndex]: value }
         }));
     };
 
-    const handleSave = async (studentId) => {
-        const studentMarks = marks[studentId];
-        if (!studentMarks) {
-            showError('No Marks Entered', 'Please enter marks for at least one question before saving.');
-            return;
-        }
-        const obtainedMarks = Object.keys(studentMarks).map(qIndex => ({
-            questionIndex: Number(qIndex),
-            marks: studentMarks[qIndex]
-        }));
-
+    const handleSaveAll = async () => {
+        setSaving(true);
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            await axios.post('/api/faculty/marks', { studentId, assessmentId, obtainedMarks }, config);
-            toast.fire({ icon: 'success', title: 'Marks saved!' });
-            setSavedRows(prev => ({ ...prev, [studentId]: true }));
-        } catch (error) {
-            showError('Error', error.response?.data?.message || 'Could not save marks');
+            await Promise.all(
+                students.map(student => {
+                    const studentMarks = marks[student._id] || {};
+                    const obtainedMarks = Object.entries(studentMarks)
+                        .map(([qIndex, m]) => ({
+                            questionIndex: Number(qIndex),
+                            marks: Number(m) || 0,
+                        }));
+                    return axios.post('/api/faculty/marks', {
+                        studentId: student._id,
+                        assessmentId,
+                        obtainedMarks,
+                    }, config);
+                })
+            );
+            setSavedAt(new Date().toLocaleTimeString());
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to save marks');
+        } finally {
+            setSaving(false);
         }
     };
 
+    const totalFor = (studentId) =>
+        Object.values(marks[studentId] || {}).reduce((s, v) => s + (Number(v) || 0), 0);
+
+    if (loading) return (
+        <div className="p-5 text-center text-muted">Loading marks entry...</div>
+    );
+
     if (!assessment) return (
-        <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
-            <div className="text-center">
-                <div className="spinner-border text-primary" role="status"></div>
-                <p className="text-muted mt-3">Loading Assessment...</p>
-            </div>
-        </Container>
+        <div className="p-5 text-center text-danger">Assessment not found.</div>
     );
 
     return (
-        <motion.div initial="hidden" animate="visible" variants={containerVariants}>
-            <Container fluid className="py-4 px-4">
-                {/* Header */}
-                <div className="d-flex justify-content-between align-items-center mb-4">
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+            className="bg-white min-vh-100">
+            <Container fluid className="px-4 py-3">
+
+                {/* Breadcrumb */}
+                <h4 className="fw-normal text-dark mb-1">Marks Entry</h4>
+                <Breadcrumb className="small mb-4" style={{ fontSize: '0.85rem' }}>
+                    <Breadcrumb.Item linkAs={Link} linkProps={{ to: '/faculty' }} className="text-muted text-decoration-none">Home</Breadcrumb.Item>
+                    <Breadcrumb.Item linkAs={Link} linkProps={{ to: '/faculty/courses' }} className="text-muted text-decoration-none">Course Sections</Breadcrumb.Item>
+                    <Breadcrumb.Item linkAs={Link} linkProps={{ to: `/faculty/courses/${courseId}?tab=Activities` }} className="text-muted text-decoration-none">Activities</Breadcrumb.Item>
+                    <Breadcrumb.Item active className="text-muted">{assessment.title}</Breadcrumb.Item>
+                </Breadcrumb>
+
+                {/* Header bar */}
+                <div className="d-flex align-items-center justify-content-between mb-4">
                     <div>
-                        <div className="d-flex align-items-center gap-2 mb-1">
-                            <Badge bg="primary-subtle" text="primary" className="rounded-pill px-3 py-2 fw-medium">
-                                {assessment.type}
-                            </Badge>
-                            <span className="text-muted small">{assessment.totalMarks} Total Marks</span>
-                        </div>
-                        <h2 className="mb-0 text-dark fw-bold display-6 fs-3">{assessment.title}</h2>
-                        <p className="text-muted small mb-0">Marks Entry — {students.length} student(s) enrolled</p>
+                        <h5 className="fw-bold mb-0" style={{ color: '#4c1d95' }}>{assessment.title}</h5>
+                        <p className="text-muted small mb-0">
+                            {assessment.type} &nbsp;·&nbsp; Total Marks: <strong>{assessment.totalMarks}</strong>
+                            &nbsp;·&nbsp; {students.length} student(s) enrolled
+                        </p>
                     </div>
-                    <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                    <div className="d-flex align-items-center gap-3">
+                        {savedAt && (
+                            <span className="d-flex align-items-center gap-1 text-success small fw-medium">
+                                <CheckCircle2 size={15} /> {savedAt}
+                            </span>
+                        )}
+                        <Button
+                            size="sm"
+                            className="px-4 py-2 border-0 fw-semibold d-flex align-items-center gap-2"
+                            style={{ backgroundColor: '#4c1d95' }}
+                            onClick={handleSaveAll}
+                            disabled={saving}
+                        >
+                            <Save size={15} />
+                            {saving ? 'Saving...' : 'Save All Marks'}
+                        </Button>
                         <Button
                             variant="light"
-                            onClick={() => navigate(`/faculty/courses/${courseId}`)}
-                            className="d-flex align-items-center gap-2 border-0 bg-light fw-semibold px-4"
+                            size="sm"
+                            className="px-3 border d-flex align-items-center gap-1"
+                            onClick={() => navigate(`/faculty/courses/${courseId}?tab=Activities`)}
                         >
-                            <ArrowLeft size={16} /> Back to Course
+                            <ArrowLeft size={15} /> Back
                         </Button>
-                    </motion.div>
+                    </div>
                 </div>
 
-                {/* Question Legend */}
-                <Card className="border-0 shadow-sm rounded-4 mb-4">
-                    <Card.Body className="p-4">
-                        <p className="fw-bold text-muted small text-uppercase mb-3">Question Summary</p>
-                        <div className="d-flex flex-wrap gap-2">
-                            {assessment.questions.map((q, i) => (
-                                <div key={i} className="bg-light rounded-3 px-3 py-2 text-center">
-                                    <div className="fw-bold text-dark small">Q{i + 1}</div>
-                                    <div className="text-muted smaller">{q.maxMarks} pts</div>
-                                </div>
-                            ))}
+                {/* Question summary strip */}
+                <div className="d-flex flex-wrap gap-2 mb-4">
+                    {assessment.questions.map((q, i) => (
+                        <div key={i} className="px-3 py-2 rounded-2 text-center"
+                            style={{ backgroundColor: '#f5f3ff', border: '1px solid #e0d8f0', minWidth: 64 }}>
+                            <div className="fw-semibold small" style={{ color: '#6d28d9' }}>
+                                {q.questionName || `Q${i + 1}`}
+                            </div>
+                            <div className="text-muted" style={{ fontSize: '0.75rem' }}>{q.maxMarks} pts</div>
                         </div>
-                    </Card.Body>
-                </Card>
+                    ))}
+                </div>
 
-                {/* Marks Table */}
-                <Card className="shadow-sm border-0 rounded-4 overflow-hidden">
-                    <Table hover responsive className="mb-0 align-middle">
-                        <thead className="bg-white border-bottom">
-                            <tr>
-                                <th className="px-4 py-3 text-muted small text-uppercase">Student</th>
-                                {assessment.questions.map((q, idx) => (
-                                    <th key={idx} className="px-3 py-3 text-muted small text-uppercase text-center" style={{ minWidth: '90px' }}>
-                                        Q{idx + 1} <span className="fw-normal opacity-75">/{q.maxMarks}</span>
-                                    </th>
-                                ))}
-                                <th className="px-4 py-3 text-muted small text-uppercase text-end">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {students.map((student) => (
-                                <motion.tr
-                                    key={student._id}
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className={savedRows[student._id] ? 'table-success bg-opacity-50' : ''}
-                                >
-                                    <td className="px-4 py-3">
-                                        <div className="d-flex align-items-center gap-3">
-                                            <div className="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '38px', height: '38px' }}>
-                                                {savedRows[student._id] ? <CheckCircle2 size={18} className="text-success" /> : <User size={18} />}
-                                            </div>
-                                            <div>
-                                                <div className="fw-semibold text-dark small">{student.name}</div>
-                                                <div className="text-muted smaller">{student.regNo}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    {assessment.questions.map((q, idx) => (
-                                        <td key={idx} className="px-3 py-3 text-center">
-                                            <Form.Control
-                                                type="number"
-                                                size="sm"
-                                                min={0}
-                                                max={q.maxMarks}
-                                                onChange={e => handleMarkChange(student._id, idx, e.target.value)}
-                                                className="text-center border-light shadow-none bg-light fw-semibold mx-auto"
-                                                style={{ width: '80px' }}
-                                            />
-                                        </td>
+                {students.length === 0 ? (
+                    <div className="text-center py-5 border rounded-3">
+                        <p className="text-muted mb-0">No students enrolled in this course yet.</p>
+                    </div>
+                ) : (
+                    <div className="border rounded-3 overflow-hidden">
+                        <Table responsive className="mb-0 align-middle" style={{ fontSize: '0.85rem' }}>
+                            <thead style={{ backgroundColor: '#f8f7ff' }}>
+                                <tr>
+                                    <th className="px-3 py-2 text-muted fw-semibold" style={{ width: 40 }}>#</th>
+                                    <th className="px-3 py-2 fw-semibold" style={{ color: '#6d28d9', minWidth: 160 }}>Student</th>
+                                    <th className="px-3 py-2 text-muted fw-semibold" style={{ minWidth: 100 }}>Reg No</th>
+                                    {assessment.questions.map((q, i) => (
+                                        <th key={i} className="px-3 py-2 text-muted fw-semibold text-center" style={{ minWidth: 90 }}>
+                                            {q.questionName || `Q${i + 1}`}<br />
+                                            <span className="fw-normal" style={{ fontSize: '0.72rem' }}>/ {q.maxMarks}</span>
+                                        </th>
                                     ))}
-                                    <td className="px-4 py-3 text-end">
-                                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                                            <Button
-                                                size="sm"
-                                                variant={savedRows[student._id] ? 'success' : 'primary'}
-                                                onClick={() => handleSave(student._id)}
-                                                className="d-flex align-items-center gap-1 border-0 ms-auto px-3 py-2"
-                                            >
-                                                {savedRows[student._id] ? <><CheckCircle2 size={14} /> Saved</> : <><Save size={14} /> Save</>}
-                                            </Button>
-                                        </motion.div>
-                                    </td>
-                                </motion.tr>
-                            ))}
-                        </tbody>
-                    </Table>
-                    {students.length === 0 && (
-                        <div className="text-center py-5">
-                            <p className="text-muted">No students are enrolled in this course yet.</p>
-                        </div>
-                    )}
-                </Card>
+                                    <th className="px-3 py-2 text-muted fw-semibold text-center" style={{ minWidth: 80 }}>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {students.map((student, idx) => (
+                                    <tr key={student._id}>
+                                        <td className="px-3 py-2 text-muted">{idx + 1}</td>
+                                        <td className="px-3 py-2 fw-medium text-dark">{student.name}</td>
+                                        <td className="px-3 py-2 text-muted">{student.regNo}</td>
+                                        {assessment.questions.map((q, qIdx) => (
+                                            <td key={qIdx} className="px-3 py-2 text-center">
+                                                <Form.Control
+                                                    type="number"
+                                                    size="sm"
+                                                    min={0}
+                                                    max={q.maxMarks}
+                                                    value={marks[student._id]?.[qIdx] ?? ''}
+                                                    onChange={e => handleMarkChange(student._id, qIdx, e.target.value)}
+                                                    className="text-center shadow-none mx-auto"
+                                                    style={{ width: 72, borderColor: '#ccc' }}
+                                                />
+                                            </td>
+                                        ))}
+                                        <td className="px-3 py-2 text-center">
+                                            <span className="fw-bold rounded-2 px-2 py-1"
+                                                style={{ backgroundColor: '#f5f3ff', color: '#6d28d9', fontSize: '0.85rem' }}>
+                                                {totalFor(student._id)}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </Table>
+                    </div>
+                )}
+
+                {/* Bottom save button */}
+                {students.length > 0 && (
+                    <div className="d-flex justify-content-end mt-3 gap-3 align-items-center">
+                        {savedAt && (
+                            <span className="d-flex align-items-center gap-1 text-success small fw-medium">
+                                <CheckCircle2 size={15} /> Saved at {savedAt}
+                            </span>
+                        )}
+                        <Button
+                            size="sm"
+                            className="px-4 py-2 border-0 fw-semibold d-flex align-items-center gap-2"
+                            style={{ backgroundColor: '#4c1d95' }}
+                            onClick={handleSaveAll}
+                            disabled={saving}
+                        >
+                            <Save size={15} />
+                            {saving ? 'Saving...' : 'Save All Marks'}
+                        </Button>
+                    </div>
+                )}
+
             </Container>
         </motion.div>
     );

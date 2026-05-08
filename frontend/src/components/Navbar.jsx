@@ -1,4 +1,5 @@
-import { User, Bell, Search, Settings, LogOut } from 'lucide-react';
+import { User, LogOut } from 'lucide-react';
+import obeLogo from '../assets/obe-logo.png.png';
 import { Navbar as BsNavbar, Container, Form, Dropdown } from 'react-bootstrap';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -9,83 +10,64 @@ const Navbar = ({ user }) => {
     const navigate = useNavigate();
 
     return (
-        <BsNavbar bg="white" className="border-bottom py-2 shadow-sm sticky-top" style={{ zIndex: 900 }}>
-            <Container fluid className="px-4">
+        <BsNavbar bg="white" className="border-bottom py-2 shadow-sm sticky-top" style={{ zIndex: 900, height: '70px' }}>
+            <Container fluid className="px-3 d-flex justify-content-between align-items-center h-100">
 
-                {/* SEARCH */}
-                <div className="d-flex align-items-center flex-grow-1">
-                    {user.role !== 'admin' && (
-                        <div className="position-relative d-none d-md-block" style={{ width: '300px' }}>
-                            <Form.Control
-                                type="text"
-                                placeholder="Quick search..."
-                                className="ps-5 bg-light border-0 py-2 rounded-pill shadow-none"
-                                style={{ fontSize: '0.9rem' }}
-                            />
-                            <Search
-                                className="position-absolute text-muted"
-                                size={18}
-                                style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }}
-                            />
-                        </div>
-                    )}
+                {/* LEFT SIDE: LOGO */}
+                <div className="d-flex align-items-center gap-2 h-100">
+                    <img
+                        src={obeLogo}
+                        alt="University Logo"
+                        style={{ height: '58px', width: 'auto', objectFit: 'contain' }}
+                    />
+                    <div>
+                        <div style={{ color: '#4c1d95', fontWeight: '800', fontSize: '1rem', lineHeight: 1.1 }}>OBE Management</div>
+                        <div style={{ color: '#7c3aed', fontSize: '0.72rem', fontWeight: 500, letterSpacing: '0.03em' }}>Outcome-Based Education</div>
+                    </div>
                 </div>
 
                 {/* RIGHT SIDE */}
-                <div className="d-flex align-items-center gap-4">
-
-                    {user.role !== 'admin' && (
-                        <>
-                            <motion.div whileHover={{ scale: 1.1 }} className="text-muted cursor-pointer position-relative">
-                                <Bell size={20} />
-                                <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
-                            </motion.div>
-
-                            <motion.div whileHover={{ scale: 1.1 }} className="text-muted cursor-pointer">
-                                <Settings size={20} />
-                            </motion.div>
-                        </>
-                    )}
-
-                    <div className="vr mx-2 text-muted opacity-25" style={{ height: '24px' }}></div>
+                <div className="d-flex align-items-center gap-3">
+                    
+                    {/* Working Semester Dropdown */}
+                    <div className="d-none d-lg-flex align-items-center me-3">
+                        <span className="text-muted small me-2 fw-medium">Working Semester</span>
+                        <Form.Select size="sm" className="bg-light border-0 rounded-1 shadow-none" style={{ width: '100px', fontSize: '0.85rem' }}>
+                            <option>All</option>
+                            <option>Spring-25</option>
+                            <option>Fall-24</option>
+                        </Form.Select>
+                    </div>
 
                     {/* PROFILE DROPDOWN */}
-                    <Dropdown align="end">
-
-                        <Dropdown.Toggle
-                            variant="light"
-                            className="d-flex align-items-center gap-2 border-0 bg-transparent shadow-none"
-                        >
-                            <div className="text-end d-none d-sm-block">
-                                <p className="mb-0 fw-bold small">{user.name}</p>
-                                <p className="mb-0 text-muted smaller text-capitalize">{user.role}</p>
-                            </div>
-
-                            <motion.div
-                                whileHover={{ scale: 1.05 }}
-                                className="bg-primary bg-opacity-10 text-primary rounded-circle p-2 border border-primary border-opacity-25"
+                    <div className="d-flex align-items-center gap-3">
+                        <Dropdown align="end">
+                            <Dropdown.Toggle
+                                variant="light"
+                                className="d-flex align-items-center gap-2 border-0 bg-transparent shadow-none p-0"
                             >
-                                <User size={20} />
-                            </motion.div>
-                        </Dropdown.Toggle>
+                                <div className="bg-light text-muted rounded-circle p-2 d-flex align-items-center justify-content-center border" style={{ width: '38px', height: '38px' }}>
+                                    <User size={20} />
+                                </div>
+                            </Dropdown.Toggle>
 
-                        <Dropdown.Menu className="shadow-sm">
+                            <Dropdown.Menu className="shadow-sm border-0 rounded-3 mt-2">
+                                <div className="px-3 py-2 border-bottom mb-1">
+                                    <p className="mb-0 fw-bold small">{user.name}</p>
+                                    <p className="mb-0 text-muted smaller text-capitalize">{user.role}</p>
+                                </div>
+                                <Dropdown.Item onClick={() => navigate('/profile')} className="small">
+                                    <User size={14} className="me-2" />
+                                    Profile
+                                </Dropdown.Item>
+                                <Dropdown.Item onClick={logout} className="text-danger small">
+                                    <LogOut size={14} className="me-2" />
+                                    Sign Out
+                                </Dropdown.Item>
+                            </Dropdown.Menu>
+                        </Dropdown>
 
-                            <Dropdown.Item onClick={() => navigate('/profile')}>
-                                <User size={16} className="me-2" />
-                                Profile
-                            </Dropdown.Item>
-
-                            <Dropdown.Divider />
-
-                            <Dropdown.Item onClick={logout} className="text-danger">
-                                <LogOut size={16} className="me-2" />
-                                Sign Out
-                            </Dropdown.Item>
-
-                        </Dropdown.Menu>
-
-                    </Dropdown>
+                    </div>
 
                 </div>
             </Container>

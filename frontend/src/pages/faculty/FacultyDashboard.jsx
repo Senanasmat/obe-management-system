@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { BookOpen, Users, ArrowRight, BarChart2, Award } from 'lucide-react';
+import { BookOpen, Users, BarChart2, Award, FileText, Clock } from 'lucide-react';
 import { Container, Row, Col, Card } from 'react-bootstrap';
 import { motion } from 'framer-motion';
 import { Dropdown } from 'react-bootstrap';
@@ -18,28 +18,59 @@ const cardVariants = {
     visible: { opacity: 1, y: 0, transition: { duration: 0.2 } }
 };
 
+const getInitials = (name) => {
+    if (!name) return '??';
+    const words = name.trim().split(/\s+/);
+    if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+};
+
+const SkeletonCard = () => (
+    <Col>
+        <Card className="h-100 shadow-sm border-0 rounded-4 text-center p-4">
+            <div className="d-flex justify-content-center mb-3">
+                <div className="rounded-circle" style={{ width: 68, height: 68, backgroundColor: '#e5e7eb' }} />
+            </div>
+            <div className="mx-auto mb-2 rounded-2" style={{ height: 16, width: '70%', backgroundColor: '#e5e7eb' }} />
+            <div className="mx-auto mb-2 rounded-2" style={{ height: 12, width: '50%', backgroundColor: '#f3f4f6' }} />
+            <div className="mx-auto mb-4 rounded-2" style={{ height: 12, width: '40%', backgroundColor: '#f3f4f6' }} />
+            <div className="d-flex justify-content-between mb-3">
+                <div className="rounded-2" style={{ height: 30, width: '44%', backgroundColor: '#e5e7eb' }} />
+                <div className="rounded-2" style={{ height: 30, width: '44%', backgroundColor: '#e5e7eb' }} />
+            </div>
+            <div className="border-top pt-3 d-flex justify-content-around">
+                <div className="rounded-2" style={{ height: 12, width: '28%', backgroundColor: '#f3f4f6' }} />
+                <div className="rounded-2" style={{ height: 12, width: '28%', backgroundColor: '#f3f4f6' }} />
+                <div className="rounded-2" style={{ height: 12, width: '28%', backgroundColor: '#f3f4f6' }} />
+            </div>
+        </Card>
+    </Col>
+);
+
+const CACHE_KEY = 'faculty_dashboard_assignments';
+
 const FacultyDashboard = () => {
-    const [assignments, setAssignments] = useState([]);
+    const [assignments, setAssignments] = useState(() => {
+        try {
+            const cached = localStorage.getItem(CACHE_KEY);
+            return cached ? JSON.parse(cached) : [];
+        } catch { return []; }
+    });
     const [semester, setSemester] = useState('');
+    const [loading, setLoading] = useState(() => !localStorage.getItem(CACHE_KEY));
     const { user } = useAuth();
     const navigate = useNavigate();
 
-    // Fetch assignments
     useEffect(() => {
-        const fetchAssignments = async () => {
-            try {
-                const config = {
-                    headers: { Authorization: `Bearer ${user.token}` }
-                };
-
-                const { data } = await axios.get('/api/assignments/my', config);
+        if (!user?.token) return;
+        const config = { headers: { Authorization: `Bearer ${user.token}` } };
+        axios.get('/api/assignments/my/summary', config)
+            .then(({ data }) => {
                 setAssignments(data);
-            } catch (error) {
-                console.error(error);
-            }
-        };
-
-        if (user?.token) fetchAssignments();
+                localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+            })
+            .catch(console.error)
+            .finally(() => setLoading(false));
     }, [user?.token]);
 
     // Generate sorted unique semesters (latest first)
@@ -57,9 +88,8 @@ const FacultyDashboard = () => {
     // Filter only selected semester
     const filtered = assignments.filter(a => a.semester === semester);
 
-    // Total students
     const totalStudents = assignments.reduce(
-        (sum, a) => sum + (a.course?.students?.length || 0),
+        (sum, a) => sum + (a.course?.studentsCount || 0),
         0
     );
 
@@ -70,7 +100,7 @@ const FacultyDashboard = () => {
                 {/* Header */}
                 <motion.div variants={cardVariants} className="mb-5">
                     <div className="d-flex align-items-center gap-3">
-                        <div className="bg-primary-subtle text-primary rounded-3 p-3">
+                        <div className="rounded-3 p-3" style={{ backgroundColor: '#ede9fe', color: '#6d28d9' }}>
                             <Award size={32} />
                         </div>
                         <div>
@@ -90,7 +120,7 @@ const FacultyDashboard = () => {
                         <motion.div variants={cardVariants}>
                             <Card className="border-0 shadow-sm rounded-4 h-100">
                                 <Card.Body className="d-flex align-items-center gap-3 p-4">
-                                    <div className="bg-primary-subtle text-primary rounded-3 p-3">
+                                    <div className="rounded-3 p-3" style={{ backgroundColor: '#ede9fe', color: '#6d28d9' }}>
                                         <BookOpen size={24} />
                                     </div>
                                     <div>
@@ -158,7 +188,9 @@ const FacultyDashboard = () => {
 
                 {/* Courses List */}
                 <Row xs={1} md={2} lg={3} className="g-4">
-                    {filtered.map((a) => (
+                    {loading ? (
+                        [0, 1, 2].map(i => <SkeletonCard key={i} />)
+                    ) : filtered.map((a) => (
                         <Col key={a._id}>
                             <motion.div
                                 variants={cardVariants}
@@ -166,102 +198,84 @@ const FacultyDashboard = () => {
                                 className="h-100"
                             >
                                 
-                                <Card className="h-100 shadow-sm border-0 rounded-4 overflow-hidden">
+                                <Card className="h-100 shadow-sm border-0 rounded-4 text-center p-4">
 
-                                    <div className="bg-primary text-white p-4 rounded-top-4">
-                                        <Link
-                                            to={`/faculty/courses/${a.course._id}`}
-                                            className="text-decoration-none"
+                                    {/* Avatar */}
+                                    <div className="d-flex justify-content-center mb-3">
+                                        <div
+                                            className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                                            style={{ width: 68, height: 68, backgroundColor: '#637a62', fontSize: '1.3rem', letterSpacing: 1 }}
                                         >
-                                            <div className="d-flex align-items-center gap-3">
-
-                                                {/* Icon */}
-                                                <div className="bg-white text-primary rounded-3 p-2">
-                                                    <BookOpen size={20} />
-                                                </div>
-
-                                                {/* Course Title */}
-                                                <h6 className="fw-bold mb-0 text-white">
-                                                    {a.course.code} - {a.course.name}
-                                                </h6>
-
-                                            </div>
-                                        </Link>
+                                            {getInitials(user.name)}
+                                        </div>
                                     </div>
 
-                                    <Card.Body>
+                                    {/* Course Title */}
+                                    <h6 className="fw-bold mb-1" style={{ color: '#6d28d9' }}>
+                                        {a.course.code} - {a.course.name}
+                                    </h6>
 
-                                        {/* Students */}
-                                        <p className="text-muted small mb-3">
-                                            <Users size={14} /> {a.course.students?.length || 0} Students Enrolled
-                                        </p>
+                                    {/* Code + Semester */}
+                                    <p className="mb-1" style={{ color: '#7c3aed', fontSize: '0.82rem' }}>
+                                        {a.course.code} - {a.semester}
+                                    </p>
 
-                                        {/* ACTION BUTTONS */}
-                                        <div className="d-flex justify-content-between align-items-center">
+                                    {/* Faculty Name */}
+                                    <p className="mb-0 fw-medium text-dark" style={{ fontSize: '0.88rem' }}>
+                                        {user.name}
+                                    </p>
 
-                                            {/* OPTIONS DROPDOWN */}
-                                            <Dropdown onClick={(e) => e.stopPropagation()}>
-                                                <Dropdown.Toggle
-                                                    variant="primary"
-                                                    size="sm"
-                                                    className="rounded-3"
-                                                >
-                                                    Options
-                                                </Dropdown.Toggle>
+                                    {/* Department */}
+                                    <p className="text-muted mb-3" style={{ fontSize: '0.82rem' }}>
+                                        {user.department || 'No Department'}
+                                    </p>
 
-                                                <Dropdown.Menu>
-                                                    <Dropdown.Item
-                                                        onClick={() => console.log('Class Activities', a.course._id)}
-                                                    >
-                                                        Class Activities
-                                                    </Dropdown.Item>
-
-                                                    <Dropdown.Item
-                                                        onClick={() => console.log('Activity Weights', a.course._id)}
-                                                    >
-                                                        Activity Weights
-                                                    </Dropdown.Item>
-                                                </Dropdown.Menu>
-                                            </Dropdown>
-
-                                            {/* REPORTS DROPDOWN */}
-                                            <Dropdown onClick={(e) => e.stopPropagation()}>
-                                                <Dropdown.Toggle
-                                                    variant="warning"
-                                                    size="sm"
-                                                    className="rounded-3"
-                                                >
-                                                    Reports
-                                                </Dropdown.Toggle>
-
-                                                <Dropdown.Menu>
-                                                    <Dropdown.Item
-                                                        onClick={() => console.log('OBE Report', a.course._id)}
-                                                    >
-                                                        OBE Report
-                                                    </Dropdown.Item>
-
-                                                    <Dropdown.Item
-                                                        onClick={() => console.log('Student Report', a.course._id)}
-                                                    >
-                                                        Student Report
-                                                    </Dropdown.Item>
-                                                </Dropdown.Menu>
-                                            </Dropdown>
-
-                                        </div>
-
-                                        {/* VIEW BUTTON */}
-                                        <div className="mt-3">
-                                            <Link
-                                                to={`/faculty/courses/${a.course._id}`}
-                                                className="text-primary small fw-bold text-decoration-none"
+                                    {/* Buttons */}
+                                    <div className="d-flex justify-content-between mb-3">
+                                        <Dropdown onClick={(e) => e.stopPropagation()}>
+                                            <Dropdown.Toggle
+                                                size="sm"
+                                                style={{ backgroundColor: '#4c1d95', border: 'none', borderRadius: '6px' }}
                                             >
-                                                View Course <ArrowRight size={14} />
-                                            </Link>
-                                        </div>
+                                                Options
+                                            </Dropdown.Toggle>
+                                            <Dropdown.Menu>
+                                                <Dropdown.Item onClick={() => navigate(`/faculty/courses/${a.course._id}?tab=Activities`)}>
+                                                    Class Activities
+                                                </Dropdown.Item>
+                                                <Dropdown.Item>Activity Weights</Dropdown.Item>
+                                            </Dropdown.Menu>
+                                        </Dropdown>
 
-                                    </Card.Body>
+                                        <Dropdown onClick={(e) => e.stopPropagation()}>
+                                            <Dropdown.Toggle
+                                                size="sm"
+                                                style={{ backgroundColor: '#d97706', border: 'none', borderRadius: '6px' }}
+                                            >
+                                                Reports
+                                            </Dropdown.Toggle>
+                                            <Dropdown.Menu align="end">
+                                                <Dropdown.Item>OBE Report</Dropdown.Item>
+                                                <Dropdown.Item>Student Report</Dropdown.Item>
+                                            </Dropdown.Menu>
+                                        </Dropdown>
+                                    </div>
+
+                                    {/* Stats */}
+                                    <div className="d-flex justify-content-around border-top pt-3" style={{ color: '#d97706' }}>
+                                        <div className="d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
+                                            <Users size={15} />
+                                            <span>{a.course.studentsCount ?? 0} Students</span>
+                                        </div>
+                                        <div className="d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
+                                            <FileText size={15} />
+                                            <span>{a.course.closCount ?? 0} CLOs</span>
+                                        </div>
+                                        <div className="d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
+                                            <Clock size={15} />
+                                            <span>0 Classes</span>
+                                        </div>
+                                    </div>
 
                                 </Card>
                             </motion.div>
@@ -270,7 +284,7 @@ const FacultyDashboard = () => {
                 </Row>
 
                 {/* Empty State */}
-                {assignments.length === 0 && (
+                {!loading && assignments.length === 0 && (
                     <div className="text-center py-5 bg-white rounded-4 shadow-sm">
                         <div className="bg-light d-inline-block p-4 rounded-circle mb-3">
                             <BookOpen size={40} className="text-muted" />
