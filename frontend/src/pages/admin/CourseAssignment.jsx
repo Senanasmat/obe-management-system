@@ -237,6 +237,13 @@ const CourseAssignment = () => {
                                 value={formData.facultyId}
                                 onChange={handleChange}
                                 required
+                                className="py-2 shadow-sm border-2"
+                                style={{
+                                    backgroundColor: '#f8fafc',
+                                    borderColor: '#cbd5e1',
+                                    borderRadius: '10px',
+                                    fontSize: '0.95rem'
+                                }}
                             >
                                 <option value="">Select Faculty</option>
                                 {faculty.map(f => (
@@ -254,6 +261,13 @@ const CourseAssignment = () => {
                                 value={formData.courseId}
                                 onChange={handleChange}
                                 required
+                                className="py-2 shadow-sm border-2"
+                                style={{
+                                    backgroundColor: '#f8fafc',
+                                    borderColor: '#cbd5e1',
+                                    borderRadius: '10px',
+                                    fontSize: '0.95rem'
+                                }}
                             >
                                 <option value="">Select Course</option>
                                 {courses.map(c => (
@@ -272,6 +286,14 @@ const CourseAssignment = () => {
                                 value={formData.semester}
                                 onChange={handleChange}
                                 required
+                                placeholder="e.g. Fall 2026"
+                                className="py-2 shadow-sm border-2"
+                                style={{
+                                    backgroundColor: '#f8fafc',
+                                    borderColor: '#cbd5e1',
+                                    borderRadius: '10px',
+                                    fontSize: '0.95rem'
+                                }}
                             />
                         </Form.Group>
 

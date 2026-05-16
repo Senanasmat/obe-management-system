@@ -2,3 +2,7 @@ body {
   font-family: 'Inter', sans-serif;
   background-color: #f8f9fa;
 }
+.form-control:focus {
+    border-color: #6d28d9 !important;
+    box-shadow: 0 0 0 0.15rem rgba(109, 40, 217, 0.15) !important;
+}

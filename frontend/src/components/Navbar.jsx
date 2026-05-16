@@ -29,15 +29,6 @@ const Navbar = ({ user }) => {
                 {/* RIGHT SIDE */}
                 <div className="d-flex align-items-center gap-3">
                     
-                    {/* Working Semester Dropdown */}
-                    <div className="d-none d-lg-flex align-items-center me-3">
-                        <span className="text-muted small me-2 fw-medium">Working Semester</span>
-                        <Form.Select size="sm" className="bg-light border-0 rounded-1 shadow-none" style={{ width: '100px', fontSize: '0.85rem' }}>
-                            <option>All</option>
-                            <option>Spring-25</option>
-                            <option>Fall-24</option>
-                        </Form.Select>
-                    </div>
 
                     {/* PROFILE DROPDOWN */}
                     <div className="d-flex align-items-center gap-3">

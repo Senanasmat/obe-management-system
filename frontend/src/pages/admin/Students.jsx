@@ -233,7 +233,7 @@ const Students = () => {
                                     <option key={batch} value={batch}>{batch}</option>
                                 ))}
                             </Form.Select>
-                            <span className="ms-3 me-2 text-muted small fw-semibold">{filteredStudents.length} student(s)</span>
+                            <span className="ms-3 me-2 text-muted small fw-semibold">{filteredStudents.length} Student(s)</span>
                         </div>
                         <Table hover responsive striped={false} className="mb-0">
                             <thead className="bg-white border-bottom">
@@ -307,27 +307,78 @@ const Students = () => {
                             <Form.Group className="mb-3">
                                 <Form.Label className="small fw-bold text-muted">Full Name</Form.Label>
                                 <div className="position-relative">
-                                    <Form.Control type="text" placeholder="e.g. Alice Johnson" required value={formData.name}
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="e.g. Alice Johnson"
+                                        required
+                                        value={formData.name}
                                         onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                        className="ps-5 py-2 border-light bg-light bg-opacity-50 shadow-none" />
+                                        className="ps-5 py-2 bg-white border rounded-3 shadow-sm"
+                                        style={{
+                                            border: '1px solid #d1d5db',
+                                            backgroundColor: '#fff'
+                                        }}
+                                        onFocus={(e) => {
+                                            e.target.style.border = '1px solid #6d28d9';
+                                            e.target.style.boxShadow = '0 0 0 3px rgba(109,40,217,0.15)';
+                                        }}
+                                        onBlur={(e) => {
+                                            e.target.style.border = '1px solid #d1d5db';
+                                            e.target.style.boxShadow = 'none';
+                                        }}
+                                    />
                                     <User className="position-absolute text-muted" size={18} style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
                                 </div>
                             </Form.Group>
                             <Form.Group className="mb-3">
                                 <Form.Label className="small fw-bold text-muted">Registration Number</Form.Label>
                                 <div className="position-relative">
-                                    <Form.Control type="text" placeholder="e.g. 2021-CS-123" required value={formData.regNo}
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="e.g. 2021-CS-123"
+                                        required
+                                        value={formData.regNo}
                                         onChange={e => setFormData({ ...formData, regNo: e.target.value })}
-                                        className="ps-5 py-2 border-light bg-light bg-opacity-50 shadow-none" />
+                                        className="ps-5 py-2 bg-white border rounded-3 shadow-sm"
+                                        style={{
+                                            border: '1px solid #d1d5db',
+                                            backgroundColor: '#fff'
+                                        }}
+                                        onFocus={(e) => {
+                                            e.target.style.border = '1px solid #6d28d9';
+                                            e.target.style.boxShadow = '0 0 0 3px rgba(109,40,217,0.15)';
+                                        }}
+                                        onBlur={(e) => {
+                                            e.target.style.border = '1px solid #d1d5db';
+                                            e.target.style.boxShadow = 'none';
+                                        }}
+                                    />
                                     <Hash className="position-absolute text-muted" size={18} style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
                                 </div>
                             </Form.Group>
                             <Form.Group>
                                 <Form.Label className="small fw-bold text-muted">Batch / Intake</Form.Label>
                                 <div className="position-relative">
-                                    <Form.Control type="text" placeholder="e.g. 2021-2025" required value={formData.batch}
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="e.g. 2021-2025"
+                                        required
+                                        value={formData.batch}
                                         onChange={e => setFormData({ ...formData, batch: e.target.value })}
-                                        className="ps-5 py-2 border-light bg-light bg-opacity-50 shadow-none" />
+                                        className="ps-5 py-2 bg-white border rounded-3 shadow-sm"
+                                        style={{
+                                            border: '1px solid #d1d5db',
+                                            backgroundColor: '#fff'
+                                        }}
+                                        onFocus={(e) => {
+                                            e.target.style.border = '1px solid #6d28d9';
+                                            e.target.style.boxShadow = '0 0 0 3px rgba(109,40,217,0.15)';
+                                        }}
+                                        onBlur={(e) => {
+                                            e.target.style.border = '1px solid #d1d5db';
+                                            e.target.style.boxShadow = 'none';
+                                        }}
+                                    />
                                     <GraduationCap className="position-absolute text-muted" size={18} style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
                                 </div>
                             </Form.Group>
@@ -352,17 +403,25 @@ const Students = () => {
                         {!importResult ? (
                             <>
                                 {/* Step 1: Download Template */}
-                                <div className="bg-light rounded-4 p-4 mb-4">
+                                <div className="border rounded-4 p-4 mb-4 bg-white shadow-sm">
                                     <div className="d-flex align-items-start gap-3">
-                                        <div className="rounded-circle rounded-3 p-2 mt-1">
+                                        <div className="rounded-circle p-2 mt-1 border bg-light">
                                             <Download size={20} />
                                         </div>
+
                                         <div className="flex-grow-1">
                                             <h6 className="fw-bold mb-1">Step 1 — Download the CSV Template</h6>
+
                                             <p className="text-muted small mb-3">
                                                 Use this template to fill in your student data. Required columns: <code>name</code>, <code>RegNo</code>, <code>Batch</code>. One student per row.
                                             </p>
-                                            <Button size="sm" onClick={downloadTemplate} className="d-flex align-items-center gap-2 border-0" style={{ backgroundColor: '#4c1d95' }}>
+
+                                            <Button
+                                                size="sm"
+                                                onClick={downloadTemplate}
+                                                className="d-flex align-items-center gap-2 border-0"
+                                                style={{ backgroundColor: '#4c1d95' }}
+                                            >
                                                 <Download size={15} /> Download Template (.csv)
                                             </Button>
                                         </div>
@@ -370,23 +429,28 @@ const Students = () => {
                                 </div>
 
                                 {/* Step 2: Upload File */}
-                                <div className="bg-light rounded-4 p-4">
+                                <div className="border rounded-4 p-4 bg-white shadow-sm">
                                     <div className="d-flex align-items-start gap-3">
-                                        <div className="bg-success-subtle text-success rounded-3 p-2 mt-1">
+                                        
+                                        <div className="rounded-circle p-2 mt-1 border bg-light text-success">
                                             <Upload size={20} />
                                         </div>
+
                                         <div className="flex-grow-1">
                                             <h6 className="fw-bold mb-1">Step 2 — Upload Your Completed CSV</h6>
+
                                             <p className="text-muted small mb-3">
                                                 Duplicate registration numbers will be skipped automatically. Existing records are never overwritten.
                                             </p>
+
                                             <Form.Control
                                                 type="file"
                                                 accept=".csv"
                                                 ref={fileInputRef}
                                                 onChange={e => setCsvFile(e.target.files[0])}
-                                                className="border-0 bg-white shadow-none"
+                                                className="border rounded-3 shadow-sm"
                                             />
+
                                             {csvFile && (
                                                 <p className="text-success small mt-2 mb-0 d-flex align-items-center gap-1">
                                                     <CheckCircle size={14} /> {csvFile.name} selected

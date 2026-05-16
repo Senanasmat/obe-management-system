@@ -26,7 +26,7 @@ const Courses = () => {
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [currentId, setCurrentId] = useState(null);
-    const [formData, setFormData] = useState({ name: '', code: '', creditHours: 3 });
+    const [formData, setFormData] = useState({ name: '', code: '', creditHours: '' });
 
     // Enroll students modal
     const [showEnrollModal, setShowEnrollModal] = useState(false);
@@ -62,7 +62,7 @@ const Courses = () => {
         } else {
             setIsEditing(false);
             setCurrentId(null);
-            setFormData({ name: '', code: '', creditHours: 3 });
+            setFormData({ name: '', code: '', creditHours: '' });
         }
         setShowModal(true);
     };
@@ -168,7 +168,12 @@ const Courses = () => {
                         {courses.length > 0 ? courses.map((course) => {
                             const assignment = assignments.find(a => a.course?._id === course._id);
                             const enrolledCount = course.students?.length || 0;
-                            const initials = course.code.replace(/[^A-Za-z0-9]/g, '').slice(0, 3).toUpperCase();
+                            const initials = course.name
+                            .split(' ')
+                            .map(word => word[0])
+                            .join('')
+                            .slice(0, 3)
+                            .toUpperCase();
 
                             return (
                                 <Col key={course._id} lg={4} md={6}>
@@ -202,9 +207,8 @@ const Courses = () => {
                                                 </div>
 
                                                 {/* Name + code */}
-                                                <h6 className="fw-bold mb-0 text-dark">{course.name}</h6>
+                                                <h6 className="fw-bold mb-0 text-dark">{course.code} - {course.name}</h6>
                                                 <p className="mb-3" style={{ color: '#7c3aed', fontSize: '0.8rem', fontWeight: 500 }}>
-                                                    {course.code}
                                                 </p>
 
                                                 {/* Info pills */}
@@ -294,12 +298,26 @@ const Courses = () => {
                                 value={formData.name}
                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
                                 required
+                                className="py-2 shadow-sm border-2"
+                                style={{
+                                    backgroundColor: '#f8fafc',
+                                    borderColor: '#cbd5e1',
+                                    borderRadius: '10px',
+                                    fontSize: '0.95rem'
+                                }}
                             />
                             <Form.Control
                                 placeholder="Course Code (e.g. CS-101)"
                                 value={formData.code}
                                 onChange={e => setFormData({ ...formData, code: e.target.value })}
                                 required
+                                className="py-2 shadow-sm border-2"
+                                style={{
+                                    backgroundColor: '#f8fafc',
+                                    borderColor: '#cbd5e1',
+                                    borderRadius: '10px',
+                                    fontSize: '0.95rem'
+                                }}
                             />
                             <Form.Control
                                 type="number"
@@ -307,6 +325,13 @@ const Courses = () => {
                                 value={formData.creditHours}
                                 onChange={e => setFormData({ ...formData, creditHours: e.target.value })}
                                 required
+                                className="py-2 shadow-sm border-2"
+                                style={{
+                                    backgroundColor: '#f8fafc',
+                                    borderColor: '#cbd5e1',
+                                    borderRadius: '10px',
+                                    fontSize: '0.95rem'
+                                }}
                             />
                         </Modal.Body>
                         <Modal.Footer>

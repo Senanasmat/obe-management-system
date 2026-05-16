@@ -209,7 +209,11 @@ const Faculty = () => {
                                                 required
                                                 value={formData.name}
                                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                                className="ps-5 py-2 border-light bg-light bg-opacity-50 shadow-none"
+                                                className="ps-5 py-2 border rounded-3 shadow-sm"
+                                                style={{
+                                                    borderColor: '#d1d5db',
+                                                    backgroundColor: '#ffffff'
+                                                }}
                                             />
                                             <User className="position-absolute text-muted" size={18} style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
                                         </div>
@@ -224,7 +228,11 @@ const Faculty = () => {
                                             required
                                             value={formData.email}
                                             onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                            className="ps-5 py-2 border-light bg-light bg-opacity-50 shadow-none"
+                                            className="ps-5 py-2 border rounded-3 shadow-sm"
+                                            style={{
+                                                borderColor: '#d1d5db',
+                                                backgroundColor: '#ffffff'
+                                            }}
                                         />
                                         <Mail className="position-absolute text-muted" size={18}
                                             style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }}
@@ -242,7 +250,11 @@ const Faculty = () => {
                                                     required
                                                     value={formData.password}
                                                     onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                                    className="ps-5 py-2 border-light bg-light bg-opacity-50 shadow-none"
+                                                    className="ps-5 py-2 border rounded-3 shadow-sm"
+                                                    style={{
+                                                        borderColor: '#d1d5db',
+                                                        backgroundColor: '#ffffff'
+                                                    }}
                                                 />
                                                 <Lock className="position-absolute text-muted" size={18}
                                                     style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }}
@@ -257,7 +269,11 @@ const Faculty = () => {
                                         <Form.Select
                                             value={formData.department}
                                             onChange={e => setFormData({ ...formData, department: e.target.value })}
-                                            className="py-2 border-light bg-light bg-opacity-50 shadow-none"
+                                            className="py-2 border rounded-3 shadow-sm"
+                                            style={{
+                                                borderColor: '#d1d5db',
+                                                backgroundColor: '#ffffff'
+                                            }}
                                         >
                                             {DEPARTMENTS.map(dept => <option key={dept} value={dept}>{dept}</option>)}
                                         </Form.Select>
@@ -269,7 +285,11 @@ const Faculty = () => {
                                         <Form.Select
                                             value={formData.designation}
                                             onChange={e => setFormData({ ...formData, designation: e.target.value })}
-                                            className="py-2 border-light bg-light bg-opacity-50 shadow-none"
+                                            className="py-2 border rounded-3 shadow-sm"
+                                            style={{
+                                                borderColor: '#d1d5db',
+                                                backgroundColor: '#ffffff'
+                                            }}
                                         >
                                             {DESIGNATIONS.map(desig => <option key={desig} value={desig}>{desig}</option>)}
                                         </Form.Select>

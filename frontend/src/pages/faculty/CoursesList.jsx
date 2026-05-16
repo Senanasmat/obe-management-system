@@ -66,7 +66,14 @@ const CoursesList = () => {
                 {filtered.map(a => (
                     <Col key={a._id}>
                         <motion.div whileHover={{ y: -6, transition: { duration: 0.2 } }} className="h-100">
-                            <Card className="h-100 shadow-sm border-0 rounded-4 text-center p-4">
+                            <Card
+                                className="h-100 rounded-4 text-center p-4"
+                                style={{
+                                    border: '1px solid #e5e7eb',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+                                    backgroundColor: '#fff'
+                                }}
+                            >
 
                                 {/* Avatar */}
                                 <div className="d-flex justify-content-center mb-3">
@@ -79,7 +86,13 @@ const CoursesList = () => {
                                 </div>
 
                                 {/* Course Title */}
-                                <h6 className="fw-bold mb-1" style={{ color: '#6d28d9' }}>
+                                <h6
+                                    className="fw-bold mb-1"
+                                    style={{
+                                        color: '#6d28d9',
+                                        cursor: 'pointer',
+                                    }}
+                                    onClick={() => navigate(`/faculty/courses/${a.course._id}`)}>
                                     {a.course.code} - {a.course.name}
                                 </h6>
 
@@ -138,10 +151,6 @@ const CoursesList = () => {
                                     <div className="d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
                                         <FileText size={15} />
                                         <span>{a.course.clos?.length || 0} CLOs</span>
-                                    </div>
-                                    <div className="d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
-                                        <Clock size={15} />
-                                        <span>0 Classes</span>
                                     </div>
                                 </div>
 

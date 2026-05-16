@@ -44,6 +44,7 @@ const AssessmentCreation = () => {
 
     // Sub-activities / questions
     const [questions, setQuestions] = useState([emptyQuestion(0)]);
+    const [existingAssessments, setExistingAssessments] = useState([]);
 
     const totalMarks = questions.reduce((sum, q) => sum + (Number(q.maxMarks) || 0), 0);
 
@@ -62,6 +63,26 @@ const AssessmentCreation = () => {
             })
             .catch(console.error);
     }, [courseId, user.token]);
+
+    // Fetch existing assessments for auto numbering
+    useEffect(() => {
+        if (!courseId || !user?.token) return;
+
+        const config = {
+            headers: {
+                Authorization: `Bearer ${user.token}`
+            }
+        };
+
+        axios
+            .get(`/api/faculty/courses/${courseId}/assessments`, config)
+            .then(({ data }) => {
+                console.log('Assessments:', data);
+                setExistingAssessments(data || []);
+            })
+            .catch(console.error);
+
+    }, [courseId, user?.token]);
 
     // In edit mode — load existing assessment data
     useEffect(() => {
@@ -100,6 +121,19 @@ const AssessmentCreation = () => {
     };
 
     const addLine = () => setQuestions(prev => [...prev, emptyQuestion(prev.length)]);
+
+    const generateAssessmentName = (type) => {
+        if (!type) return '';
+
+        const normalizedType = type.trim().toLowerCase();
+
+        const sameTypeAssessments = existingAssessments.filter(a =>
+            a.type &&
+            a.type.trim().toLowerCase() === normalizedType
+        );
+
+        return `${type} ${sameTypeAssessments.length + 1}`;
+    };
 
     const removeLine = (index) => {
         setQuestions(prev => prev.filter((_, i) => i !== index));
@@ -165,7 +199,16 @@ const AssessmentCreation = () => {
                             <Form.Label className="small text-dark mb-1">Activity/Assesment Method</Form.Label>
                             <Form.Select
                                 value={method}
-                                onChange={e => setMethod(e.target.value)}
+                                onChange={(e) => {
+                                    const selectedMethod = e.target.value;
+
+                                    setMethod(selectedMethod);
+
+                                    // Auto generate name only while creating
+                                    if (!isEditMode) {
+                                        setName(generateAssessmentName(selectedMethod));
+                                    }
+                                }}
                                 style={{ borderColor: '#a0b4d6' }}
                             >
                                 <option value="">- Select -</option>
@@ -443,7 +486,7 @@ const AssessmentCreation = () => {
                         {/* Add Line button */}
                         <Button
                             type="button"
-                            variant="outline-secondary"
+                            variant="success"
                             size="sm"
                             className="d-flex align-items-center gap-1 mt-1"
                             onClick={addLine}

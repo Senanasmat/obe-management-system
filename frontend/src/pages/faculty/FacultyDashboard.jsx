@@ -114,57 +114,6 @@ const FacultyDashboard = () => {
                     </div>
                 </motion.div>
 
-                {/* Stats */}
-                <Row className="g-4 mb-5">
-                    <Col md={4}>
-                        <motion.div variants={cardVariants}>
-                            <Card className="border-0 shadow-sm rounded-4 h-100">
-                                <Card.Body className="d-flex align-items-center gap-3 p-4">
-                                    <div className="rounded-3 p-3" style={{ backgroundColor: '#ede9fe', color: '#6d28d9' }}>
-                                        <BookOpen size={24} />
-                                    </div>
-                                    <div>
-                                        <p className="text-muted small mb-0">Assigned Courses</p>
-                                        <h3 className="fw-bold mb-0">{assignments.length}</h3>
-                                    </div>
-                                </Card.Body>
-                            </Card>
-                        </motion.div>
-                    </Col>
-
-                    <Col md={4}>
-                        <motion.div variants={cardVariants}>
-                            <Card className="border-0 shadow-sm rounded-4 h-100">
-                                <Card.Body className="d-flex align-items-center gap-3 p-4">
-                                    <div className="bg-success-subtle text-success rounded-3 p-3">
-                                        <Users size={24} />
-                                    </div>
-                                    <div>
-                                        <p className="text-muted small mb-0">Total Students</p>
-                                        <h3 className="fw-bold mb-0">{totalStudents}</h3>
-                                    </div>
-                                </Card.Body>
-                            </Card>
-                        </motion.div>
-                    </Col>
-
-                    <Col md={4}>
-                        <motion.div variants={cardVariants}>
-                            <Card className="border-0 shadow-sm rounded-4 h-100">
-                                <Card.Body className="d-flex align-items-center gap-3 p-4">
-                                    <div className="bg-info-subtle text-info rounded-3 p-3">
-                                        <BarChart2 size={24} />
-                                    </div>
-                                    <div>
-                                        <p className="text-muted small mb-0">OBE Tracking</p>
-                                        <h3 className="fw-bold mb-0">Active</h3>
-                                    </div>
-                                </Card.Body>
-                            </Card>
-                        </motion.div>
-                    </Col>
-                </Row>
-
                 {/* Courses Header + Semester Filter */}
                 <div className="d-flex justify-content-between align-items-center mb-3">
                     <h5 className="fw-bold text-dark mb-0">My Courses</h5>
@@ -198,8 +147,14 @@ const FacultyDashboard = () => {
                                 className="h-100"
                             >
                                 
-                                <Card className="h-100 shadow-sm border-0 rounded-4 text-center p-4">
-
+                                <Card
+                                    className="h-100 rounded-4 text-center p-4"
+                                    style={{
+                                        border: '1px solid #e5e7eb',
+                                        boxShadow: '0 6px 18px rgba(0,0,0,0.06)',
+                                        backgroundColor: '#fff'
+                                    }}
+                                >
                                     {/* Avatar */}
                                     <div className="d-flex justify-content-center mb-3">
                                         <div
@@ -211,7 +166,13 @@ const FacultyDashboard = () => {
                                     </div>
 
                                     {/* Course Title */}
-                                    <h6 className="fw-bold mb-1" style={{ color: '#6d28d9' }}>
+                                    <h6
+                                        className="fw-bold mb-1"
+                                        style={{
+                                            color: '#6d28d9',
+                                            cursor: 'pointer',
+                                        }}
+                                        onClick={() => navigate(`/faculty/courses/${a.course._id}`)}>
                                         {a.course.code} - {a.course.name}
                                     </h6>
 
@@ -270,10 +231,6 @@ const FacultyDashboard = () => {
                                         <div className="d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
                                             <FileText size={15} />
                                             <span>{a.course.closCount ?? 0} CLOs</span>
-                                        </div>
-                                        <div className="d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
-                                            <Clock size={15} />
-                                            <span>0 Classes</span>
                                         </div>
                                     </div>
 
