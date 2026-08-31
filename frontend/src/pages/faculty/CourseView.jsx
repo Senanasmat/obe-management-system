@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Container, Card, Row, Col, Button, Badge, Dropdown, Table, Breadcrumb } from 'react-bootstrap';
-import { PlusCircle, FileText, ClipboardList, ChevronDown, XCircle, CheckCircle, Plus, Trash2 } from 'lucide-react';
+import { PlusCircle, FileText, ClipboardList, ChevronDown, XCircle, CheckCircle, Plus, Trash2, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const containerVariants = {
@@ -48,7 +48,7 @@ const CourseView = () => {
         if (!selectedIds.size) return;
         if (!window.confirm(`Delete ${selectedIds.size} assessment(s)?`)) return;
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        await Promise.all([...selectedIds].map(id => axios.delete(`/api/faculty/assessments/${id}`, config)));
+        await Promise.all([...selectedIds].map(id => api.delete(`/api/faculty/assessments/${id}`, config)));
         setAssessments(prev => prev.filter(a => !selectedIds.has(a._id)));
         setSelectedIds(new Set());
     };
@@ -56,7 +56,7 @@ const CourseView = () => {
     const deleteSingle = async (id) => {
         if (!window.confirm('Delete this assessment?')) return;
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        await axios.delete(`/api/faculty/assessments/${id}`, config);
+        await api.delete(`/api/faculty/assessments/${id}`, config);
         setAssessments(prev => prev.filter(a => a._id !== id));
         setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
     };
@@ -65,14 +65,14 @@ const CourseView = () => {
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
 
         // Use /assignments/my which fully populates course.clos and course.students
-        axios.get('/api/assignments/my', config).then(r => {
+        api.get('/api/assignments/my', config).then(r => {
             const found = r.data.find(a => a.course._id === courseId);
             setAssignment(found);
             setCourseClos(found?.course?.clos || []);
         }).catch(console.error);
 
-        axios.get(`/api/faculty/analytics/${courseId}`, config).then(r => setAnalytics(r.data)).catch(console.error);
-        axios.get(`/api/faculty/courses/${courseId}/assessments`, config).then(r => setAssessments(r.data)).catch(console.error);
+        api.get(`/api/faculty/analytics/${courseId}`, config).then(r => setAnalytics(r.data)).catch(console.error);
+        api.get(`/api/faculty/courses/${courseId}/assessments`, config).then(r => setAssessments(r.data)).catch(console.error);
     }, [courseId, user.token]);
 
     const handleAddClo = async (e) => {
@@ -81,7 +81,7 @@ const CourseView = () => {
         setCloLoading(true);
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            const { data } = await axios.post(`/api/faculty/courses/${courseId}/clos`, cloForm, config);
+            const { data } = await api.post(`/api/faculty/courses/${courseId}/clos`, cloForm, config);
             setCourseClos(prev => [...prev, data]);
             setCloForm({ code: '', description: '' });
         } catch (err) {
@@ -94,11 +94,11 @@ const CourseView = () => {
     const handleRemoveClo = async (cloId) => {
         if (!window.confirm('Remove this CLO from the course?')) return;
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        await axios.delete(`/api/faculty/courses/${courseId}/clos/${cloId}`, config);
+        await api.delete(`/api/faculty/courses/${courseId}/clos/${cloId}`, config);
         setCourseClos(prev => prev.filter(c => c._id !== cloId));
     };
 
-    const tabs = ['View', 'Activities', 'CLOs'];
+    const tabs = ['View', 'Students', 'Activities', 'CLOs'];
 
     if (!assignment) {
         return <div className="p-5 text-center text-muted">Loading course details...</div>;
@@ -137,7 +137,7 @@ const CourseView = () => {
                     <div>
                         <h5 className="mb-1 fw-bold text-dark" style={{ color: '#4a4a4a' }}>{course.code}- {course.name}</h5>
                         <p className="mb-0 text-muted" style={{ fontSize: '0.9rem' }}>
-                            <span style={{ color: '#a085b4' }}>{course.code} - {assignment.semester} (A)</span> / {faculty?.name} / {assignment.semester}
+                            <span style={{ color: '#a085b4' }}>{course.code} - {assignment.semester}</span> / {faculty?.name} / {assignment.semester}
                         </p>
                     </div>
                 </div>
@@ -207,6 +207,59 @@ const CourseView = () => {
                                     </tbody>
                                 </Table>
                             </div>
+                        </motion.div>
+                    )}
+
+                    {activeTab === 'Students' && (
+                        <motion.div key="Students" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                            <h5 className="fw-semibold text-dark mb-3">Enrolled Students</h5>
+
+                            {(!course.students || course.students.length === 0) ? (
+                                <div className="text-center py-5 bg-white rounded-3 border">
+                                    <div className="d-inline-block p-3 rounded-circle mb-3" style={{ backgroundColor: '#ede9fe' }}>
+                                        <Users size={30} color="#6d28d9" />
+                                    </div>
+                                    <h6 className="fw-bold">No Students Enrolled</h6>
+                                    <p className="text-muted small">Contact your administrator to enroll students in this course.</p>
+                                </div>
+                            ) : (
+                                <div className="border rounded-3 overflow-hidden">
+                                    <Table responsive className="mb-0 align-middle" style={{ fontSize: '0.85rem' }}>
+                                        <thead style={{ backgroundColor: '#f8f7ff' }}>
+                                            <tr>
+                                                <th className="px-4 py-3 text-muted fw-semibold" style={{ width: 40 }}>#</th>
+                                                <th className="px-3 py-3 fw-semibold">Student Name</th>
+                                                <th className="px-3 py-3 text-muted fw-semibold">Registration No.</th>
+                                                <th className="px-3 py-3 text-muted fw-semibold">Batch</th>
+                                                <th className="px-3 py-3 text-muted fw-semibold text-center">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {course.students.map((student, idx) => (
+                                                <tr key={student._id} style={{ backgroundColor: idx % 2 === 0 ? '#fff' : '#fafafa' }}>
+                                                    <td className="px-4 py-3 text-muted fw-semibold">{idx + 1}</td>
+                                                    <td className="px-3 py-3 fw-semibold text-dark">{student.name}</td>
+                                                    <td className="px-3 py-3 text-muted">{student.regNo}</td>
+                                                    <td className="px-3 py-3">
+                                                        <span className="badge bg-light text-dark border px-2 py-1 rounded-pill" style={{ fontSize: '0.8rem' }}>
+                                                            {student.batch}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-3 py-3 text-center">
+                                                        <span className="badge bg-success-subtle text-success px-2 py-1 rounded-pill" style={{ fontSize: '0.8rem' }}>
+                                                            Enrolled
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </Table>
+                                </div>
+                            )}
+
+                            <p className="text-muted small mt-3">
+                                Total Enrolled: <strong>{course.students?.length || 0}</strong> student{(course.students?.length || 0) !== 1 ? 's' : ''}
+                            </p>
                         </motion.div>
                     )}
 

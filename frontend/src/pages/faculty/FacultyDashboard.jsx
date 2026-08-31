@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { BookOpen, Users, BarChart2, Award, FileText, Clock } from 'lucide-react';
 import { Container, Row, Col, Card } from 'react-bootstrap';
@@ -64,7 +64,7 @@ const FacultyDashboard = () => {
     useEffect(() => {
         if (!user?.token) return;
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        axios.get('/api/assignments/my/summary', config)
+        api.get('/api/assignments/my/summary', config)
             .then(({ data }) => {
                 setAssignments(data);
                 localStorage.setItem(CACHE_KEY, JSON.stringify(data));
@@ -142,6 +142,8 @@ const FacultyDashboard = () => {
                     ) : filtered.map((a) => (
                         <Col key={a._id}>
                             <motion.div
+                                initial="hidden"
+                                animate="visible"
                                 variants={cardVariants}
                                 whileHover={{ y: -6, transition: { duration: 0.2 } }}
                                 className="h-100"
@@ -204,7 +206,6 @@ const FacultyDashboard = () => {
                                                 <Dropdown.Item onClick={() => navigate(`/faculty/courses/${a.course._id}?tab=Activities`)}>
                                                     Class Activities
                                                 </Dropdown.Item>
-                                                <Dropdown.Item>Activity Weights</Dropdown.Item>
                                             </Dropdown.Menu>
                                         </Dropdown>
 

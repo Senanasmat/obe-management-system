@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { Container, Card, Form, Button, Table, Modal, Row, Col } from 'react-bootstrap';
 import { toast, showError, showConfirm } from '../../utils/notifications';
@@ -52,7 +52,7 @@ const Faculty = () => {
     const fetchFaculty = async () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            const { data } = await axios.get('/api/admin/faculty', config);
+            const { data } = await api.get('/api/admin/staff', config);
             setFaculty(data);
         } catch (error) {
             console.error("Error fetching faculty:", error);
@@ -90,11 +90,11 @@ const Faculty = () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
             if (isEditing) {
-                await axios.put(`/api/admin/faculty/${currentId}`, formData, config);
+                await api.put(`/api/admin/staff/${currentId}`, formData, config);
                 toast.fire({ icon: 'success', title: 'Faculty member updated successfully!' });
             } else {
                 // Registering via admin controller which handles auto-gen
-                await axios.post('/api/admin/faculty', formData, config);
+                await api.post('/api/admin/staff', formData, config);
                 toast.fire({ icon: 'success', title: 'Faculty registered successfully!' });
             }
             fetchFaculty();
@@ -111,7 +111,7 @@ const Faculty = () => {
         if (result.isConfirmed) {
             try {
                 const config = { headers: { Authorization: `Bearer ${user.token}` } };
-                await axios.delete(`/api/admin/faculty/${id}`, config);
+                await api.delete(`/api/admin/staff/${id}`, config);
                 toast.fire({ icon: 'success', title: 'Faculty member removed successfully!' });
                 fetchFaculty();
             } catch (error) {

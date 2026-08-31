@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { Container, Card, Button, Table, Modal, Form } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -34,9 +34,9 @@ const CourseAssignment = () => {
             };
 
             const [facRes, courseRes, assignRes] = await Promise.all([
-                axios.get('/api/admin/faculty', config),
-                axios.get('/api/admin/courses', config),
-                axios.get('/api/assignments', config)
+                api.get('/api/admin/staff', config),
+                api.get('/api/admin/courses', config),
+                api.get('/api/assignments', config)
             ]);
 
             setFaculty(facRes.data);
@@ -65,13 +65,13 @@ const CourseAssignment = () => {
             };
 
             if (isEditing) {
-                await axios.put(`/api/assignments/${currentId}`, {
+                await api.put(`/api/assignments/${currentId}`, {
                     faculty: formData.facultyId,
                     course: formData.courseId,
                     semester: formData.semester
                 }, config);
             } else {
-                await axios.post('/api/assignments', {
+                await api.post('/api/assignments', {
                     faculty: formData.facultyId,
                     course: formData.courseId,
                     semester: formData.semester
@@ -103,7 +103,7 @@ const CourseAssignment = () => {
                     headers: { Authorization: `Bearer ${user.token}` }
                 };
 
-                await axios.delete(`/api/assignments/${id}`, config);
+                await api.delete(`/api/assignments/${id}`, config);
                 showSuccess('Deleted!', 'The assignment has been deleted.');
                 fetchData();
 

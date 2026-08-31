@@ -26,7 +26,17 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/users', require('./routes/userRoutes'));
-app.use('/api/admin', require('./routes/adminRoutes'));
+const adminRoutes = require('./routes/adminRoutes');
+console.log('Admin routes loaded, stack length:', adminRoutes.stack.length);
+adminRoutes.stack.forEach((layer, i) => {
+    if (layer.route) {
+        console.log(`  ${i}: ${layer.route.path} - ${Object.keys(layer.route.methods).join(',')}`);
+    }
+});
+app.use('/api/admin', adminRoutes);
+app.use('/api/admin/catch-all', (req, res) => {
+    res.json({ message: 'Catch-all route hit' });
+});
 app.use('/api/faculty', require('./routes/facultyRoutes'));
 app.use('/api/assignments', require('./routes/courseAssignmentRoutes'));
 

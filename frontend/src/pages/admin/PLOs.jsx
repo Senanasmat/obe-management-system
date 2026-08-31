@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { Container, Card, Form, Button, Table, Modal } from 'react-bootstrap';
 import { toast, showError, showConfirm } from '../../utils/notifications';
@@ -32,7 +32,7 @@ const PLOs = () => {
     const fetchPLOs = async () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            const { data } = await axios.get('/api/admin/plos', config);
+            const { data } = await api.get('/api/admin/plos', config);
             setPlos(data);
         } catch (error) {
             console.error("Error fetching PLOs:", error);
@@ -58,10 +58,10 @@ const PLOs = () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
             if (isEditing) {
-                await axios.put(`/api/admin/plos/${currentId}`, formData, config);
+                await api.put(`/api/admin/plos/${currentId}`, formData, config);
                 toast.fire({ icon: 'success', title: 'PLO updated successfully!' });
             } else {
-                await axios.post('/api/admin/plos', formData, config);
+                await api.post('/api/admin/plos', formData, config);
                 toast.fire({ icon: 'success', title: 'PLO added successfully!' });
             }
             fetchPLOs();
@@ -78,7 +78,7 @@ const PLOs = () => {
         if (result.isConfirmed) {
             try {
                 const config = { headers: { Authorization: `Bearer ${user.token}` } };
-                await axios.delete(`/api/admin/plos/${id}`, config);
+                await api.delete(`/api/admin/plos/${id}`, config);
                 toast.fire({ icon: 'success', title: 'PLO removed successfully!' });
                 fetchPLOs();
             } catch (error) {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { Container, Card, Form, Button, Table, Badge, Modal, Row, Col } from 'react-bootstrap';
 import { toast, showError, showConfirm } from '../../utils/notifications';
@@ -34,7 +34,7 @@ const CLOs = () => {
     const fetchCLOs = async () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            const { data } = await axios.get('/api/admin/clos', config);
+            const { data } = await api.get('/api/admin/clos', config);
             setClos(data);
         } catch (error) {
             console.error("Error fetching CLOs:", error);
@@ -44,7 +44,7 @@ const CLOs = () => {
     const fetchPLOs = async () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            const { data } = await axios.get('/api/admin/plos', config);
+            const { data } = await api.get('/api/admin/plos', config);
             setPlos(data);
         } catch (error) {
             console.error("Error fetching PLOs:", error);
@@ -70,10 +70,10 @@ const CLOs = () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
             if (isEditing) {
-                await axios.put(`/api/admin/clos/${currentId}`, formData, config);
+                await api.put(`/api/admin/clos/${currentId}`, formData, config);
                 toast.fire({ icon: 'success', title: 'CLO updated successfully!' });
             } else {
-                await axios.post('/api/admin/clos', formData, config);
+                await api.post('/api/admin/clos', formData, config);
                 toast.fire({ icon: 'success', title: 'CLO added successfully!' });
             }
             fetchCLOs();
@@ -90,7 +90,7 @@ const CLOs = () => {
         if (result.isConfirmed) {
             try {
                 const config = { headers: { Authorization: `Bearer ${user.token}` } };
-                await axios.delete(`/api/admin/clos/${id}`, config);
+                await api.delete(`/api/admin/clos/${id}`, config);
                 toast.fire({ icon: 'success', title: 'CLO removed successfully!' });
                 fetchCLOs();
             } catch (error) {

@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState, useEffect, useMemo } from 'react';
+import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
-import { Container, Card, Form, Button, Row, Col, Modal, Badge } from 'react-bootstrap';
+import { Container, Card, Form, Button, Row, Col, Modal, Badge, Table } from 'react-bootstrap';
 import { toast, showError, showConfirm } from '../../utils/notifications';
-import { BookPlus, Book, User, Edit, Trash2, Users, Search, Check } from 'lucide-react';
+import { BookPlus, Book, User, Users, Search, Check, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const containerVariants = {
@@ -15,10 +15,13 @@ const itemVariants = {
     visible: { opacity: 1, scale: 1 }
 };
 
+const SEMESTERS = ['Spring 2026', 'Fall 2026', 'Spring 2027', 'Fall 2027', 'Spring 2028', 'Fall 2028'];
+
 const Courses = () => {
     const { user } = useAuth();
     const [courses, setCourses] = useState([]);
     const [assignments, setAssignments] = useState([]);
+    const [faculty, setFaculty] = useState([]);
     const [allStudents, setAllStudents] = useState([]);
     const [loading, setLoading] = useState(false);
 
@@ -28,26 +31,36 @@ const Courses = () => {
     const [currentId, setCurrentId] = useState(null);
     const [formData, setFormData] = useState({ name: '', code: '', creditHours: '' });
 
+    // Course assignment modal
+    const [showAssignModal, setShowAssignModal] = useState(false);
+    const [isEditingAssignment, setIsEditingAssignment] = useState(false);
+    const [currentAssignmentId, setCurrentAssignmentId] = useState(null);
+    const [assignmentFormData, setAssignmentFormData] = useState({ facultyId: '', courseId: '', semester: '' });
+    const [assignmentLoading, setAssignmentLoading] = useState(false);
+
     // Enroll students modal
     const [showEnrollModal, setShowEnrollModal] = useState(false);
     const [enrollCourse, setEnrollCourse] = useState(null);
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [search, setSearch] = useState('');
     const [enrollLoading, setEnrollLoading] = useState(false);
+    const [batchFilter, setBatchFilter] = useState('');
 
     useEffect(() => { fetchData(); }, []);
 
     const fetchData = async () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            const [courseRes, assignmentRes, studentRes] = await Promise.all([
-                axios.get('/api/admin/courses', config),
-                axios.get('/api/assignments', config),
-                axios.get('/api/admin/students', config),
+            const [courseRes, assignmentRes, studentRes, facultyRes] = await Promise.all([
+                api.get('/api/admin/courses', config),
+                api.get('/api/assignments', config),
+                api.get('/api/admin/students', config),
+                api.get('/api/admin/staff', config),
             ]);
             setCourses(courseRes.data);
             setAssignments(assignmentRes.data);
             setAllStudents(studentRes.data);
+            setFaculty(facultyRes.data);
         } catch (err) {
             console.error(err);
         }
@@ -73,10 +86,10 @@ const Courses = () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
             if (isEditing) {
-                await axios.put(`/api/admin/courses/${currentId}`, formData, config);
+                await api.put(`/api/admin/courses/${currentId}`, formData, config);
                 toast.fire({ icon: 'success', title: 'Course updated!' });
             } else {
-                await axios.post('/api/admin/courses', formData, config);
+                await api.post('/api/admin/courses', formData, config);
                 toast.fire({ icon: 'success', title: 'Course created!' });
             }
             fetchData();
@@ -93,7 +106,7 @@ const Courses = () => {
         if (result.isConfirmed) {
             try {
                 const config = { headers: { Authorization: `Bearer ${user.token}` } };
-                await axios.delete(`/api/admin/courses/${id}`, config);
+                await api.delete(`/api/admin/courses/${id}`, config);
                 toast.fire({ icon: 'success', title: 'Course deleted!' });
                 fetchData();
             } catch {
@@ -108,6 +121,7 @@ const Courses = () => {
         const enrolled = new Set((course.students || []).map(s => s._id || s));
         setSelectedIds(enrolled);
         setSearch('');
+        setBatchFilter('');
         setShowEnrollModal(true);
     };
 
@@ -123,7 +137,7 @@ const Courses = () => {
         setEnrollLoading(true);
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            await axios.put(
+            await api.put(
                 `/api/admin/courses/${enrollCourse._id}/enroll`,
                 { studentIds: [...selectedIds] },
                 config
@@ -138,10 +152,85 @@ const Courses = () => {
         }
     };
 
-    const filteredStudents = allStudents.filter(s =>
-        s.name.toLowerCase().includes(search.toLowerCase()) ||
-        s.regNo.toLowerCase().includes(search.toLowerCase())
-    );
+    // Get unique batches from all students
+    const uniqueBatches = useMemo(() => {
+        const batches = new Set(allStudents.map(s => s.batch).filter(Boolean));
+        return Array.from(batches).sort();
+    }, [allStudents]);
+
+    const filteredStudents = allStudents.filter(s => {
+        const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
+                            s.regNo.toLowerCase().includes(search.toLowerCase());
+        const matchesBatch = !batchFilter || s.batch === batchFilter;
+        return matchesSearch && matchesBatch;
+    });
+
+    // Get unique semesters/batches from students
+    const availableSemesters = useMemo(() => {
+        const batches = new Set(allStudents.map(s => s.batch).filter(Boolean));
+        return Array.from(batches).sort();
+    }, [allStudents]);
+
+    // ── Course assignment handlers ──
+    const handleOpenAssignModal = (assignment = null) => {
+        if (assignment) {
+            setIsEditingAssignment(true);
+            setCurrentAssignmentId(assignment._id);
+            setAssignmentFormData({
+                facultyId: assignment.faculty?._id || '',
+                courseId: assignment.course?._id || '',
+                semester: assignment.semester || ''
+            });
+        } else {
+            setIsEditingAssignment(false);
+            setCurrentAssignmentId(null);
+            setAssignmentFormData({ facultyId: '', courseId: '', semester: '' });
+        }
+        setShowAssignModal(true);
+    };
+
+    const handleAssignmentSubmit = async (e) => {
+        e.preventDefault();
+        setAssignmentLoading(true);
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            if (isEditingAssignment) {
+                await api.put(`/api/assignments/${currentAssignmentId}`, {
+                    faculty: assignmentFormData.facultyId,
+                    course: assignmentFormData.courseId,
+                    semester: assignmentFormData.semester
+                }, config);
+                toast.fire({ icon: 'success', title: 'Assignment updated!' });
+            } else {
+                await api.post('/api/assignments', {
+                    faculty: assignmentFormData.facultyId,
+                    course: assignmentFormData.courseId,
+                    semester: assignmentFormData.semester
+                }, config);
+                toast.fire({ icon: 'success', title: 'Course assigned!' });
+            }
+            fetchData();
+            setShowAssignModal(false);
+        } catch (err) {
+            showError('Error', err.response?.data?.message || 'Error processing request');
+        } finally {
+            setAssignmentLoading(false);
+        }
+    };
+
+    const handleDeleteAssignment = async (id) => {
+        const result = await showConfirm('Are you sure?', 'This will delete the course assignment.');
+        if (result.isConfirmed) {
+            try {
+                const config = { headers: { Authorization: `Bearer ${user.token}` } };
+                await api.delete(`/api/assignments/${id}`, config);
+                toast.fire({ icon: 'success', title: 'Assignment deleted!' });
+                fetchData();
+            } catch {
+                showError('Error', 'Could not delete assignment.');
+            }
+        }
+    };
 
     return (
         <motion.div initial="hidden" animate="visible" variants={containerVariants}>
@@ -224,48 +313,21 @@ const Courses = () => {
                                                                 : <span className="fst-italic">Not assigned</span>}
                                                         </span>
                                                     </div>
-                                                    <div className="d-flex align-items-center gap-2 px-3 py-2 rounded-3"
-                                                        style={{ backgroundColor: '#f0fdf4' }}>
-                                                        <div className="rounded-2 p-1" style={{ backgroundColor: '#dcfce7' }}>
-                                                            <Users size={13} color="#16a34a" />
-                                                        </div>
-                                                        <span className="fw-medium text-dark" style={{ fontSize: '0.82rem' }}>
-                                                            {enrolledCount} student{enrolledCount !== 1 ? 's' : ''} enrolled
-                                                        </span>
-                                                    </div>
                                                 </div>
                                             </Card.Body>
 
                                             {/* Footer */}
-                                            <div className="border-top px-4 py-3 d-flex justify-content-between align-items-center"
+                                            <div className="border-top px-4 py-3 d-flex justify-content-between align-items-center gap-2"
                                                 style={{ backgroundColor: '#fafafa' }}>
-                                                <Button
-                                                    size="sm"
-                                                    className="rounded-2 px-3 d-flex align-items-center gap-1 border-0"
-                                                    style={{ backgroundColor: '#4c1d95', fontSize: '0.8rem' }}
+                                                <span className="text-muted small" style={{ fontSize: '0.75rem' }}>Created once</span>
+                                                <button
+                                                    className="btn btn-sm rounded-2 px-3 py-1"
+                                                    style={{ backgroundColor: '#4c1d95', color: '#fff', fontSize: '0.78rem', border: 'none' }}
                                                     onClick={() => openEnrollModal(course)}
+                                                    title="Enroll Students"
                                                 >
-                                                    <Users size={13} /> Enroll Students
-                                                </Button>
-
-                                                <div className="d-flex gap-2">
-                                                    <button
-                                                        className="btn btn-sm rounded-2 px-2 py-1"
-                                                        style={{ border: '1px solid #d1d5db', color: '#374151', fontSize: '0.78rem' }}
-                                                        onClick={() => handleOpenModal(course)}
-                                                        title="Edit"
-                                                    >
-                                                        <Edit size={14} />
-                                                    </button>
-                                                    <button
-                                                        className="btn btn-sm rounded-2 px-2 py-1"
-                                                        style={{ border: '1px solid #fca5a5', color: '#dc2626', fontSize: '0.78rem' }}
-                                                        onClick={() => handleDelete(course._id)}
-                                                        title="Delete"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                </div>
+                                                    Enroll Students
+                                                </button>
                                             </div>
 
                                         </Card>
@@ -285,6 +347,84 @@ const Courses = () => {
                         )}
                     </AnimatePresence>
                 </Row>
+
+                {/* ── Course Assignment Section ── */}
+                <div className="mt-5">
+                    <div className="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h5 className="fw-bold text-dark mb-0">Course Assignments</h5>
+                            <p className="text-muted small mb-0">{assignments.length} assignment{assignments.length !== 1 ? 's' : ''}</p>
+                        </div>
+                        <Button
+                            className="d-flex align-items-center gap-2 border-0 px-4"
+                            style={{ backgroundColor: '#4c1d95' }}
+                            onClick={() => handleOpenAssignModal()}
+                        >
+                            <Plus size={16} /> Assign Course
+                        </Button>
+                    </div>
+
+                    <Card className="shadow-sm border-0">
+                        <Card.Body className="p-0">
+                            <Table hover responsive className="mb-0">
+                                <thead className="bg-white border-bottom">
+                                    <tr>
+                                        <th className="px-4 py-3 text-muted small">Course</th>
+                                        <th className="px-4 py-3 text-muted small">Faculty</th>
+                                        <th className="px-4 py-3 text-muted small">Semester</th>
+                                        <th className="px-4 py-3 text-muted small text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <AnimatePresence>
+                                        {assignments.length > 0 ? assignments.map((a) => (
+                                            <motion.tr
+                                                key={a._id}
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                            >
+                                                <td className="px-4 py-3 fw-semibold">{a.course?.name}</td>
+                                                <td className="px-4 py-3 text-muted">{a.faculty?.name}</td>
+                                                <td className="px-4 py-3">
+                                                    <span className="badge bg-light text-dark border px-3 py-2">
+                                                        {a.semester}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-end">
+                                                    <div className="d-flex justify-content-end gap-2">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="light"
+                                                            className="bg-primary-subtle text-primary"
+                                                            onClick={() => handleOpenAssignModal(a)}
+                                                        >
+                                                            Edit
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="light"
+                                                            className="bg-danger-subtle text-danger"
+                                                            onClick={() => handleDeleteAssignment(a._id)}
+                                                        >
+                                                            Delete
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </motion.tr>
+                                        )) : (
+                                            <tr>
+                                                <td colSpan="4" className="text-center py-5">
+                                                    <p className="text-muted">No assignments found</p>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </AnimatePresence>
+                                </tbody>
+                            </Table>
+                        </Card.Body>
+                    </Card>
+                </div>
 
                 {/* ── Create / Edit Course Modal ── */}
                 <Modal show={showModal} onHide={() => setShowModal(false)} centered>
@@ -343,6 +483,95 @@ const Courses = () => {
                     </Form>
                 </Modal>
 
+                {/* ── Course Assignment Modal ── */}
+                <Modal show={showAssignModal} onHide={() => setShowAssignModal(false)} centered>
+                    <Modal.Header closeButton>
+                        <Modal.Title>{isEditingAssignment ? 'Edit Assignment' : 'Assign Course'}</Modal.Title>
+                    </Modal.Header>
+                    <Form onSubmit={handleAssignmentSubmit}>
+                        <Modal.Body className="d-flex flex-column gap-3">
+                            <Form.Group>
+                                <Form.Label>Faculty</Form.Label>
+                                <Form.Select
+                                    value={assignmentFormData.facultyId}
+                                    onChange={e => setAssignmentFormData({ ...assignmentFormData, facultyId: e.target.value })}
+                                    required
+                                    className="py-2 shadow-sm border-2"
+                                    style={{
+                                        backgroundColor: '#f8fafc',
+                                        borderColor: '#cbd5e1',
+                                        borderRadius: '10px',
+                                        fontSize: '0.95rem'
+                                    }}
+                                >
+                                    <option value="">Select Faculty</option>
+                                    {faculty.map(f => (
+                                        <option key={f._id} value={f._id}>
+                                            {f.name}
+                                        </option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+
+                            <Form.Group>
+                                <Form.Label>Course</Form.Label>
+                                <Form.Select
+                                    value={assignmentFormData.courseId}
+                                    onChange={e => setAssignmentFormData({ ...assignmentFormData, courseId: e.target.value })}
+                                    required
+                                    className="py-2 shadow-sm border-2"
+                                    style={{
+                                        backgroundColor: '#f8fafc',
+                                        borderColor: '#cbd5e1',
+                                        borderRadius: '10px',
+                                        fontSize: '0.95rem'
+                                    }}
+                                >
+                                    <option value="">Select Course</option>
+                                    {courses.map(c => (
+                                        <option key={c._id} value={c._id}>
+                                            {c.code} - {c.name}
+                                        </option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+
+                            <Form.Group>
+                                <Form.Label>Semester</Form.Label>
+                                <Form.Select
+                                    value={assignmentFormData.semester}
+                                    onChange={e => setAssignmentFormData({ ...assignmentFormData, semester: e.target.value })}
+                                    required
+                                    className="py-2 shadow-sm border-2"
+                                    style={{
+                                        backgroundColor: '#f8fafc',
+                                        borderColor: '#cbd5e1',
+                                        borderRadius: '10px',
+                                        fontSize: '0.95rem'
+                                    }}
+                                >
+                                    <option value="">Select Semester</option>
+                                    {availableSemesters.map(sem => (
+                                        <option key={sem} value={sem}>
+                                            {sem}
+                                        </option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+                        </Modal.Body>
+                        <Modal.Footer>
+                            <Button variant="secondary" onClick={() => setShowAssignModal(false)}>Cancel</Button>
+                            <Button
+                                type="submit"
+                                disabled={assignmentLoading}
+                                style={{ backgroundColor: '#4c1d95', border: 'none' }}
+                            >
+                                {assignmentLoading ? 'Saving...' : isEditingAssignment ? 'Update' : 'Assign'}
+                            </Button>
+                        </Modal.Footer>
+                    </Form>
+                </Modal>
+
                 {/* ── Enroll Students Modal ── */}
                 <Modal show={showEnrollModal} onHide={() => setShowEnrollModal(false)} centered size="lg">
                     <Modal.Header closeButton>
@@ -358,15 +587,28 @@ const Courses = () => {
                     </Modal.Header>
 
                     <Modal.Body style={{ maxHeight: '65vh', overflowY: 'auto' }}>
-                        {/* Search */}
-                        <div className="position-relative mb-3">
-                            <Search size={16} className="position-absolute text-muted" style={{ left: 12, top: '50%', transform: 'translateY(-50%)' }} />
-                            <Form.Control
-                                placeholder="Search by name or reg no..."
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                                className="ps-5"
-                            />
+                        {/* Search and Batch Filter */}
+                        <div className="d-flex gap-2 mb-3">
+                            <div className="position-relative flex-grow-1">
+                                <Search size={16} className="position-absolute text-muted" style={{ left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+                                <Form.Control
+                                    placeholder="Search by name or reg no..."
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                    className="ps-5"
+                                />
+                            </div>
+                            <Form.Select
+                                value={batchFilter}
+                                onChange={e => setBatchFilter(e.target.value)}
+                                className="py-2"
+                                style={{ maxWidth: '180px' }}
+                            >
+                                <option value="">All Batches</option>
+                                {uniqueBatches.map(batch => (
+                                    <option key={batch} value={batch}>{batch}</option>
+                                ))}
+                            </Form.Select>
                         </div>
 
                         {/* Quick actions */}

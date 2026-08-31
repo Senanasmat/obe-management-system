@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { Container, Table, Button, Form, Breadcrumb } from 'react-bootstrap';
 import { ArrowLeft, Save, CheckCircle2 } from 'lucide-react';
@@ -23,9 +23,9 @@ const MarksEntry = () => {
             try {
                 const config = { headers: { Authorization: `Bearer ${user.token}` } };
                 const [assessRes, assignRes, resultsRes] = await Promise.all([
-                    axios.get(`/api/faculty/assessments/${assessmentId}`, config),
-                    axios.get('/api/assignments/my', config),
-                    axios.get(`/api/faculty/assessments/${assessmentId}/results`, config),
+                    api.get(`/api/faculty/assessments/${assessmentId}`, config),
+                    api.get('/api/assignments/my', config),
+                    api.get(`/api/faculty/assessments/${assessmentId}/results`, config),
                 ]);
 
                 const current = assessRes.data;
@@ -80,7 +80,7 @@ const MarksEntry = () => {
                             questionIndex: Number(qIndex),
                             marks: Number(m) || 0,
                         }));
-                    return axios.post('/api/faculty/marks', {
+                    return api.post('/api/faculty/marks', {
                         studentId: student._id,
                         assessmentId,
                         obtainedMarks,

@@ -17,22 +17,28 @@ const {
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.route('/plos').post(protect, admin, createPLO).get(protect, admin, getPLOs);
-router.route('/plos/:id').put(protect, admin, updatePLO).delete(protect, admin, deletePLO);
+router.put('/plos/:id', protect, admin, updatePLO);
+router.delete('/plos/:id', protect, admin, deletePLO);
 
 router.route('/clos').post(protect, admin, createCLO).get(protect, admin, getCLOs);
-router.route('/clos/:id').put(protect, admin, updateCLO).delete(protect, admin, deleteCLO);
+router.put('/clos/:id', protect, admin, updateCLO);
+router.delete('/clos/:id', protect, admin, deleteCLO);
 
 router.route('/courses').post(protect, admin, createCourse).get(protect, admin, getCourses);
-router.route('/courses/assign-faculty').post(protect, admin, assignFaculty);
-router.route('/courses/:id').put(protect, admin, updateCourse).delete(protect, admin, deleteCourse);
+router.post('/courses/assign-faculty', protect, admin, assignFaculty);
+router.put('/courses/:id', protect, admin, updateCourse);
+router.delete('/courses/:id', protect, admin, deleteCourse);
 router.put('/courses/:id/enroll', protect, admin, enrollStudents);
 
 router.route('/students').post(protect, admin, createStudent).get(protect, admin, getStudents);
 router.post('/students/bulk-import', protect, admin, upload.single('file'), bulkImportStudents);
-router.route('/students/:id').put(protect, admin, updateStudent).delete(protect, admin, deleteStudent);
+router.put('/students/:id', protect, admin, updateStudent);
+router.delete('/students/:id', protect, admin, deleteStudent);
 
-router.route('/faculty').get(protect, admin, getFaculty).post(protect, admin, createFacultyMember);
-router.route('/faculty/:id').put(protect, admin, updateFacultyMember).delete(protect, admin, deleteFacultyMember);
+// Faculty management endpoints (renamed to /staff to avoid routing issues)
+router.route('/staff').get(protect, admin, getFaculty).post(protect, admin, createFacultyMember);
+router.put('/staff/:id', protect, admin, updateFacultyMember);
+router.delete('/staff/:id', protect, admin, deleteFacultyMember);
 
 router.get('/stats', protect, admin, getDashboardStats);
 

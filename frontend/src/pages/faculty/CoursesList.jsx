@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Container, Card, Row, Col } from 'react-bootstrap';
@@ -24,7 +24,7 @@ const CoursesList = () => {
         const fetchData = async () => {
             try {
                 const config = { headers: { Authorization: `Bearer ${user.token}` } };
-                const { data } = await axios.get('/api/assignments/my', config);
+                const { data } = await api.get('/api/assignments/my', config);
                 setAssignments(data);
             } catch (err) {
                 console.error(err);

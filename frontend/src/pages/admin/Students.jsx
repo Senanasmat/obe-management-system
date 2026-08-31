@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { Container, Card, Form, Button, Table, Modal, Badge, Row, Col } from 'react-bootstrap';
 import { toast, showError, showConfirm, showAlert } from '../../utils/notifications';
@@ -39,7 +39,7 @@ const Students = () => {
     const fetchStudents = async () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            const { data } = await axios.get('/api/admin/students', config);
+            const { data } = await api.get('/api/admin/students', config);
             setStudents(data);
         } catch (error) {
             console.error("Error fetching students:", error);
@@ -65,10 +65,10 @@ const Students = () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
             if (isEditing) {
-                await axios.put(`/api/admin/students/${currentId}`, formData, config);
+                await api.put(`/api/admin/students/${currentId}`, formData, config);
                 toast.fire({ icon: 'success', title: 'Student updated successfully!' });
             } else {
-                await axios.post('/api/admin/students', formData, config);
+                await api.post('/api/admin/students', formData, config);
                 toast.fire({ icon: 'success', title: 'Student registered successfully!' });
             }
             fetchStudents();
@@ -85,7 +85,7 @@ const Students = () => {
         if (result.isConfirmed) {
             try {
                 const config = { headers: { Authorization: `Bearer ${user.token}` } };
-                await axios.delete(`/api/admin/students/${id}`, config);
+                await api.delete(`/api/admin/students/${id}`, config);
                 toast.fire({ icon: 'success', title: 'Student deleted successfully!' });
                 fetchStudents();
             } catch (error) {
@@ -126,7 +126,7 @@ const Students = () => {
                     Authorization: `Bearer ${user.token}`
                 }
             };
-            const { data } = await axios.post('/api/admin/students/bulk-import', formPayload, config);
+            const { data } = await api.post('/api/admin/students/bulk-import', formPayload, config);
             setImportResult(data);
             fetchStudents();
         } catch (error) {

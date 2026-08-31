@@ -13,10 +13,8 @@ const Sidebar = ({ role }) => {
         { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
         { name: 'Faculty', path: '/admin/faculty', icon: Users },
         { name: 'Courses', path: '/admin/courses', icon: BookOpen },
-        { name: 'Course Assignment', path: '/admin/course-assignment', icon: BookOpen },
         { name: 'Students', path: '/admin/students', icon: Users },
         { name: 'PLOs', path: '/admin/plos', icon: GraduationCap },
-        { name: 'CLOs', path: '/admin/clos', icon: FileText },
     ] : [
         { name: 'Dashboards', path: '/faculty', icon: FileBarChart },
         { name: 'Operation', path: '/faculty/courses', icon: ListTodo },

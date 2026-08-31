@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { Container, Button, Breadcrumb, Table, Dropdown } from 'react-bootstrap';
 import { PlusCircle, FileText, ClipboardList, XCircle, CheckCircle } from 'lucide-react';
@@ -30,8 +30,8 @@ const ClassActivities = () => {
     useEffect(() => {
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
         Promise.all([
-            axios.get('/api/assignments/my', config),
-            axios.get(`/api/faculty/courses/${courseId}/assessments`, config)
+            api.get('/api/assignments/my', config),
+            api.get(`/api/faculty/courses/${courseId}/assessments`, config)
         ]).then(([assignRes, assessRes]) => {
             const found = assignRes.data.find(a => a.course._id === courseId);
             setAssignment(found || null);
@@ -42,7 +42,7 @@ const ClassActivities = () => {
     const deleteSingle = async (id) => {
         if (!window.confirm('Delete this assessment?')) return;
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        await axios.delete(`/api/faculty/assessments/${id}`, config);
+        await api.delete(`/api/faculty/assessments/${id}`, config);
         setAssessments(prev => prev.filter(a => a._id !== id));
     };
 
@@ -50,7 +50,7 @@ const ClassActivities = () => {
         if (!selectedIds.size) return;
         if (!window.confirm(`Delete ${selectedIds.size} assessment(s)?`)) return;
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        await Promise.all([...selectedIds].map(id => axios.delete(`/api/faculty/assessments/${id}`, config)));
+        await Promise.all([...selectedIds].map(id => api.delete(`/api/faculty/assessments/${id}`, config)));
         setAssessments(prev => prev.filter(a => !selectedIds.has(a._id)));
         setSelectedIds(new Set());
     };

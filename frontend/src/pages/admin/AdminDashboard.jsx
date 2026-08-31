@@ -1,9 +1,9 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Users, BookOpen, GraduationCap, ArrowUpRight, Activity, Plus, Calendar, UserPlus, CheckCircle, FileText } from 'lucide-react';
+import { Users, BookOpen, GraduationCap, ArrowUpRight, Activity, Plus, Calendar, UserPlus, FileText } from 'lucide-react';
 import { Container, Row, Col, Card, Button, Badge } from 'react-bootstrap';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
+import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 
 const containerVariants = {
@@ -69,7 +69,7 @@ const AdminDashboard = () => {
         const fetchData = async () => {
             try {
                 const config = { headers: { Authorization: `Bearer ${user.token}` } };
-                const statsRes = await axios.get('/api/admin/stats', config);
+                const statsRes = await api.get('/api/admin/stats', config);
                 setStats(statsRes.data);
                 setLoading(false);
             } catch (error) {
@@ -156,14 +156,6 @@ const AdminDashboard = () => {
                             color="bg-secondary"
                         />
                     </Col>
-                    <Col xs={12} sm={6} md={4} lg>
-                        <StatCard
-                            title="Total CLOs"
-                            count={stats.totalCLOs}
-                            icon={CheckCircle}
-                            color="bg-warning"
-                        />
-                    </Col>
                 </Row>
 
                 <Row className="g-4 mb-5">
@@ -188,9 +180,6 @@ const AdminDashboard = () => {
                                         <Button variant="secondary" className="rounded-pill px-4 py-2 fw-bold shadow-sm" onClick={() => window.location.href = '/admin/plos'}>
                                             <GraduationCap size={18} className="me-2" /> Manage PLOs
                                         </Button>
-                                        <Button variant="warning" className="rounded-pill px-4 py-2 fw-bold shadow-sm" onClick={() => window.location.href = '/admin/clos'}>
-                                            <CheckCircle size={18} className="me-2" /> Manage CLOs
-                                        </Button>
                                     </div>
                                 </Card.Body>
                             </Card>
@@ -199,53 +188,7 @@ const AdminDashboard = () => {
                 </Row>
 
                 <Row className="g-4 mb-5">
-                    <Col lg={6}>
-                        <motion.div variants={itemVariants}>
-                            <Card className="shadow-sm border-0 h-100 overflow-hidden">
-                                <Card.Header className="bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
-                                    <h5 className="fw-bold mb-0">CLO Achievement Performance</h5>
-                                    <Badge bg="primary-subtle" className="text-primary px-3 py-2 rounded-pill fw-medium">CLOs</Badge>
-                                </Card.Header>
-                                <Card.Body className="p-4">
-                                    <div style={{ width: '100%', height: 350 }}>
-                                        <ResponsiveContainer>
-                                            <BarChart data={stats.cloAchievements} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                                                <XAxis
-                                                    dataKey="code"
-                                                    axisLine={false}
-                                                    tickLine={false}
-                                                    tick={{ fill: '#999', fontSize: 12 }}
-                                                />
-                                                <YAxis
-                                                    unit="%"
-                                                    axisLine={false}
-                                                    tickLine={false}
-                                                    tick={{ fill: '#999', fontSize: 12 }}
-                                                />
-                                                <Tooltip
-                                                    cursor={{ fill: 'rgba(0,0,0,0.02)' }}
-                                                    contentStyle={{
-                                                        borderRadius: '12px',
-                                                        border: 'none',
-                                                        boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                                                        padding: '12px'
-                                                    }}
-                                                />
-                                                <Bar
-                                                    dataKey="achievement"
-                                                    fill="#4c1d95"
-                                                    radius={[6, 6, 0, 0]}
-                                                    barSize={40}
-                                                />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </Card.Body>
-                            </Card>
-                        </motion.div>
-                    </Col>
-                    <Col lg={6}>
+                    <Col lg={12}>
                         <motion.div variants={itemVariants}>
                             <Card className="shadow-sm border-0 h-100 overflow-hidden">
                                 <Card.Header className="bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">

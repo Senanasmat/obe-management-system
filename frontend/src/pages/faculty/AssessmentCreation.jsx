@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { Container, Form, Row, Col, Button, Breadcrumb } from 'react-bootstrap';
 import { Calendar, X, Plus } from 'lucide-react';
@@ -56,7 +56,7 @@ const AssessmentCreation = () => {
     // Fetch CLOs for this course
     useEffect(() => {
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        axios.get('/api/assignments/my', config)
+        api.get('/api/assignments/my', config)
             .then(({ data }) => {
                 const found = data.find(a => a.course._id === courseId);
                 if (found?.course?.clos) setClos(found.course.clos);
@@ -74,7 +74,7 @@ const AssessmentCreation = () => {
             }
         };
 
-        axios
+        api
             .get(`/api/faculty/courses/${courseId}/assessments`, config)
             .then(({ data }) => {
                 console.log('Assessments:', data);
@@ -88,7 +88,7 @@ const AssessmentCreation = () => {
     useEffect(() => {
         if (!isEditMode) return;
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        axios.get(`/api/faculty/assessments/${assessmentId}`, config)
+        api.get(`/api/faculty/assessments/${assessmentId}`, config)
             .then(({ data }) => {
                 setMethod(data.type || '');
                 setName(data.title || '');
@@ -165,9 +165,9 @@ const AssessmentCreation = () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
             if (isEditMode) {
-                await axios.put(`/api/faculty/assessments/${assessmentId}`, payload, config);
+                await api.put(`/api/faculty/assessments/${assessmentId}`, payload, config);
             } else {
-                await axios.post('/api/faculty/assessments', payload, config);
+                await api.post('/api/faculty/assessments', payload, config);
             }
             navigate(`/faculty/courses/${courseId}?tab=Activities`);
         } catch (err) {
