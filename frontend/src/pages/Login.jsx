@@ -79,16 +79,18 @@ const Login = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: 'transparent'
+                        backgroundColor: 'transparent',
+                        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
                     }}>
                         <img
                             src={obeLogo}
                             alt="OBE Logo"
                             style={{
-                                width: '100%',
-                                height: '100%',
+                                width: '85%',
+                                height: '85%',
                                 objectFit: 'contain',
-                                backgroundColor: 'transparent'
+                                backgroundColor: 'transparent',
+                                filter: 'saturate(1.1) contrast(1.05)'
                             }}
                         />
                     </div>
