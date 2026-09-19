@@ -53,8 +53,7 @@ const Login = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '20px',
-            fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+            padding: '20px'
         }}>
             <div style={{
                 display: 'grid',

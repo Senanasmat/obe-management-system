@@ -1,12 +1,27 @@
 * {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+  font-family: 'Inter', sans-serif;
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+  font-family: 'Inter', sans-serif;
   background-color: #f8f9fa;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Headings use Merriweather */
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6,
+.display-1, .display-2, .display-3, .display-4, .display-5, .display-6 {
+  font-family: 'Merriweather', serif;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+/* Body text remains Inter */
+p, span, a, button, input, textarea, select,
+.btn, .card, .list-group, .badge, .alert {
+  font-family: 'Inter', sans-serif;
 }
 .form-control:focus {
     border-color: #6d28d9 !important;
