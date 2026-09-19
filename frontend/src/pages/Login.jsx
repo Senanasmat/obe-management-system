@@ -61,34 +61,51 @@ const Login = () => {
                 width: '100%',
                 alignItems: 'center'
             }}>
-                {/* Left Side - Logo & Info */}
+                {/* Left Side - Text Only */}
                 <div style={{
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'flex-start',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#4c1d95',
                     textAlign: 'left'
                 }}>
-                    <div style={{
-                        width: '120px',
-                        height: '120px',
-                        marginBottom: '30px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'rgba(255,255,255,0.1)',
-                        borderRadius: '20px',
-                        backdropFilter: 'blur(10px)'
+                    <h1 style={{
+                        fontSize: '48px',
+                        fontWeight: 'bold',
+                        marginBottom: '20px',
+                        lineHeight: '1.2'
                     }}>
-                        <img
-                            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Ccircle cx='100' cy='100' r='95' fill='%2388ccee' stroke='%23667eea' stroke-width='3'/%3E%3Ctext x='50%' y='50%' font-size='60' font-weight='bold' text-anchor='middle' dy='.3em' fill='%23667eea'%3EOB%3C/text%3E%3C/svg%3E"
-                            alt="OBE Logo"
-                            style={{ width: '100px', height: '100px' }}
-                        />
+                        OBE<br />Management<br />System
+                    </h1>
+                    <p style={{
+                        fontSize: '18px',
+                        opacity: 0.8,
+                        marginBottom: '30px',
+                        lineHeight: '1.6'
+                    }}>
+                        Outcome-Based Education<br />
+                        Platform for Academic<br />
+                        Excellence
+                    </p>
+                    <div style={{
+                        display: 'flex',
+                        gap: '20px',
+                        marginTop: '20px'
+                    }}>
+                        <div>
+                            <p style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '5px' }}>✓</p>
+                            <p style={{ fontSize: '13px', color: '#666' }}>Easy Management</p>
+                        </div>
+                        <div>
+                            <p style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '5px' }}>✓</p>
+                            <p style={{ fontSize: '13px', color: '#666' }}>Real-time Analytics</p>
+                        </div>
+                        <div>
+                            <p style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '5px' }}>✓</p>
+                            <p style={{ fontSize: '13px', color: '#666' }}>Secure & Fast</p>
+                        </div>
                     </div>
-                    <h2 style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '10px' }}>OBE Management</h2>
-                    <p style={{ fontSize: '16px', opacity: 0.9, marginBottom: '30px' }}>Outcome-Based Education System</p>
                 </div>
 
                 {/* Right Side - Login Form */}
