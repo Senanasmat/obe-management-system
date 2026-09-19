@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Container, Form, Button, Card, Alert, Row, Col, ButtonGroup, ToggleButton } from 'react-bootstrap';
-import { GraduationCap, Lock, Mail, ArrowRight } from 'lucide-react';
+import { Form, Button, Alert, ButtonGroup, ToggleButton } from 'react-bootstrap';
+import { Lock, Mail, ArrowRight } from 'lucide-react';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -46,114 +46,255 @@ const Login = () => {
     return (
         <div style={{
             minHeight: '100vh',
-            background: 'linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%)',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '10px'
+            padding: '20px',
+            fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
         }}>
-            <Container>
-                <Row className="justify-content-center">
-                    <Col md={8} lg={6} xl={5}>
-                        <Card className="shadow-lg border-0 rounded-4 overflow-hidden">
-                            <Card.Body className="p-4">
-                                <div className="text-center mb-3">
-                                    <div className="bg-primary-subtle text-primary rounded-circle p-2 d-inline-flex mb-2">
-                                        <GraduationCap size={28} />
-                                    </div>
-                                    <h3 className="fw-bold text-dark mb-1" style={{ fontSize: '1.4rem' }}>Welcome Back</h3>
-                                    <p className="text-muted mb-0" style={{ fontSize: '0.85rem' }}>Sign in to OBE Management</p>
-                                </div>
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                gap: '40px',
+                maxWidth: '1000px',
+                width: '100%',
+                alignItems: 'center'
+            }}>
+                {/* Left Side - Logo & Info */}
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    justifyContent: 'center',
+                    color: 'white',
+                    textAlign: 'left'
+                }}>
+                    <div style={{
+                        width: '120px',
+                        height: '120px',
+                        marginBottom: '30px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'rgba(255,255,255,0.1)',
+                        borderRadius: '20px',
+                        backdropFilter: 'blur(10px)'
+                    }}>
+                        <img
+                            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Ccircle cx='100' cy='100' r='95' fill='%2388ccee' stroke='%23667eea' stroke-width='3'/%3E%3Ctext x='50%' y='50%' font-size='60' font-weight='bold' text-anchor='middle' dy='.3em' fill='%23667eea'%3EOB%3C/text%3E%3C/svg%3E"
+                            alt="OBE Logo"
+                            style={{ width: '100px', height: '100px' }}
+                        />
+                    </div>
+                    <h2 style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '10px' }}>OBE Management</h2>
+                    <p style={{ fontSize: '16px', opacity: 0.9, marginBottom: '30px' }}>Outcome-Based Education System</p>
+                </div>
 
-                                {error && (
-                                    <Alert variant="danger" className="border-0 bg-danger-subtle text-danger py-2 d-flex align-items-center mb-3" style={{ fontSize: '0.85rem' }}>
-                                        <Lock size={16} className="me-2" /> {error}
-                                    </Alert>
-                                )}
-                                {success && (
-                                    <Alert variant="success" className="border-0 bg-success-subtle text-success py-2 d-flex align-items-center mb-3" style={{ fontSize: '0.85rem' }}>
-                                        <GraduationCap size={16} className="me-2" /> {success}
-                                    </Alert>
-                                )}
+                {/* Right Side - Login Form */}
+                <div style={{
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    borderRadius: '20px',
+                    padding: '40px',
+                    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+                    backdropFilter: 'blur(10px)'
+                }}>
+                    <h3 style={{
+                        fontSize: '24px',
+                        fontWeight: 'bold',
+                        marginBottom: '10px',
+                        color: '#333'
+                    }}>Log In</h3>
+                    <p style={{
+                        fontSize: '13px',
+                        color: '#999',
+                        marginBottom: '24px'
+                    }}>Enter your credentials to continue</p>
 
-                                <Form onSubmit={handleSubmit}>
-                                    <div className="mb-3">
-                                        <label className="fw-bold text-muted mb-2 d-block text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.4px' }}>Select Role</label>
-                                        <ButtonGroup className="w-100 shadow-sm rounded-pill p-1 bg-light border">
-                                            {['faculty', 'admin'].map((radioValue) => (
-                                                <ToggleButton
-                                                    key={radioValue}
-                                                    id={`radio-${radioValue}`}
-                                                    type="radio"
-                                                    variant={role === radioValue ? 'primary' : 'light'}
-                                                    name="radio"
-                                                    value={radioValue}
-                                                    checked={role === radioValue}
-                                                    onChange={(e) => setRole(e.currentTarget.value)}
-                                                    className={`rounded-pill border-0 text-capitalize py-2 d-flex align-items-center justify-content-center ${role === radioValue ? 'fw-bold shadow-sm' : 'text-muted'}`}
-                                                    style={{ fontSize: '0.85rem' }}
-                                                >
-                                                    {radioValue === 'admin' ? 'Super Admin' : 'Faculty Member'}
-                                                </ToggleButton>
-                                            ))}
-                                        </ButtonGroup>
-                                    </div>
+                    {error && (
+                        <Alert variant="danger" className="border-0 bg-danger-subtle text-danger py-2 d-flex align-items-center mb-3" style={{ fontSize: '0.85rem' }}>
+                            <Lock size={16} className="me-2" /> {error}
+                        </Alert>
+                    )}
+                    {success && (
+                        <Alert variant="success" className="border-0 bg-success-subtle text-success py-2 d-flex align-items-center mb-3" style={{ fontSize: '0.85rem' }}>
+                            ✓ {success}
+                        </Alert>
+                    )}
 
-                                    <Form.Group className="mb-3 position-relative">
-                                        <Form.Label className="fw-bold text-muted mb-2 small">Email Address</Form.Label>
-                                        <div className="position-relative">
-                                            <Form.Control
-                                                type="email"
-                                                placeholder="name@example.com"
-                                                required
-                                                value={email}
-                                                onChange={(e) => setEmail(e.target.value)}
-                                                className="py-2 ps-4 bg-light border-0"
-                                                style={{ fontSize: '0.95rem' }}
-                                            />
-                                            <Mail className="position-absolute text-muted" size={18} style={{ top: '50%', left: '15px', transform: 'translateY(-50%)' }} />
-                                        </div>
-                                    </Form.Group>
-
-                                    <Form.Group className="mb-3 position-relative">
-                                        <Form.Label className="fw-bold text-muted mb-2 small">Password</Form.Label>
-                                        <div className="position-relative">
-                                            <Form.Control
-                                                type="password"
-                                                placeholder="••••••••"
-                                                required
-                                                value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
-                                                className="py-2 ps-4 bg-light border-0"
-                                                style={{ fontSize: '0.95rem' }}
-                                            />
-                                            <Lock className="position-absolute text-muted" size={18} style={{ top: '50%', left: '15px', transform: 'translateY(-50%)' }} />
-                                        </div>
-                                    </Form.Group>
-
-                                    <div className="d-flex justify-content-between align-items-center mb-3">
-                                        <Form.Check type="checkbox" label={<span className="small text-muted">Remember me</span>} id="remember" />
-                                        <a href="#" className="small text-decoration-none fw-bold">Forgot Password?</a>
-                                    </div>
-
-                                    <Button
-                                        variant="primary"
-                                        type="submit"
-                                        className="w-100 py-2 rounded-3 shadow-sm d-flex justify-content-center align-items-center"
-                                        disabled={loading}
+                    <Form onSubmit={handleSubmit}>
+                        {/* Role Selection */}
+                        <div style={{ marginBottom: '24px' }}>
+                            <label style={{
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                color: '#666',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                                display: 'block',
+                                marginBottom: '10px'
+                            }}>Select Role</label>
+                            <ButtonGroup className="w-100" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                {['faculty', 'admin'].map((radioValue) => (
+                                    <ToggleButton
+                                        key={radioValue}
+                                        id={`radio-${radioValue}`}
+                                        type="radio"
+                                        variant={role === radioValue ? 'primary' : 'outline-secondary'}
+                                        name="radio"
+                                        value={radioValue}
+                                        checked={role === radioValue}
+                                        onChange={(e) => setRole(e.currentTarget.value)}
+                                        className="border-0 py-2"
+                                        style={{
+                                            borderRadius: '10px',
+                                            fontSize: '13px',
+                                            fontWeight: '600',
+                                            background: role === radioValue ? '#667eea' : '#f5f5f5',
+                                            color: role === radioValue ? 'white' : '#666',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.3s'
+                                        }}
                                     >
-                                        <span className="fw-bold me-2">{loading ? 'Signing In...' : 'Sign In'}</span>
-                                        {!loading && <ArrowRight size={18} />}
-                                    </Button>
-                                </Form>
-                            </Card.Body>
-                            <div className="bg-light p-3 text-center border-top">
-                                <p className="small text-muted mb-0">Don't have an account? <span className="text-dark fw-bold cursor-pointer">Contact Admin</span></p>
+                                        {radioValue === 'admin' ? 'Admin' : 'Faculty'}
+                                    </ToggleButton>
+                                ))}
+                            </ButtonGroup>
+                        </div>
+
+                        {/* Email Field */}
+                        <Form.Group className="mb-3">
+                            <Form.Label style={{ fontSize: '12px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>Your Email</Form.Label>
+                            <div style={{ position: 'relative' }}>
+                                <Form.Control
+                                    type="email"
+                                    placeholder="name@example.com"
+                                    required
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    style={{
+                                        paddingLeft: '40px',
+                                        paddingRight: '16px',
+                                        paddingTop: '12px',
+                                        paddingBottom: '12px',
+                                        border: '1px solid #ddd',
+                                        borderRadius: '10px',
+                                        fontSize: '14px',
+                                        background: '#f9f9f9',
+                                        transition: 'all 0.3s'
+                                    }}
+                                    onFocus={(e) => {
+                                        e.target.style.background = '#fff';
+                                        e.target.style.borderColor = '#667eea';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.target.style.background = '#f9f9f9';
+                                        e.target.style.borderColor = '#ddd';
+                                    }}
+                                />
+                                <Mail size={18} style={{
+                                    position: 'absolute',
+                                    left: '12px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    color: '#999'
+                                }} />
                             </div>
-                        </Card>
-                    </Col>
-                </Row>
-            </Container>
+                        </Form.Group>
+
+                        {/* Password Field */}
+                        <Form.Group className="mb-3">
+                            <Form.Label style={{ fontSize: '12px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>Your Password</Form.Label>
+                            <div style={{ position: 'relative' }}>
+                                <Form.Control
+                                    type="password"
+                                    placeholder="••••••••"
+                                    required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    style={{
+                                        paddingLeft: '40px',
+                                        paddingRight: '16px',
+                                        paddingTop: '12px',
+                                        paddingBottom: '12px',
+                                        border: '1px solid #ddd',
+                                        borderRadius: '10px',
+                                        fontSize: '14px',
+                                        background: '#f9f9f9',
+                                        transition: 'all 0.3s'
+                                    }}
+                                    onFocus={(e) => {
+                                        e.target.style.background = '#fff';
+                                        e.target.style.borderColor = '#667eea';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.target.style.background = '#f9f9f9';
+                                        e.target.style.borderColor = '#ddd';
+                                    }}
+                                />
+                                <Lock size={18} style={{
+                                    position: 'absolute',
+                                    left: '12px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    color: '#999'
+                                }} />
+                            </div>
+                        </Form.Group>
+
+                        {/* Remember & Forgot */}
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '24px',
+                            fontSize: '13px'
+                        }}>
+                            <Form.Check
+                                type="checkbox"
+                                label="Remember me"
+                                id="remember"
+                                style={{ marginBottom: 0 }}
+                            />
+                            <a href="#" style={{ color: '#667eea', textDecoration: 'none', fontWeight: '600' }}>Forgot?</a>
+                        </div>
+
+                        {/* Sign In Button */}
+                        <Button
+                            variant="primary"
+                            type="submit"
+                            className="w-100"
+                            disabled={loading}
+                            style={{
+                                padding: '12px 20px',
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                borderRadius: '10px',
+                                background: '#667eea',
+                                border: 'none',
+                                marginBottom: '16px',
+                                cursor: loading ? 'not-allowed' : 'pointer',
+                                transition: 'all 0.3s'
+                            }}
+                            onMouseEnter={(e) => !loading && (e.target.style.background = '#5568d3')}
+                            onMouseLeave={(e) => !loading && (e.target.style.background = '#667eea')}
+                        >
+                            {loading ? 'Signing In...' : 'Sign In'} {!loading && '→'}
+                        </Button>
+
+                        {/* Sign Up Link */}
+                        <p style={{
+                            textAlign: 'center',
+                            fontSize: '13px',
+                            color: '#999',
+                            marginBottom: 0
+                        }}>
+                            Need access? <span style={{ color: '#667eea', fontWeight: '600', cursor: 'pointer' }}>Contact Admin</span>
+                        </p>
+                    </Form>
+                </div>
+            </div>
         </div>
     );
 };
