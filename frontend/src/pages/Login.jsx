@@ -47,9 +47,9 @@ const Login = () => {
     return (
         <div style={{
             minHeight: '100vh',
-            background: 'rgba(224, 234, 252, 0.1)',
-            backdropFilter: 'blur(0px)',
-            WebkitBackdropFilter: 'blur(0px)',
+            background: 'rgba(224, 234, 252, 0.5)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
