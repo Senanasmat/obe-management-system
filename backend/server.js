@@ -36,33 +36,40 @@ app.get('/', (req, res) => {
     res.send('OBE Management System API is running...');
 });
 
-console.log('Loading user routes...');
-app.use('/api/users', require('./routes/userRoutes'));
+try {
+    console.log('Loading user routes...');
+    app.use('/api/users', require('./routes/userRoutes'));
 
-console.log('Loading admin routes...');
-const adminRoutes = require('./routes/adminRoutes');
-console.log('Admin routes loaded, stack length:', adminRoutes.stack.length);
-adminRoutes.stack.forEach((layer, i) => {
-    if (layer.route) {
-        console.log(`  ${i}: ${layer.route.path} - ${Object.keys(layer.route.methods).join(',')}`);
-    }
-});
-app.use('/api/admin', adminRoutes);
-app.use('/api/admin/catch-all', (req, res) => {
-    res.json({ message: 'Catch-all route hit' });
-});
+    console.log('Loading admin routes...');
+    const adminRoutes = require('./routes/adminRoutes');
+    console.log('Admin routes loaded, stack length:', adminRoutes.stack.length);
+    adminRoutes.stack.forEach((layer, i) => {
+        if (layer.route) {
+            console.log(`  ${i}: ${layer.route.path} - ${Object.keys(layer.route.methods).join(',')}`);
+        }
+    });
+    app.use('/api/admin', adminRoutes);
+    app.use('/api/admin/catch-all', (req, res) => {
+        res.json({ message: 'Catch-all route hit' });
+    });
 
-console.log('Loading faculty routes...');
-app.use('/api/faculty', require('./routes/facultyRoutes'));
+    console.log('Loading faculty routes...');
+    app.use('/api/faculty', require('./routes/facultyRoutes'));
 
-console.log('Loading course assignment routes...');
-app.use('/api/assignments', require('./routes/courseAssignmentRoutes'));
-console.log('✅ All routes loaded successfully');
+    console.log('Loading course assignment routes...');
+    app.use('/api/assignments', require('./routes/courseAssignmentRoutes'));
+    console.log('✅ All routes loaded successfully');
+} catch (err) {
+    console.error('❌ FATAL ERROR during route loading:');
+    console.error('Error message:', err.message);
+    console.error('Stack:', err.stack);
+    process.exit(1);
+}
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+    console.log(`✅ Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
 });
 
 module.exports = app;
