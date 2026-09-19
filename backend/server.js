@@ -53,10 +53,8 @@ app.use('/api/assignments', require('./routes/courseAssignmentRoutes'));
 
 const PORT = process.env.PORT || 5000;
 
-if (process.env.NODE_ENV !== 'production') {
-    app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-    });
-}
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+});
 
 module.exports = app;
