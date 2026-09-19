@@ -74,8 +74,8 @@ const Login = () => {
                 }}>
                     <div style={{
                         marginBottom: '30px',
-                        width: '120px',
-                        height: '120px',
+                        width: '150px',
+                        height: '150px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'
@@ -108,24 +108,6 @@ const Login = () => {
                         Platform for Academic<br />
                         Excellence
                     </p>
-                    <div style={{
-                        display: 'flex',
-                        gap: '20px',
-                        marginTop: '20px'
-                    }}>
-                        <div>
-                            <p style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '5px' }}>✓</p>
-                            <p style={{ fontSize: '13px', color: '#666' }}>Easy Management</p>
-                        </div>
-                        <div>
-                            <p style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '5px' }}>✓</p>
-                            <p style={{ fontSize: '13px', color: '#666' }}>Real-time Analytics</p>
-                        </div>
-                        <div>
-                            <p style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '5px' }}>✓</p>
-                            <p style={{ fontSize: '13px', color: '#666' }}>Secure & Fast</p>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Right Side - Login Form */}
