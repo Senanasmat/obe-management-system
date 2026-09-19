@@ -28,9 +28,9 @@ router.route('/courses').post(protect, admin, createCourse).get(protect, admin, 
 router.post('/courses/assign-faculty', protect, admin, assignFaculty);
 router.put('/courses/:id', protect, admin, updateCourse);
 router.delete('/courses/:id', protect, admin, deleteCourse);
-router.put('/courses/:id/enroll', protect, admin, enrollStudents);
+router.put('/courses/:id/enroll', protect, enrollStudents);
 
-router.route('/students').post(protect, admin, createStudent).get(protect, admin, getStudents);
+router.route('/students').post(protect, admin, createStudent).get(protect, getStudents);
 router.post('/students/bulk-import', protect, admin, upload.single('file'), bulkImportStudents);
 router.put('/students/:id', protect, admin, updateStudent);
 router.delete('/students/:id', protect, admin, deleteStudent);

@@ -1,6 +1,26 @@
 const CourseAssignment = require('../models/courseAssignmentModel');
 const { Result, ALL_MODELS, getModelByType, findAssessmentById } = require('../models/assessmentModel');
-const { CLO, Course } = require('../models/academicModels');
+const { CLO, Course, Student } = require('../models/academicModels');
+
+// Grade Scale constant
+const GRADE_SCALE = [
+    { min: 90, max: 100, gpa: 4.0, grade: 'A+' },
+    { min: 85, max: 89.99, gpa: 3.9, grade: 'A' },
+    { min: 80, max: 84.99, gpa: 3.7, grade: 'A-' },
+    { min: 75, max: 79.99, gpa: 3.5, grade: 'B+' },
+    { min: 70, max: 74.99, gpa: 3.0, grade: 'B' },
+    { min: 65, max: 69.99, gpa: 2.7, grade: 'B-' },
+    { min: 60, max: 64.99, gpa: 2.5, grade: 'C+' },
+    { min: 55, max: 59.99, gpa: 2.0, grade: 'C' },
+    { min: 50, max: 54.99, gpa: 1.5, grade: 'D' },
+    { min: 0, max: 49.99, gpa: 0.0, grade: 'F' }
+];
+
+// Helper to get grade info
+const getGradeInfo = (percentage) => {
+    const gradeInfo = GRADE_SCALE.find(g => percentage >= g.min && percentage <= g.max);
+    return gradeInfo ? { gpa: gradeInfo.gpa, grade: gradeInfo.grade } : { gpa: null, grade: 'N/A' };
+};
 
 // GET ASSIGNED COURSES
 const getAssignedCourses = async (req, res) => {
@@ -278,6 +298,218 @@ const removeCourseCLO = async (req, res) => {
     }
 };
 
+// GET ALL STUDENTS (for batch copy functionality)
+const getAllStudents = async (req, res) => {
+    try {
+        const { Student } = require('../models/academicModels');
+        const students = await Student.find({}).sort({ batch: 1, name: 1 });
+        res.json(students);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// CALCULATE STUDENT GRADES AND GPA FOR A COURSE
+const getStudentGrades = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        const course = await Course.findById(courseId).populate('students');
+        if (!course) return res.status(404).json({ message: 'Course not found' });
+
+        console.log(`Getting grades for course ${courseId}`);
+        console.log(`Students enrolled: ${course.students?.length || 0}`);
+
+        // Get all assessments for this course
+        const assessments = await Promise.all(
+            ALL_MODELS.map(Model => Model.find({ course: courseId }))
+        );
+        const allAssessments = assessments.flat().sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        console.log(`Total assessments: ${allAssessments.length}`);
+
+        // Get all results for this course
+        const results = await Result.find({
+            assessment: { $in: allAssessments.map(a => a._id) }
+        }).populate('student', 'name regNo');
+
+        console.log(`Total results found: ${results.length}`);
+        console.log(`Results:`, JSON.stringify(results.map(r => ({ student: r.student?.name, assessment: r.assessment, marksCount: r.obtainedMarks?.length })), null, 2));
+
+        // Group results by student
+        const studentResults = {};
+        course.students?.forEach(student => {
+            studentResults[student._id] = {
+                student: student,
+                assessments: [],
+                totalObtained: 0,
+                totalMaxMarks: 0,
+                percentage: 0,
+                gpa: 0,
+                grade: 'N/A'
+            };
+        });
+
+        // Aggregate marks by student
+        results.forEach(result => {
+            const studentId = result.student?._id?.toString() || result.student?.toString();
+            const assessment = allAssessments.find(a => a._id.toString() === result.assessment.toString());
+
+            if (studentResults[studentId] && assessment) {
+                const totalMarksInAssessment = assessment.questions.reduce((sum, q) => sum + (q.maxMarks || 0), 0);
+                const obtainedMarks = result.obtainedMarks.reduce((sum, om) => sum + (om.marks || 0), 0);
+
+                studentResults[studentId].assessments.push({
+                    assessmentTitle: assessment.title,
+                    type: assessment.type,
+                    totalMarks: totalMarksInAssessment,
+                    obtained: obtainedMarks,
+                    percentage: totalMarksInAssessment > 0 ? (obtainedMarks / totalMarksInAssessment) * 100 : 0
+                });
+
+                studentResults[studentId].totalObtained += obtainedMarks;
+                studentResults[studentId].totalMaxMarks += totalMarksInAssessment;
+            }
+        });
+
+        // Calculate overall percentage and convert to GPA (4.0 scale) and letter grade
+        Object.keys(studentResults).forEach(studentId => {
+            const data = studentResults[studentId];
+            if (data.totalMaxMarks > 0) {
+                data.percentage = (data.totalObtained / data.totalMaxMarks) * 100;
+                const gradeInfo = getGradeInfo(data.percentage);
+                data.gpa = gradeInfo.gpa;
+                data.grade = gradeInfo.grade;
+            }
+        });
+
+        const studentGradesList = Object.values(studentResults).sort((a, b) =>
+            (b.percentage || 0) - (a.percentage || 0)
+        );
+
+        console.log(`Returning grades for ${studentGradesList.length} students`);
+        console.log(`Sample data:`, JSON.stringify(studentGradesList.slice(0, 2), null, 2));
+
+        res.json({
+            course: {
+                id: course._id,
+                name: course.name,
+                code: course.code
+            },
+            studentGrades: studentGradesList
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// GENERATE DMC (DETAILED MARKS CERTIFICATE) FOR STUDENTS
+const generateDMC = async (req, res) => {
+    try {
+        const { studentIds } = req.body;
+        if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+            return res.status(400).json({ message: 'No students selected' });
+        }
+
+        const studentsData = [];
+
+        for (const studentId of studentIds) {
+            // Get all courses this student is enrolled in
+            const enrolledCourses = await Course.find({ students: studentId })
+                .select('_id name code creditHours');
+
+            if (enrolledCourses.length === 0) {
+                // Student enrolled in no courses, still add entry
+                const student = await Student.findById(studentId);
+                studentsData.push({
+                    student: student,
+                    courses: [],
+                    totalCreditHours: 0,
+                    overallGPA: 0
+                });
+                continue;
+            }
+
+            const studentCourseData = [];
+            let totalCreditHours = 0;
+            let totalGPAPoints = 0;
+            let gradeableCoursesCount = 0;
+
+            for (const course of enrolledCourses) {
+                // Get semester info for this course
+                const assignment = await CourseAssignment.findOne({ course: course._id });
+                const semester = assignment?.semester || 'N/A';
+
+                // Get assessments for this course
+                const assessments = await Promise.all(
+                    ALL_MODELS.map(Model => Model.find({ course: course._id }))
+                );
+                const allAssessments = assessments.flat();
+
+                // Get results for this student in this course
+                const results = await Result.find({
+                    assessment: { $in: allAssessments.map(a => a._id) },
+                    student: studentId
+                });
+
+                let totalObtained = 0;
+                let totalMaxMarks = 0;
+
+                results.forEach(result => {
+                    const assessment = allAssessments.find(a => a._id.toString() === result.assessment.toString());
+                    if (assessment) {
+                        const maxInAssessment = assessment.questions.reduce((sum, q) => sum + (q.maxMarks || 0), 0);
+                        const obtainedInAssessment = result.obtainedMarks.reduce((sum, om) => sum + (om.marks || 0), 0);
+                        totalObtained += obtainedInAssessment;
+                        totalMaxMarks += maxInAssessment;
+                    }
+                });
+
+                let percentage = 0, gpa = null, grade = 'N/A';
+                if (totalMaxMarks > 0) {
+                    percentage = (totalObtained / totalMaxMarks) * 100;
+                    const gradeInfo = getGradeInfo(percentage);
+                    gpa = gradeInfo.gpa;
+                    grade = gradeInfo.grade;
+                    totalGPAPoints += gpa * (course.creditHours || 0);
+                    gradeableCoursesCount += 1;
+                }
+
+                totalCreditHours += course.creditHours || 0;
+
+                studentCourseData.push({
+                    courseId: course._id,
+                    code: course.code,
+                    name: course.name,
+                    creditHours: course.creditHours || 0,
+                    semester: semester,
+                    totalObtained: totalObtained,
+                    totalMaxMarks: totalMaxMarks,
+                    percentage: percentage.toFixed(2),
+                    gpa: gpa,
+                    grade: grade
+                });
+            }
+
+            const overallGPA = gradeableCoursesCount > 0
+                ? (totalGPAPoints / totalCreditHours).toFixed(2)
+                : 0;
+
+            const student = await Student.findById(studentId);
+            studentsData.push({
+                student: student,
+                courses: studentCourseData,
+                totalCreditHours: totalCreditHours,
+                overallGPA: parseFloat(overallGPA)
+            });
+        }
+
+        res.json({ students: studentsData });
+    } catch (error) {
+        console.error('Error generating DMC:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     getAssignedCourses,
     createAssessment,
@@ -289,5 +521,8 @@ module.exports = {
     updateAssessment,
     deleteAssessment,
     createCourseCLO,
-    removeCourseCLO
+    removeCourseCLO,
+    getAllStudents,
+    getStudentGrades,
+    generateDMC
 };

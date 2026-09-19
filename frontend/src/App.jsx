@@ -18,6 +18,7 @@ import AssessmentCreation from './pages/faculty/AssessmentCreation';
 import MarksEntry from './pages/faculty/MarksEntry';
 import ClassActivities from './pages/faculty/ClassActivities';
 import CoursesList from './pages/faculty/CoursesList';
+import Reports from './pages/faculty/Reports';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
@@ -122,6 +123,11 @@ function App() {
             <Route path="faculty/courses/:courseId/class-activities" element={
               <ProtectedRoute allowedRoles={['faculty']}>
                 <ClassActivities />
+              </ProtectedRoute>
+            } />
+            <Route path="faculty/reports" element={
+              <ProtectedRoute allowedRoles={['faculty']}>
+                <Reports />
               </ProtectedRoute>
             } />
 

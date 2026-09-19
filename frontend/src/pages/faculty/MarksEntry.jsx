@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Container, Table, Button, Form, Breadcrumb } from 'react-bootstrap';
 import { ArrowLeft, Save, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Swal from 'sweetalert2';
 
 const MarksEntry = () => {
     const { courseId, assessmentId } = useParams();
@@ -61,6 +62,22 @@ const MarksEntry = () => {
     }, [courseId, assessmentId, user.token]);
 
     const handleMarkChange = (studentId, qIndex, value) => {
+        const maxMarks = assessment.questions[qIndex].maxMarks;
+        const numValue = Number(value);
+
+        if (value !== '' && numValue > maxMarks) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Marks Exceed Maximum',
+                text: `Question ${assessment.questions[qIndex].questionName || `Q${qIndex + 1}`} has a maximum of ${maxMarks} marks. Value cannot exceed this.`,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000
+            });
+            return;
+        }
+
         setSavedAt(null);
         setMarks(prev => ({
             ...prev,
@@ -89,7 +106,7 @@ const MarksEntry = () => {
             );
             setSavedAt(new Date().toLocaleTimeString());
         } catch (err) {
-            alert(err.response?.data?.message || 'Failed to save marks');
+            Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || 'Failed to save marks', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
         } finally {
             setSaving(false);
         }

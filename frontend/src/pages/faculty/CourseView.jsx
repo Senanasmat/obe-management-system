@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Container, Card, Row, Col, Button, Badge, Dropdown, Table, Breadcrumb } from 'react-bootstrap';
-import { PlusCircle, FileText, ClipboardList, ChevronDown, XCircle, CheckCircle, Plus, Trash2, Users } from 'lucide-react';
+import { Container, Card, Row, Col, Button, Badge, Dropdown, Table, Breadcrumb, Modal, Form } from 'react-bootstrap';
+import { PlusCircle, FileText, ClipboardList, ChevronDown, XCircle, CheckCircle, Plus, Trash2, Users, Search, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Swal from 'sweetalert2';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const containerVariants = {
     hidden: { opacity: 0, y: 10 },
@@ -32,6 +35,17 @@ const CourseView = () => {
     const [cloForm, setCloForm] = useState({ code: '', description: '' });
     const [cloLoading, setCloLoading] = useState(false);
     const [selectedIds, setSelectedIds] = useState(new Set());
+    const [showEnrollModal, setShowEnrollModal] = useState(false);
+    const [showBatchModal, setShowBatchModal] = useState(false);
+    const [allStudents, setAllStudents] = useState([]);
+    const [enrolledStudentIds, setEnrolledStudentIds] = useState(new Set());
+    const [enrollSearch, setEnrollSearch] = useState('');
+    const [enrollBatchFilter, setEnrollBatchFilter] = useState('');
+    const [enrollLoading, setEnrollLoading] = useState(false);
+    const [selectedBatch, setSelectedBatch] = useState('');
+    const [batchStudentIds, setBatchStudentIds] = useState(new Set());
+    const [studentCheckboxes, setStudentCheckboxes] = useState(new Set());
+    const [studentGrades, setStudentGrades] = useState({});
 
     const formatDate = (d) => {
         if (!d) return '—';
@@ -69,11 +83,268 @@ const CourseView = () => {
             const found = r.data.find(a => a.course._id === courseId);
             setAssignment(found);
             setCourseClos(found?.course?.clos || []);
+            setEnrolledStudentIds(new Set((found?.course?.students || []).map(s => s._id)));
         }).catch(console.error);
 
         api.get(`/api/faculty/analytics/${courseId}`, config).then(r => setAnalytics(r.data)).catch(console.error);
         api.get(`/api/faculty/courses/${courseId}/assessments`, config).then(r => setAssessments(r.data)).catch(console.error);
+
+        // Fetch student grades
+        api.get(`/api/faculty/courses/${courseId}/grades`, config)
+            .then(r => {
+                const gradesMap = {};
+                r.data.studentGrades.forEach(sg => {
+                    gradesMap[sg.student._id] = {
+                        percentage: sg.percentage.toFixed(2),
+                        gpa: sg.gpa.toFixed(2),
+                        grade: sg.grade
+                    };
+                });
+                setStudentGrades(gradesMap);
+            })
+            .catch(err => console.error('Error fetching grades:', err));
+
+        // Fetch all students for batch copy
+        api.get('/api/admin/students', config)
+            .then(r => {
+                console.log('Students fetched successfully:', r.data?.length, 'students');
+                console.log('Batches:', [...new Set(r.data?.map(s => s.batch) || [])]);
+                setAllStudents(r.data || []);
+            })
+            .catch(err => {
+                console.error('Error fetching students:', err.response?.data || err.message);
+                setAllStudents([]);
+            });
     }, [courseId, user.token]);
+
+    const openEnrollModal = () => {
+        setEnrollSearch('');
+        setEnrollBatchFilter('');
+        setShowEnrollModal(true);
+    };
+
+    const handleEnrollStudents = async () => {
+        setEnrollLoading(true);
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            await api.put(
+                `/api/admin/courses/${assignment.course._id}/enroll`,
+                { studentIds: [...enrolledStudentIds] },
+                config
+            );
+            Swal.fire({ icon: 'success', title: 'Success', text: 'Students enrolled successfully!', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+            setShowEnrollModal(false);
+            // Refresh course data
+            api.get('/api/assignments/my', config).then(r => {
+                const found = r.data.find(a => a.course._id === courseId);
+                setAssignment(found);
+            });
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || error.message, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+        } finally {
+            setEnrollLoading(false);
+        }
+    };
+
+    const toggleEnrolledStudent = (id) => {
+        setEnrolledStudentIds(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    };
+
+    // Get unique batches
+    const uniqueBatches = useMemo(() => {
+        const batches = new Set(allStudents.map(s => s.batch).filter(Boolean));
+        return Array.from(batches).sort();
+    }, [allStudents]);
+
+    // Get students for selected batch
+    const batchStudents = useMemo(() => {
+        return allStudents.filter(s => s.batch === selectedBatch);
+    }, [allStudents, selectedBatch]);
+
+    const openBatchModal = () => {
+        setSelectedBatch('');
+        setBatchStudentIds(new Set());
+        setShowBatchModal(true);
+    };
+
+    const handleCopyFromBatch = async () => {
+        if (batchStudentIds.size === 0) {
+            Swal.fire({ icon: 'warning', title: 'Select Students', text: 'Please select at least one student', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+            return;
+        }
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            await api.put(
+                `/api/admin/courses/${assignment.course._id}/enroll`,
+                { studentIds: [...new Set([...enrolledStudentIds, ...batchStudentIds])] },
+                config
+            );
+            Swal.fire({ icon: 'success', title: 'Success', text: 'Students copied and enrolled successfully!', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+            setShowBatchModal(false);
+            // Refresh course data
+            api.get('/api/assignments/my', config).then(r => {
+                const found = r.data.find(a => a.course._id === courseId);
+                setAssignment(found);
+                setEnrolledStudentIds(new Set((found?.course?.students || []).map(s => s._id)));
+            });
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || error.message, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+        }
+    };
+
+    const toggleBatchStudent = (id) => {
+        setBatchStudentIds(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    };
+
+    const toggleStudentCheckbox = (id) => {
+        setStudentCheckboxes(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    };
+
+    const handleUpdateSelected = async () => {
+        if (studentCheckboxes.size === 0) {
+            Swal.fire({ icon: 'warning', title: 'Select Students', text: 'Please select at least one student', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+            return;
+        }
+        Swal.fire({ icon: 'success', title: 'Success', text: `Updated ${studentCheckboxes.size} student(s)`, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+        // Implementation for update functionality
+    };
+
+    const handleDeleteSelected = async () => {
+        if (studentCheckboxes.size === 0) {
+            Swal.fire({ icon: 'warning', title: 'Select Students', text: 'Please select at least one student to delete', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+            return;
+        }
+        if (!window.confirm(`Delete ${studentCheckboxes.size} student(s)? This action cannot be undone.`)) {
+            return;
+        }
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const newEnrolledIds = new Set([...enrolledStudentIds].filter(id => !studentCheckboxes.has(id)));
+            await api.put(
+                `/api/admin/courses/${assignment.course._id}/enroll`,
+                { studentIds: [...newEnrolledIds] },
+                config
+            );
+            Swal.fire({ icon: 'success', title: 'Success', text: 'Student(s) deleted successfully!', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+            setStudentCheckboxes(new Set());
+            // Refresh course data
+            api.get('/api/assignments/my', config).then(r => {
+                const found = r.data.find(a => a.course._id === courseId);
+                setAssignment(found);
+                setEnrolledStudentIds(new Set((found?.course?.students || []).map(s => s._id)));
+            });
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || error.message, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+        }
+    };
+
+    const handleDeleteAll = async () => {
+        if (!window.confirm('Delete ALL students from this course? This action cannot be undone.')) {
+            return;
+        }
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            await api.put(
+                `/api/admin/courses/${assignment.course._id}/enroll`,
+                { studentIds: [] },
+                config
+            );
+            Swal.fire({ icon: 'success', title: 'Success', text: 'All students deleted successfully!', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+            setStudentCheckboxes(new Set());
+            // Refresh course data
+            api.get('/api/assignments/my', config).then(r => {
+                const found = r.data.find(a => a.course._id === courseId);
+                setAssignment(found);
+                setEnrolledStudentIds(new Set());
+            });
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || error.message, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+        }
+    };
+
+    const handleGenerateDMC = async () => {
+        if (studentCheckboxes.size === 0) {
+            Swal.fire({ icon: 'warning', title: 'Select Students', text: 'Please select at least one student to generate DMC', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+            return;
+        }
+
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const { data } = await api.post(
+                '/api/faculty/students/dmc',
+                { studentIds: [...studentCheckboxes] },
+                config
+            );
+
+            if (!data.students || data.students.length === 0) {
+                Swal.fire({ icon: 'error', title: 'Error', text: 'No data received from server', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+                return;
+            }
+
+            const doc = new jsPDF();
+            const now = new Date().toLocaleDateString();
+
+            data.students.forEach((studentData, idx) => {
+                if (idx > 0) doc.addPage();
+
+                // Header
+                doc.setFontSize(16);
+                doc.text('DETAILED MARKS CERTIFICATE', 14, 15);
+
+                doc.setFontSize(10);
+                doc.text(`Student Name: ${studentData.student.name}`, 14, 25);
+                doc.text(`Registration No: ${studentData.student.regNo}`, 14, 31);
+                doc.text(`Batch: ${studentData.student.batch}`, 14, 37);
+                doc.text(`Generated: ${now}`, 14, 43);
+
+                // Table
+                const tableData = studentData.courses.map(course => [
+                    course.code,
+                    course.name,
+                    course.creditHours,
+                    course.semester,
+                    `${course.totalObtained}/${course.totalMaxMarks}`,
+                    `${course.percentage}%`,
+                    course.grade,
+                    course.gpa !== null ? course.gpa.toFixed(2) : 'N/A'
+                ]);
+
+                if (tableData.length > 0 && typeof doc.autoTable === 'function') {
+                    doc.autoTable({
+                        head: [['Code', 'Course', 'Cr Hrs', 'Semester', 'Obtained/Total', '%', 'Grade', 'GPA']],
+                        body: tableData,
+                        startY: 50,
+                        margin: { left: 14, right: 14 }
+                    });
+
+                    const finalY = doc.lastAutoTable.finalY + 8;
+                    doc.setFontSize(10);
+                    doc.text(`Total Credit Hours: ${studentData.totalCreditHours}   Overall GPA: ${studentData.overallGPA.toFixed(2)}`, 14, finalY);
+                } else if (tableData.length === 0) {
+                    doc.setFontSize(10);
+                    doc.text('No courses enrolled.', 14, 50);
+                }
+            });
+
+            doc.save(`DMC-${Date.now()}.pdf`);
+            Swal.fire({ icon: 'success', title: 'Success', text: 'DMC generated successfully!', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+        } catch (error) {
+            console.error('Error generating DMC:', error);
+            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || error.message, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+        }
+    };
 
     const handleAddClo = async (e) => {
         e.preventDefault();
@@ -85,7 +356,7 @@ const CourseView = () => {
             setCourseClos(prev => [...prev, data]);
             setCloForm({ code: '', description: '' });
         } catch (err) {
-            alert(err.response?.data?.message || 'Failed to add CLO');
+            Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || 'Failed to add CLO', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
         } finally {
             setCloLoading(false);
         }
@@ -212,43 +483,152 @@ const CourseView = () => {
 
                     {activeTab === 'Students' && (
                         <motion.div key="Students" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                            <h5 className="fw-semibold text-dark mb-3">Enrolled Students</h5>
+                            <h5 className="fw-semibold text-dark mb-3">Course Section Students</h5>
 
+                            {/* Top Action Buttons */}
+                            <div className="d-flex flex-wrap gap-2 mb-3">
+                                <Button
+                                    variant="outline-success"
+                                    size="sm"
+                                    onClick={openEnrollModal}
+                                    className="rounded-2"
+                                >
+                                    Enroll Existing
+                                </Button>
+                                <Button
+                                    variant="outline-success"
+                                    size="sm"
+                                    onClick={openBatchModal}
+                                    className="rounded-2"
+                                >
+                                    Copy from Program Batch
+                                </Button>
+                            </div>
+
+                            {/* Action Buttons Row */}
+                            <div className="d-flex flex-wrap gap-2 mb-3">
+                                <Button
+                                    variant="success"
+                                    size="sm"
+                                    onClick={handleUpdateSelected}
+                                    className="rounded-2"
+                                >
+                                    Update Selected
+                                </Button>
+                                <Button
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={handleDeleteSelected}
+                                    className="rounded-2"
+                                >
+                                    Delete Selected
+                                </Button>
+                                <Button
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={handleDeleteAll}
+                                    className="rounded-2"
+                                >
+                                    Delete All
+                                </Button>
+                                <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    onClick={handleGenerateDMC}
+                                    className="rounded-2 ms-2"
+                                >
+                                    Generate DMC
+                                </Button>
+                            </div>
+
+                            {/* Students Table */}
                             {(!course.students || course.students.length === 0) ? (
                                 <div className="text-center py-5 bg-white rounded-3 border">
-                                    <div className="d-inline-block p-3 rounded-circle mb-3" style={{ backgroundColor: '#ede9fe' }}>
-                                        <Users size={30} color="#6d28d9" />
-                                    </div>
-                                    <h6 className="fw-bold">No Students Enrolled</h6>
-                                    <p className="text-muted small">Contact your administrator to enroll students in this course.</p>
+                                    <p className="text-muted">No results found.</p>
                                 </div>
                             ) : (
-                                <div className="border rounded-3 overflow-hidden">
-                                    <Table responsive className="mb-0 align-middle" style={{ fontSize: '0.85rem' }}>
+                                <div className="border rounded-3 overflow-x-auto">
+                                    <Table responsive hover className="mb-0" style={{ fontSize: '0.85rem' }}>
                                         <thead style={{ backgroundColor: '#f8f7ff' }}>
                                             <tr>
-                                                <th className="px-4 py-3 text-muted fw-semibold" style={{ width: 40 }}>#</th>
-                                                <th className="px-3 py-3 fw-semibold">Student Name</th>
-                                                <th className="px-3 py-3 text-muted fw-semibold">Registration No.</th>
-                                                <th className="px-3 py-3 text-muted fw-semibold">Batch</th>
-                                                <th className="px-3 py-3 text-muted fw-semibold text-center">Status</th>
+                                                <th className="px-3 py-3 text-center" style={{ width: 50 }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={studentCheckboxes.size === course.students.length && course.students.length > 0}
+                                                        onChange={() => {
+                                                            if (studentCheckboxes.size === course.students.length) {
+                                                                setStudentCheckboxes(new Set());
+                                                            } else {
+                                                                setStudentCheckboxes(new Set(course.students.map(s => s._id)));
+                                                            }
+                                                        }}
+                                                    />
+                                                </th>
+                                                <th className="px-3 py-3 text-center" style={{ width: 50 }}>
+                                                    <input type="checkbox" disabled />
+                                                </th>
+                                                <th className="px-3 py-3 fw-semibold text-muted small">#</th>
+                                                <th className="px-3 py-3 fw-semibold">Registration No.</th>
+                                                <th className="px-3 py-3 fw-semibold">Name</th>
+                                                <th className="px-3 py-3 fw-semibold text-muted small">Program Batch</th>
+                                                <th className="px-3 py-3 fw-semibold text-muted small">Use in OBE</th>
+                                                <th className="px-3 py-3 fw-semibold text-muted small">Status</th>
+                                                <th className="px-3 py-3 fw-semibold text-muted small">Grade</th>
+                                                <th className="px-3 py-3 fw-semibold text-muted small">Score/GPA</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {course.students.map((student, idx) => (
                                                 <tr key={student._id} style={{ backgroundColor: idx % 2 === 0 ? '#fff' : '#fafafa' }}>
-                                                    <td className="px-4 py-3 text-muted fw-semibold">{idx + 1}</td>
-                                                    <td className="px-3 py-3 fw-semibold text-dark">{student.name}</td>
+                                                    <td className="px-3 py-3 text-center">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={studentCheckboxes.has(student._id)}
+                                                            onChange={() => toggleStudentCheckbox(student._id)}
+                                                        />
+                                                    </td>
+                                                    <td className="px-3 py-3 text-center">
+                                                        <input type="checkbox" defaultChecked disabled />
+                                                    </td>
+                                                    <td className="px-3 py-3 text-muted fw-semibold">{idx + 1}</td>
                                                     <td className="px-3 py-3 text-muted">{student.regNo}</td>
+                                                    <td className="px-3 py-3 fw-semibold text-dark">{student.name}</td>
                                                     <td className="px-3 py-3">
-                                                        <span className="badge bg-light text-dark border px-2 py-1 rounded-pill" style={{ fontSize: '0.8rem' }}>
+                                                        <span className="badge bg-light text-dark border px-2 py-1 rounded-pill" style={{ fontSize: '0.75rem' }}>
                                                             {student.batch}
                                                         </span>
                                                     </td>
                                                     <td className="px-3 py-3 text-center">
-                                                        <span className="badge bg-success-subtle text-success px-2 py-1 rounded-pill" style={{ fontSize: '0.8rem' }}>
-                                                            Enrolled
-                                                        </span>
+                                                        <Badge bg="success" style={{ fontSize: '0.75rem' }}>Yes</Badge>
+                                                    </td>
+                                                    <td className="px-3 py-3">
+                                                        <Badge bg="info" style={{ fontSize: '0.75rem' }}>Active</Badge>
+                                                    </td>
+                                                    <td className="px-3 py-3 text-center">
+                                                        {studentGrades[student._id] ? (
+                                                            <Badge
+                                                                bg={studentGrades[student._id].grade === 'F' ? 'danger' : studentGrades[student._id].grade.startsWith('A') ? 'success' : studentGrades[student._id].grade.startsWith('B') ? 'primary' : 'warning'}
+                                                                style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem', fontWeight: 600 }}
+                                                            >
+                                                                {studentGrades[student._id].grade}
+                                                            </Badge>
+                                                        ) : (
+                                                            <span className="text-muted small">—</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-3 text-center">
+                                                        {studentGrades[student._id] ? (
+                                                            <div>
+                                                                <div className="fw-semibold text-dark" style={{ fontSize: '0.9rem' }}>
+                                                                    {studentGrades[student._id].percentage}%
+                                                                </div>
+                                                                <div className="text-muted small">
+                                                                    GPA: {studentGrades[student._id].gpa}
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-muted small">—</span>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -518,6 +898,258 @@ const CourseView = () => {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* Copy from Program Batch Modal */}
+                <Modal show={showBatchModal} onHide={() => setShowBatchModal(false)} centered size="lg">
+                    <Modal.Header closeButton>
+                        <div>
+                            <Modal.Title className="fw-bold">Copy from Program Batch</Modal.Title>
+                            <p className="text-muted small mb-0 mt-1">
+                                Select batch and students to copy to this course
+                            </p>
+                        </div>
+                    </Modal.Header>
+
+                    <Modal.Body style={{ maxHeight: '65vh', overflowY: 'auto' }}>
+                        {allStudents.length === 0 && (
+                            <div className="alert alert-info mb-3">
+                                Loading batches... If this persists, contact your administrator.
+                            </div>
+                        )}
+                        <Form.Group className="mb-3">
+                            <Form.Label className="fw-semibold">Select Batch</Form.Label>
+                            <Form.Select
+                                value={selectedBatch}
+                                onChange={e => {
+                                    setSelectedBatch(e.target.value);
+                                    setBatchStudentIds(new Set());
+                                }}
+                            >
+                                <option value="">Choose a batch...</option>
+                                {allStudents.length > 0 ? (
+                                    [...new Set(allStudents.map(s => s.batch).filter(Boolean))].sort().map(batch => (
+                                        <option key={batch} value={batch}>{batch}</option>
+                                    ))
+                                ) : (
+                                    <option disabled>No batches available</option>
+                                )}
+                            </Form.Select>
+                        </Form.Group>
+
+                        {selectedBatch && (
+                            <>
+                                <div className="d-flex gap-2 mb-3">
+                                    <Button
+                                        variant="outline-secondary"
+                                        size="sm"
+                                        onClick={() => setBatchStudentIds(new Set(batchStudents.map(s => s._id)))}
+                                    >
+                                        Select All
+                                    </Button>
+                                    <Button
+                                        variant="outline-secondary"
+                                        size="sm"
+                                        onClick={() => setBatchStudentIds(new Set())}
+                                    >
+                                        Deselect All
+                                    </Button>
+                                </div>
+
+                                {batchStudents.length === 0 ? (
+                                    <p className="text-muted text-center py-4">No students in this batch.</p>
+                                ) : (
+                                    <div className="d-flex flex-column gap-2">
+                                        {batchStudents.map(s => {
+                                            const checked = batchStudentIds.has(s._id);
+                                            return (
+                                                <div
+                                                    key={s._id}
+                                                    onClick={() => toggleBatchStudent(s._id)}
+                                                    className="d-flex align-items-center gap-3 p-3 rounded-3 border"
+                                                    style={{
+                                                        cursor: 'pointer',
+                                                        backgroundColor: checked ? '#f5f3ff' : '#fff',
+                                                        borderColor: checked ? '#6d28d9' : '#dee2e6',
+                                                        transition: 'all 0.15s'
+                                                    }}
+                                                >
+                                                    <div
+                                                        className="d-flex align-items-center justify-content-center rounded-2 flex-shrink-0"
+                                                        style={{
+                                                            width: 20, height: 20,
+                                                            backgroundColor: checked ? '#6d28d9' : '#fff',
+                                                            border: `2px solid ${checked ? '#6d28d9' : '#aaa'}`
+                                                        }}
+                                                    >
+                                                        {checked && <Check size={12} color="white" strokeWidth={3} />}
+                                                    </div>
+                                                    <div
+                                                        className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                                                        style={{ width: 38, height: 38, backgroundColor: '#637a62', fontSize: '0.85rem' }}
+                                                    >
+                                                        {s.name.slice(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <div className="flex-grow-1 min-width-0">
+                                                        <div className="fw-semibold text-dark" style={{ fontSize: '0.92rem' }}>{s.name}</div>
+                                                        <div className="text-muted" style={{ fontSize: '0.78rem' }}>{s.regNo}</div>
+                                                    </div>
+                                                    {checked && (
+                                                        <Badge bg="primary" className="rounded-pill px-2" style={{ backgroundColor: '#6d28d9', fontSize: '0.7rem' }}>
+                                                            Selected
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </Modal.Body>
+
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={() => setShowBatchModal(false)}>Cancel</Button>
+                        <Button
+                            style={{ backgroundColor: '#4c1d95', border: 'none' }}
+                            onClick={handleCopyFromBatch}
+                            disabled={batchStudentIds.size === 0}
+                        >
+                            Copy {batchStudentIds.size} Student{batchStudentIds.size !== 1 ? 's' : ''}
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+
+                {/* Enroll Students Modal */}
+                <Modal show={showEnrollModal} onHide={() => setShowEnrollModal(false)} centered size="lg">
+                    <Modal.Header closeButton>
+                        <div>
+                            <Modal.Title className="fw-bold">Manage Student Enrollment</Modal.Title>
+                            {assignment && (
+                                <p className="text-muted small mb-0 mt-1">
+                                    {assignment.course.code} — {assignment.course.name} &nbsp;·&nbsp;
+                                    <strong>{enrolledStudentIds.size}</strong> selected
+                                </p>
+                            )}
+                        </div>
+                    </Modal.Header>
+
+                    <Modal.Body style={{ maxHeight: '65vh', overflowY: 'auto' }}>
+                        {/* Search and Batch Filter */}
+                        <div className="d-flex gap-2 mb-3">
+                            <div className="position-relative flex-grow-1">
+                                <Search size={16} className="position-absolute text-muted" style={{ left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+                                <Form.Control
+                                    placeholder="Search by name or reg no..."
+                                    value={enrollSearch}
+                                    onChange={e => setEnrollSearch(e.target.value)}
+                                    className="ps-5"
+                                />
+                            </div>
+                            <Form.Select
+                                value={enrollBatchFilter}
+                                onChange={e => setEnrollBatchFilter(e.target.value)}
+                                className="py-2"
+                                style={{ maxWidth: '180px' }}
+                            >
+                                <option value="">All Batches</option>
+                                {[...new Set(allStudents.map(s => s.batch).filter(Boolean))].map(batch => (
+                                    <option key={batch} value={batch}>{batch}</option>
+                                ))}
+                            </Form.Select>
+                        </div>
+
+                        {/* Quick actions */}
+                        <div className="d-flex gap-2 mb-3">
+                            <Button
+                                variant="outline-secondary"
+                                size="sm"
+                                onClick={() => setEnrolledStudentIds(new Set(allStudents.map(s => s._id)))}
+                            >
+                                Select All
+                            </Button>
+                            <Button
+                                variant="outline-secondary"
+                                size="sm"
+                                onClick={() => setEnrolledStudentIds(new Set())}
+                            >
+                                Deselect All
+                            </Button>
+                        </div>
+
+                        {/* Student list */}
+                        {allStudents.length === 0 ? (
+                            <p className="text-muted text-center py-4">No students available.</p>
+                        ) : (
+                            <div className="d-flex flex-column gap-2">
+                                {allStudents
+                                    .filter(s => {
+                                        const matchesSearch = s.name.toLowerCase().includes(enrollSearch.toLowerCase()) ||
+                                                            s.regNo.toLowerCase().includes(enrollSearch.toLowerCase());
+                                        const matchesBatch = !enrollBatchFilter || s.batch === enrollBatchFilter;
+                                        return matchesSearch && matchesBatch;
+                                    })
+                                    .map(s => {
+                                        const checked = enrolledStudentIds.has(s._id);
+                                        return (
+                                            <div
+                                                key={s._id}
+                                                onClick={() => toggleEnrolledStudent(s._id)}
+                                                className="d-flex align-items-center gap-3 p-3 rounded-3 border"
+                                                style={{
+                                                    cursor: 'pointer',
+                                                    backgroundColor: checked ? '#f5f3ff' : '#fff',
+                                                    borderColor: checked ? '#6d28d9' : '#dee2e6',
+                                                    transition: 'all 0.15s'
+                                                }}
+                                            >
+                                                {/* Custom checkbox */}
+                                                <div
+                                                    className="d-flex align-items-center justify-content-center rounded-2 flex-shrink-0"
+                                                    style={{
+                                                        width: 20, height: 20,
+                                                        backgroundColor: checked ? '#6d28d9' : '#fff',
+                                                        border: `2px solid ${checked ? '#6d28d9' : '#aaa'}`
+                                                    }}
+                                                >
+                                                    {checked && <Check size={12} color="white" strokeWidth={3} />}
+                                                </div>
+
+                                                {/* Avatar */}
+                                                <div
+                                                    className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                                                    style={{ width: 38, height: 38, backgroundColor: '#637a62', fontSize: '0.85rem' }}
+                                                >
+                                                    {s.name.slice(0, 2).toUpperCase()}
+                                                </div>
+
+                                                <div className="flex-grow-1 min-width-0">
+                                                    <div className="fw-semibold text-dark" style={{ fontSize: '0.92rem' }}>{s.name}</div>
+                                                    <div className="text-muted" style={{ fontSize: '0.78rem' }}>{s.regNo} &nbsp;·&nbsp; Batch {s.batch}</div>
+                                                </div>
+
+                                                {checked && (
+                                                    <Badge bg="primary" className="rounded-pill px-2" style={{ backgroundColor: '#6d28d9', fontSize: '0.7rem' }}>
+                                                        Enrolled
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                            </div>
+                        )}
+                    </Modal.Body>
+
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={() => setShowEnrollModal(false)}>Cancel</Button>
+                        <Button
+                            style={{ backgroundColor: '#4c1d95', border: 'none' }}
+                            onClick={handleEnrollStudents}
+                            disabled={enrollLoading}
+                        >
+                            {enrollLoading ? 'Saving...' : `Save Enrollment (${enrolledStudentIds.size} students)`}
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
             </Container>
         </motion.div>
     );

@@ -317,17 +317,9 @@ const Courses = () => {
                                             </Card.Body>
 
                                             {/* Footer */}
-                                            <div className="border-top px-4 py-3 d-flex justify-content-between align-items-center gap-2"
+                                            <div className="border-top px-4 py-3 d-flex justify-content-end align-items-center gap-2"
                                                 style={{ backgroundColor: '#fafafa' }}>
                                                 <span className="text-muted small" style={{ fontSize: '0.75rem' }}>Created once</span>
-                                                <button
-                                                    className="btn btn-sm rounded-2 px-3 py-1"
-                                                    style={{ backgroundColor: '#4c1d95', color: '#fff', fontSize: '0.78rem', border: 'none' }}
-                                                    onClick={() => openEnrollModal(course)}
-                                                    title="Enroll Students"
-                                                >
-                                                    Enroll Students
-                                                </button>
                                             </div>
 
                                         </Card>

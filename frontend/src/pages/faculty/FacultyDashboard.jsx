@@ -151,10 +151,19 @@ const FacultyDashboard = () => {
                                 
                                 <Card
                                     className="h-100 rounded-4 text-center p-4"
+                                    onClick={() => navigate(`/faculty/courses/${a.course._id}?tab=Activities`)}
                                     style={{
                                         border: '1px solid #e5e7eb',
                                         boxShadow: '0 6px 18px rgba(0,0,0,0.06)',
-                                        backgroundColor: '#fff'
+                                        backgroundColor: '#fff',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s ease'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 10px 28px rgba(0,0,0,0.12)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.boxShadow = '0 6px 18px rgba(0,0,0,0.06)';
                                     }}
                                 >
                                     {/* Avatar */}
@@ -163,7 +172,7 @@ const FacultyDashboard = () => {
                                             className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
                                             style={{ width: 68, height: 68, backgroundColor: '#637a62', fontSize: '1.3rem', letterSpacing: 1 }}
                                         >
-                                            {getInitials(user.name)}
+                                            {a.course.code.split('-')[0] || '??'}
                                         </div>
                                     </div>
 
@@ -171,10 +180,8 @@ const FacultyDashboard = () => {
                                     <h6
                                         className="fw-bold mb-1"
                                         style={{
-                                            color: '#6d28d9',
-                                            cursor: 'pointer',
-                                        }}
-                                        onClick={() => navigate(`/faculty/courses/${a.course._id}`)}>
+                                            color: '#6d28d9'
+                                        }}>
                                         {a.course.code} - {a.course.name}
                                     </h6>
 

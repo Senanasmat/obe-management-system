@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Users, GraduationCap, FileText, ChevronRight, Settings, ListTodo, FileBarChart } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Users, GraduationCap, FileText, ChevronRight, Settings, ListTodo, FileBarChart, BarChart3 } from 'lucide-react';
 import { ListGroup } from 'react-bootstrap';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
@@ -18,7 +18,7 @@ const Sidebar = ({ role }) => {
     ] : [
         { name: 'Dashboards', path: '/faculty', icon: FileBarChart },
         { name: 'Operation', path: '/faculty/courses', icon: ListTodo },
-        { name: 'Reports', path: '/faculty/reports', icon: FileText },
+        { name: 'Reports', path: '/faculty/reports', icon: BarChart3 },
         { name: 'Settings', path: '/faculty/settings', icon: Settings },
     ];
 
