@@ -36,27 +36,28 @@ app.get('/', (req, res) => {
     res.send('OBE Management System API is running...');
 });
 
-try {
-    app.use('/api/users', require('./routes/userRoutes'));
-    const adminRoutes = require('./routes/adminRoutes');
-    console.log('Admin routes loaded, stack length:', adminRoutes.stack.length);
-    adminRoutes.stack.forEach((layer, i) => {
-        if (layer.route) {
-            console.log(`  ${i}: ${layer.route.path} - ${Object.keys(layer.route.methods).join(',')}`);
-        }
-    });
-    app.use('/api/admin', adminRoutes);
-    app.use('/api/admin/catch-all', (req, res) => {
-        res.json({ message: 'Catch-all route hit' });
-    });
-    app.use('/api/faculty', require('./routes/facultyRoutes'));
-    app.use('/api/assignments', require('./routes/courseAssignmentRoutes'));
-    console.log('All routes loaded successfully');
-} catch (err) {
-    console.error('CRITICAL ERROR loading routes:', err.message);
-    console.error(err.stack);
-    process.exit(1);
-}
+console.log('Loading user routes...');
+app.use('/api/users', require('./routes/userRoutes'));
+
+console.log('Loading admin routes...');
+const adminRoutes = require('./routes/adminRoutes');
+console.log('Admin routes loaded, stack length:', adminRoutes.stack.length);
+adminRoutes.stack.forEach((layer, i) => {
+    if (layer.route) {
+        console.log(`  ${i}: ${layer.route.path} - ${Object.keys(layer.route.methods).join(',')}`);
+    }
+});
+app.use('/api/admin', adminRoutes);
+app.use('/api/admin/catch-all', (req, res) => {
+    res.json({ message: 'Catch-all route hit' });
+});
+
+console.log('Loading faculty routes...');
+app.use('/api/faculty', require('./routes/facultyRoutes'));
+
+console.log('Loading course assignment routes...');
+app.use('/api/assignments', require('./routes/courseAssignmentRoutes'));
+console.log('✅ All routes loaded successfully');
 
 const PORT = process.env.PORT || 5000;
 
