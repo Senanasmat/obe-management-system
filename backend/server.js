@@ -3,6 +3,12 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./config/db');
 
+console.log('=== ENVIRONMENT DEBUG ===');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('PORT:', process.env.PORT);
+console.log('MONGO_URI exists:', !!process.env.MONGO_URI);
+console.log('========================');
+
 if (process.env.NODE_ENV !== 'production') {
     dotenv.config();
 }
