@@ -1,5 +1,5 @@
 import { User, LogOut } from 'lucide-react';
-import obeLogo from '../assets/obe-logo.png.png';
+import obeLogo from '../assets/obe-logo.png';
 import { Navbar as BsNavbar, Container, Form, Dropdown } from 'react-bootstrap';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
