@@ -131,13 +131,13 @@ const Login = () => {
 
                 {/* Right Side - Login Form */}
                 <div style={{
-                    background: 'rgba(255, 255, 255, 0.55)',
+                    background: 'rgba(255, 255, 255, 0.95)',
                     borderRadius: '25px',
                     padding: '50px 45px',
                     boxShadow: '0 20px 60px rgba(102, 126, 234, 0.15)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255, 255, 255, 0.8)',
-                    WebkitBackdropFilter: 'blur(20px)'
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 1)',
+                    WebkitBackdropFilter: 'blur(10px)'
                 }}>
                     <h3 style={{
                         fontSize: '28px',
@@ -220,25 +220,25 @@ const Login = () => {
                                         paddingRight: '16px',
                                         paddingTop: '14px',
                                         paddingBottom: '14px',
-                                        border: '1.5px solid rgba(102, 126, 234, 0.3)',
+                                        border: '1.5px solid rgba(102, 126, 234, 0.5)',
                                         borderRadius: '12px',
                                         fontSize: '15px',
-                                        background: 'rgba(255, 255, 255, 0.7)',
+                                        background: 'rgba(255, 255, 255, 0.95)',
                                         color: '#333',
-                                        backdropFilter: 'blur(10px)',
-                                        WebkitBackdropFilter: 'blur(10px)',
+                                        backdropFilter: 'blur(5px)',
+                                        WebkitBackdropFilter: 'blur(5px)',
                                         transition: 'all 0.3s ease',
-                                        boxShadow: '0 4px 15px rgba(102, 126, 234, 0.1)'
+                                        boxShadow: '0 4px 15px rgba(102, 126, 234, 0.15)'
                                     }}
                                     onFocus={(e) => {
-                                        e.target.style.background = 'rgba(255, 255, 255, 0.85)';
-                                        e.target.style.borderColor = 'rgba(102, 126, 234, 0.7)';
-                                        e.target.style.boxShadow = '0 4px 20px rgba(102, 126, 234, 0.25)';
+                                        e.target.style.background = 'rgba(255, 255, 255, 1)';
+                                        e.target.style.borderColor = 'rgba(102, 126, 234, 0.8)';
+                                        e.target.style.boxShadow = '0 4px 20px rgba(102, 126, 234, 0.3)';
                                     }}
                                     onBlur={(e) => {
-                                        e.target.style.background = 'rgba(255, 255, 255, 0.7)';
-                                        e.target.style.borderColor = 'rgba(102, 126, 234, 0.3)';
-                                        e.target.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.1)';
+                                        e.target.style.background = 'rgba(255, 255, 255, 0.95)';
+                                        e.target.style.borderColor = 'rgba(102, 126, 234, 0.5)';
+                                        e.target.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.15)';
                                     }}
                                 />
                                 <Mail size={18} style={{
@@ -266,25 +266,25 @@ const Login = () => {
                                         paddingRight: '16px',
                                         paddingTop: '14px',
                                         paddingBottom: '14px',
-                                        border: '1.5px solid rgba(102, 126, 234, 0.3)',
+                                        border: '1.5px solid rgba(102, 126, 234, 0.5)',
                                         borderRadius: '12px',
                                         fontSize: '15px',
-                                        background: 'rgba(255, 255, 255, 0.7)',
+                                        background: 'rgba(255, 255, 255, 0.95)',
                                         color: '#333',
-                                        backdropFilter: 'blur(10px)',
-                                        WebkitBackdropFilter: 'blur(10px)',
+                                        backdropFilter: 'blur(5px)',
+                                        WebkitBackdropFilter: 'blur(5px)',
                                         transition: 'all 0.3s ease',
-                                        boxShadow: '0 4px 15px rgba(102, 126, 234, 0.1)'
+                                        boxShadow: '0 4px 15px rgba(102, 126, 234, 0.15)'
                                     }}
                                     onFocus={(e) => {
-                                        e.target.style.background = 'rgba(255, 255, 255, 0.85)';
-                                        e.target.style.borderColor = 'rgba(102, 126, 234, 0.7)';
-                                        e.target.style.boxShadow = '0 4px 20px rgba(102, 126, 234, 0.25)';
+                                        e.target.style.background = 'rgba(255, 255, 255, 1)';
+                                        e.target.style.borderColor = 'rgba(102, 126, 234, 0.8)';
+                                        e.target.style.boxShadow = '0 4px 20px rgba(102, 126, 234, 0.3)';
                                     }}
                                     onBlur={(e) => {
-                                        e.target.style.background = 'rgba(255, 255, 255, 0.7)';
-                                        e.target.style.borderColor = 'rgba(102, 126, 234, 0.3)';
-                                        e.target.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.1)';
+                                        e.target.style.background = 'rgba(255, 255, 255, 0.95)';
+                                        e.target.style.borderColor = 'rgba(102, 126, 234, 0.5)';
+                                        e.target.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.15)';
                                     }}
                                 />
                                 <Lock size={18} style={{
