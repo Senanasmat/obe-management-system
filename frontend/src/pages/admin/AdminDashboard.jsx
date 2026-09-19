@@ -31,20 +31,20 @@ const STAT_COLORS = {
 const StatCard = ({ title, count, icon: Icon, color }) => {
     const c = STAT_COLORS[color] || STAT_COLORS['bg-purple'];
     return (
-        <motion.div variants={itemVariants} whileHover={{ y: -5, transition: { duration: 0.2 } }} className="h-100" style={{ overflow: 'visible' }}>
-            <Card className="h-100 shadow-sm border-0 position-relative" style={{ minHeight: '120px', overflow: 'visible' }}>
-                <Card.Body className="d-flex flex-column p-3 h-100 justify-content-center">
-                    <div className="d-flex align-items-center justify-content-between">
-                        <div className="text-truncate me-2" style={{ minWidth: 0 }}>
-                            <div className="text-muted mb-1 small text-uppercase fw-bold" style={{ fontSize: '0.7rem', letterSpacing: '0.05em' }}>{title}</div>
-                            <div className="fw-bold mb-0 text-dark" style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', lineHeight: '1.2' }}>{count}</div>
+        <motion.div variants={itemVariants} whileHover={{ y: -3, transition: { duration: 0.2 } }} className="h-100" style={{ overflow: 'visible' }}>
+            <Card className="h-100 shadow-sm border-0 position-relative" style={{ minHeight: '100px', overflow: 'visible' }}>
+                <Card.Body className="d-flex flex-column p-2 h-100 justify-content-center">
+                    <div className="d-flex align-items-center justify-content-between gap-2">
+                        <div className="text-truncate" style={{ minWidth: 0 }}>
+                            <div className="text-muted mb-0 text-uppercase fw-bold" style={{ fontSize: '0.65rem', letterSpacing: '0.03em' }}>{title}</div>
+                            <div className="fw-bold mb-0 text-dark" style={{ fontSize: 'clamp(1.2rem, 4vw, 1.6rem)', lineHeight: '1.1' }}>{count}</div>
                         </div>
-                        <div className="p-2 rounded-3 flex-shrink-0" style={{ backgroundColor: c.bg }}>
-                            <Icon size={24} style={{ color: c.icon }} />
+                        <div className="p-1 rounded-2 flex-shrink-0" style={{ backgroundColor: c.bg }}>
+                            <Icon size={20} style={{ color: c.icon }} />
                         </div>
                     </div>
                 </Card.Body>
-                <div className="position-absolute bottom-0 start-0 w-100 rounded-bottom" style={{ height: '4px', backgroundColor: c.bar, opacity: 0.7 }} />
+                <div className="position-absolute bottom-0 start-0 w-100 rounded-bottom" style={{ height: '3px', backgroundColor: c.bar, opacity: 0.7 }} />
             </Card>
         </motion.div>
     );
@@ -108,22 +108,22 @@ const AdminDashboard = () => {
             initial="hidden"
             animate="visible"
             variants={containerVariants}
-            className="pb-5"
+            className="pb-3"
         >
-            <Container fluid className="px-3 px-md-4">
-                <div className="d-flex justify-content-between align-items-center mb-4 mt-3 pt-1 flex-wrap gap-2">
+            <Container fluid className="px-2 px-md-3">
+                <div className="d-flex justify-content-between align-items-center mb-2 mt-2 pt-0 flex-wrap gap-1">
                     <div>
-                        <h2 className="fw-bold text-dark mb-0" style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)' }}>SuperAdmin Dashboard</h2>
+                        <h2 className="fw-bold text-dark mb-0" style={{ fontSize: 'clamp(1.2rem, 4vw, 1.5rem)' }}>SuperAdmin Dashboard</h2>
 
                     </div>
-                    <div className="d-flex gap-2">
-                        <Button variant="light" className="shadow-sm border-0 bg-white" style={{ fontSize: '0.85rem' }}>
-                            <Calendar size={16} className="me-2" /> {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    <div className="d-flex gap-1">
+                        <Button variant="light" className="shadow-sm border-0 bg-white" style={{ fontSize: '0.75rem', padding: '0.4rem 0.8rem' }}>
+                            <Calendar size={14} className="me-1" /> {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </Button>
                     </div>
                 </div>
 
-                <Row className="g-3 mb-4 pt-1">
+                <Row className="g-2 mb-3 pt-0">
                     <Col xs={12} sm={6} md={4} lg>
                         <StatCard
                             title="Total Students"
@@ -158,27 +158,27 @@ const AdminDashboard = () => {
                     </Col>
                 </Row>
 
-                <Row className="g-3 mb-4">
+                <Row className="g-2 mb-3">
                     <Col lg={12}>
                         <motion.div variants={itemVariants}>
                             <Card className="shadow-sm border-0 overflow-hidden">
-                                <Card.Header className="bg-white border-0 pt-3 px-3 pb-0 d-flex justify-content-between align-items-center">
-                                    <h5 className="fw-bold mb-0" style={{ fontSize: '1rem' }}>Quick Actions</h5>
-                                    <Activity size={20} className="text-primary" />
+                                <Card.Header className="bg-white border-0 pt-2 px-2 pb-0 d-flex justify-content-between align-items-center">
+                                    <h5 className="fw-bold mb-0" style={{ fontSize: '0.9rem' }}>Quick Actions</h5>
+                                    <Activity size={18} className="text-primary" />
                                 </Card.Header>
-                                <Card.Body className="p-3">
-                                    <div className="d-flex flex-wrap gap-2">
-                                        <Button className="rounded-pill px-3 py-2 fw-bold shadow-sm border-0 flex-grow-1" style={{ backgroundColor: '#4c1d95', fontSize: '0.9rem', minWidth: '150px' }} onClick={() => window.location.href = '/admin/students'}>
-                                            <UserPlus size={16} className="me-2" /> Register Student
+                                <Card.Body className="p-2">
+                                    <div className="d-flex flex-wrap gap-1">
+                                        <Button className="rounded-pill px-2 py-1 fw-bold shadow-sm border-0 flex-grow-1" style={{ backgroundColor: '#4c1d95', fontSize: '0.8rem', minWidth: '120px' }} onClick={() => window.location.href = '/admin/students'}>
+                                            <UserPlus size={14} className="me-1" /> Register Student
                                         </Button>
-                                        <Button className="rounded-pill px-3 py-2 fw-bold shadow-sm border-0 flex-grow-1" style={{ backgroundColor: '#6d28d9', fontSize: '0.9rem', minWidth: '150px' }} onClick={() => window.location.href = '/admin/faculty'}>
-                                            <UserPlus size={16} className="me-2" /> Register Faculty
+                                        <Button className="rounded-pill px-2 py-1 fw-bold shadow-sm border-0 flex-grow-1" style={{ backgroundColor: '#6d28d9', fontSize: '0.8rem', minWidth: '120px' }} onClick={() => window.location.href = '/admin/faculty'}>
+                                            <UserPlus size={14} className="me-1" /> Register Faculty
                                         </Button>
-                                        <Button variant="success" className="rounded-pill px-3 py-2 fw-bold shadow-sm flex-grow-1" style={{ fontSize: '0.9rem', minWidth: '150px' }} onClick={() => window.location.href = '/admin/courses'}>
-                                            <Plus size={16} className="me-2" /> Add New Course
+                                        <Button variant="success" className="rounded-pill px-2 py-1 fw-bold shadow-sm flex-grow-1" style={{ fontSize: '0.8rem', minWidth: '120px' }} onClick={() => window.location.href = '/admin/courses'}>
+                                            <Plus size={14} className="me-1" /> Add Course
                                         </Button>
-                                        <Button variant="secondary" className="rounded-pill px-3 py-2 fw-bold shadow-sm flex-grow-1" style={{ fontSize: '0.9rem', minWidth: '150px' }} onClick={() => window.location.href = '/admin/plos'}>
-                                            <GraduationCap size={16} className="me-2" /> Manage PLOs
+                                        <Button variant="secondary" className="rounded-pill px-2 py-1 fw-bold shadow-sm flex-grow-1" style={{ fontSize: '0.8rem', minWidth: '120px' }} onClick={() => window.location.href = '/admin/plos'}>
+                                            <GraduationCap size={14} className="me-1" /> Manage PLOs
                                         </Button>
                                     </div>
                                 </Card.Body>
@@ -187,16 +187,16 @@ const AdminDashboard = () => {
                     </Col>
                 </Row>
 
-                <Row className="g-3 mb-4">
+                <Row className="g-2 mb-2">
                     <Col lg={12}>
                         <motion.div variants={itemVariants}>
                             <Card className="shadow-sm border-0 h-100 overflow-hidden">
-                                <Card.Header className="bg-white border-0 pt-3 px-3 pb-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                    <h5 className="fw-bold mb-0" style={{ fontSize: '1rem' }}>PLO Achievement Performance</h5>
-                                    <Badge bg="success-subtle" className="text-success px-3 py-2 rounded-pill fw-medium" style={{ fontSize: '0.8rem' }}>PLOs</Badge>
+                                <Card.Header className="bg-white border-0 pt-2 px-2 pb-0 d-flex justify-content-between align-items-center flex-wrap gap-1">
+                                    <h5 className="fw-bold mb-0" style={{ fontSize: '0.9rem' }}>PLO Achievement Performance</h5>
+                                    <Badge bg="success-subtle" className="text-success px-2 py-1 rounded-pill fw-medium" style={{ fontSize: '0.7rem' }}>PLOs</Badge>
                                 </Card.Header>
-                                <Card.Body className="p-3">
-                                    <div style={{ width: '100%', height: 'clamp(250px, 60vw, 350px)' }}>
+                                <Card.Body className="p-2">
+                                    <div style={{ width: '100%', height: 'clamp(200px, 50vw, 280px)' }}>
                                         <ResponsiveContainer>
                                             <BarChart data={stats.ploAchievements || []} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />

@@ -95,36 +95,37 @@ const FacultyDashboard = () => {
 
     return (
         <motion.div initial="hidden" animate="visible" variants={containerVariants}>
-            <Container fluid className="py-4 px-4">
+            <Container fluid className="py-2 px-2 px-md-3">
 
                 {/* Header */}
-                <motion.div variants={cardVariants} className="mb-5">
-                    <div className="d-flex align-items-center gap-3">
-                        <div className="rounded-3 p-3" style={{ backgroundColor: '#ede9fe', color: '#6d28d9' }}>
-                            <Award size={32} />
+                <motion.div variants={cardVariants} className="mb-3">
+                    <div className="d-flex align-items-center gap-2">
+                        <div className="rounded-2 p-2" style={{ backgroundColor: '#ede9fe', color: '#6d28d9' }}>
+                            <Award size={24} />
                         </div>
                         <div>
-                            <h2 className="mb-0 fw-bold fs-3 text-dark">
+                            <h2 className="mb-0 fw-bold text-dark" style={{ fontSize: 'clamp(1.2rem, 4vw, 1.5rem)' }}>
                                 Welcome back, {user.name}!
                             </h2>
-                            <p className="text-muted mb-0 small">
-                                Here's an overview of your teaching portfolio.
+                            <p className="text-muted mb-0 small" style={{ fontSize: '0.8rem' }}>
+                                Overview of your teaching portfolio.
                             </p>
                         </div>
                     </div>
                 </motion.div>
 
                 {/* Courses Header + Semester Filter */}
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                    <h5 className="fw-bold text-dark mb-0">My Courses</h5>
+                <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                    <h5 className="fw-bold text-dark mb-0" style={{ fontSize: '0.95rem' }}>My Courses</h5>
 
-                    <div className="d-flex align-items-center gap-2">
-                        <span className="fw-semibold text-muted small">
-                            Select Semester
+                    <div className="d-flex align-items-center gap-1">
+                        <span className="fw-semibold text-muted small" style={{ fontSize: '0.8rem' }}>
+                            Semester:
                         </span>
 
                         <select
                             className="form-select w-auto"
+                            style={{ fontSize: '0.85rem', padding: '0.3rem 0.5rem' }}
                             value={semester}
                             onChange={(e) => setSemester(e.target.value)}
                         >
@@ -136,7 +137,7 @@ const FacultyDashboard = () => {
                 </div>
 
                 {/* Courses List */}
-                <Row xs={1} md={2} lg={3} className="g-4">
+                <Row xs={1} md={2} lg={3} className="g-2">
                     {loading ? (
                         [0, 1, 2].map(i => <SkeletonCard key={i} />)
                     ) : filtered.map((a) => (
