@@ -46,7 +46,9 @@ const Login = () => {
     return (
         <div style={{
             minHeight: '100vh',
-            background: 'linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%)',
+            background: 'rgba(224, 234, 252, 0.5)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -110,25 +112,27 @@ const Login = () => {
 
                 {/* Right Side - Login Form */}
                 <div style={{
-                    background: 'rgba(255, 255, 255, 0.35)',
-                    borderRadius: '20px',
-                    padding: '40px',
-                    boxShadow: '0 8px 32px rgba(31, 38, 135, 0.1)',
-                    backdropFilter: 'blur(30px)',
-                    border: '1px solid rgba(255, 255, 255, 0.7)',
-                    WebkitBackdropFilter: 'blur(30px)'
+                    background: 'rgba(255, 255, 255, 0.20)',
+                    borderRadius: '25px',
+                    padding: '50px 45px',
+                    boxShadow: '0 20px 60px rgba(102, 126, 234, 0.15)',
+                    backdropFilter: 'blur(40px)',
+                    border: '2px solid rgba(255, 255, 255, 0.5)',
+                    WebkitBackdropFilter: 'blur(40px)'
                 }}>
                     <h3 style={{
-                        fontSize: '24px',
-                        fontWeight: 'bold',
-                        marginBottom: '10px',
-                        color: '#333'
+                        fontSize: '28px',
+                        fontWeight: '700',
+                        marginBottom: '12px',
+                        color: '#2d1b4e',
+                        letterSpacing: '-0.5px'
                     }}>Log In</h3>
                     <p style={{
-                        fontSize: '13px',
-                        color: '#999',
-                        marginBottom: '24px'
-                    }}>Enter your credentials to continue</p>
+                        fontSize: '14px',
+                        color: '#6b7280',
+                        marginBottom: '32px',
+                        fontWeight: '500'
+                    }}>Access your OBE Management System</p>
 
                     {error && (
                         <Alert variant="danger" className="border-0 bg-danger-subtle text-danger py-2 d-flex align-items-center mb-3" style={{ fontSize: '0.85rem' }}>
@@ -195,21 +199,27 @@ const Login = () => {
                                     style={{
                                         paddingLeft: '40px',
                                         paddingRight: '16px',
-                                        paddingTop: '12px',
-                                        paddingBottom: '12px',
-                                        border: '1px solid #ddd',
-                                        borderRadius: '10px',
-                                        fontSize: '14px',
-                                        background: '#f9f9f9',
-                                        transition: 'all 0.3s'
+                                        paddingTop: '14px',
+                                        paddingBottom: '14px',
+                                        border: '1.5px solid rgba(255, 255, 255, 0.4)',
+                                        borderRadius: '12px',
+                                        fontSize: '15px',
+                                        background: 'rgba(255, 255, 255, 0.25)',
+                                        color: '#333',
+                                        backdropFilter: 'blur(10px)',
+                                        WebkitBackdropFilter: 'blur(10px)',
+                                        transition: 'all 0.3s ease',
+                                        boxShadow: '0 4px 15px rgba(102, 126, 234, 0.05)'
                                     }}
                                     onFocus={(e) => {
-                                        e.target.style.background = '#fff';
-                                        e.target.style.borderColor = '#667eea';
+                                        e.target.style.background = 'rgba(255, 255, 255, 0.35)';
+                                        e.target.style.borderColor = 'rgba(102, 126, 234, 0.6)';
+                                        e.target.style.boxShadow = '0 4px 20px rgba(102, 126, 234, 0.2)';
                                     }}
                                     onBlur={(e) => {
-                                        e.target.style.background = '#f9f9f9';
-                                        e.target.style.borderColor = '#ddd';
+                                        e.target.style.background = 'rgba(255, 255, 255, 0.25)';
+                                        e.target.style.borderColor = 'rgba(255, 255, 255, 0.4)';
+                                        e.target.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.05)';
                                     }}
                                 />
                                 <Mail size={18} style={{
@@ -235,21 +245,27 @@ const Login = () => {
                                     style={{
                                         paddingLeft: '40px',
                                         paddingRight: '16px',
-                                        paddingTop: '12px',
-                                        paddingBottom: '12px',
-                                        border: '1px solid #ddd',
-                                        borderRadius: '10px',
-                                        fontSize: '14px',
-                                        background: '#f9f9f9',
-                                        transition: 'all 0.3s'
+                                        paddingTop: '14px',
+                                        paddingBottom: '14px',
+                                        border: '1.5px solid rgba(255, 255, 255, 0.4)',
+                                        borderRadius: '12px',
+                                        fontSize: '15px',
+                                        background: 'rgba(255, 255, 255, 0.25)',
+                                        color: '#333',
+                                        backdropFilter: 'blur(10px)',
+                                        WebkitBackdropFilter: 'blur(10px)',
+                                        transition: 'all 0.3s ease',
+                                        boxShadow: '0 4px 15px rgba(102, 126, 234, 0.05)'
                                     }}
                                     onFocus={(e) => {
-                                        e.target.style.background = '#fff';
-                                        e.target.style.borderColor = '#667eea';
+                                        e.target.style.background = 'rgba(255, 255, 255, 0.35)';
+                                        e.target.style.borderColor = 'rgba(102, 126, 234, 0.6)';
+                                        e.target.style.boxShadow = '0 4px 20px rgba(102, 126, 234, 0.2)';
                                     }}
                                     onBlur={(e) => {
-                                        e.target.style.background = '#f9f9f9';
-                                        e.target.style.borderColor = '#ddd';
+                                        e.target.style.background = 'rgba(255, 255, 255, 0.25)';
+                                        e.target.style.borderColor = 'rgba(255, 255, 255, 0.4)';
+                                        e.target.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.05)';
                                     }}
                                 />
                                 <Lock size={18} style={{
