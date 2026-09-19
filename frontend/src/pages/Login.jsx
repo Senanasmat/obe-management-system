@@ -57,9 +57,9 @@ const Login = () => {
         }}>
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: '40px',
-                maxWidth: '1000px',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: '30px',
+                maxWidth: '850px',
                 width: '100%',
                 alignItems: 'center'
             }}>
@@ -73,12 +73,13 @@ const Login = () => {
                     textAlign: 'left'
                 }}>
                     <div style={{
-                        marginBottom: '30px',
-                        width: '150px',
-                        height: '150px',
+                        marginBottom: '20px',
+                        width: '100px',
+                        height: '100px',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
+                        backgroundColor: 'transparent'
                     }}>
                         <img
                             src={obeLogo}
@@ -86,22 +87,23 @@ const Login = () => {
                             style={{
                                 width: '100%',
                                 height: '100%',
-                                objectFit: 'contain'
+                                objectFit: 'contain',
+                                backgroundColor: 'transparent'
                             }}
                         />
                     </div>
                     <h1 style={{
-                        fontSize: '48px',
+                        fontSize: '36px',
                         fontWeight: 'bold',
-                        marginBottom: '20px',
+                        marginBottom: '12px',
                         lineHeight: '1.2'
                     }}>
                         OBE<br />Management<br />System
                     </h1>
                     <p style={{
-                        fontSize: '18px',
+                        fontSize: '14px',
                         opacity: 0.8,
-                        marginBottom: '30px',
+                        marginBottom: '20px',
                         lineHeight: '1.6'
                     }}>
                         Outcome-Based Education<br />
@@ -113,24 +115,24 @@ const Login = () => {
                 {/* Right Side - Login Form */}
                 <div style={{
                     background: 'rgba(255, 255, 255, 0.95)',
-                    borderRadius: '25px',
-                    padding: '50px 45px',
+                    borderRadius: '20px',
+                    padding: '35px 30px',
                     boxShadow: '0 20px 60px rgba(102, 126, 234, 0.15)',
                     backdropFilter: 'blur(10px)',
                     border: '1px solid rgba(255, 255, 255, 1)',
                     WebkitBackdropFilter: 'blur(10px)'
                 }}>
                     <h3 style={{
-                        fontSize: '28px',
+                        fontSize: '24px',
                         fontWeight: '700',
-                        marginBottom: '12px',
+                        marginBottom: '8px',
                         color: '#2d1b4e',
                         letterSpacing: '-0.5px'
                     }}>Log In</h3>
                     <p style={{
-                        fontSize: '14px',
+                        fontSize: '13px',
                         color: '#6b7280',
-                        marginBottom: '32px',
+                        marginBottom: '24px',
                         fontWeight: '500'
                     }}>Access your OBE Management System</p>
 
