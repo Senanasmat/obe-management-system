@@ -90,8 +90,7 @@ const Login = () => {
                                 height: '85%',
                                 objectFit: 'contain',
                                 backgroundColor: 'transparent',
-                                filter: 'saturate(1.1) contrast(1.05)',
-                                mixBlendMode: 'lighten'
+                                filter: 'saturate(1.1) contrast(1.05)'
                             }}
                         />
                     </div>
