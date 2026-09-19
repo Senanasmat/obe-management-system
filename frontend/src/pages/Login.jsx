@@ -63,7 +63,7 @@ const Login = () => {
                 width: '100%',
                 alignItems: 'center'
             }}>
-                {/* Left Side - Text Only */}
+                {/* Left Side - Logo & Text */}
                 <div style={{
                     display: 'flex',
                     flexDirection: 'column',
@@ -72,6 +72,24 @@ const Login = () => {
                     color: '#4c1d95',
                     textAlign: 'left'
                 }}>
+                    <div style={{
+                        marginBottom: '30px',
+                        width: '120px',
+                        height: '120px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}>
+                        <img
+                            src="https://via.placeholder.com/120/0066cc/ffffff?text=OBE"
+                            alt="OBE Logo"
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'contain'
+                            }}
+                        />
+                    </div>
                     <h1 style={{
                         fontSize: '48px',
                         fontWeight: 'bold',
