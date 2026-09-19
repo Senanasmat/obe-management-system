@@ -93,12 +93,13 @@ const Login = () => {
 
                 {/* Right Side - Login Form */}
                 <div style={{
-                    background: 'rgba(255, 255, 255, 0.75)',
+                    background: 'rgba(255, 255, 255, 0.35)',
                     borderRadius: '20px',
                     padding: '40px',
-                    boxShadow: '0 8px 32px rgba(31, 38, 135, 0.15)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255, 255, 255, 0.5)'
+                    boxShadow: '0 8px 32px rgba(31, 38, 135, 0.1)',
+                    backdropFilter: 'blur(30px)',
+                    border: '1px solid rgba(255, 255, 255, 0.7)',
+                    WebkitBackdropFilter: 'blur(30px)'
                 }}>
                     <h3 style={{
                         fontSize: '24px',
