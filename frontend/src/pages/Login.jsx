@@ -46,7 +46,7 @@ const Login = () => {
     return (
         <div style={{
             minHeight: '100vh',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            background: 'linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -93,11 +93,12 @@ const Login = () => {
 
                 {/* Right Side - Login Form */}
                 <div style={{
-                    background: 'rgba(255, 255, 255, 0.95)',
+                    background: 'rgba(255, 255, 255, 0.75)',
                     borderRadius: '20px',
                     padding: '40px',
-                    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-                    backdropFilter: 'blur(10px)'
+                    boxShadow: '0 8px 32px rgba(31, 38, 135, 0.15)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(255, 255, 255, 0.5)'
                 }}>
                     <h3 style={{
                         fontSize: '24px',
