@@ -9,7 +9,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 
 const containerVariants = {
     hidden: { opacity: 0, y: 10 },
@@ -831,7 +830,7 @@ const CourseView = () => {
 
                             {/* Heading + action buttons */}
                             <h5 className="fw-semibold text-dark mb-3">Class Activities</h5>
-                            <div className="d-flex gap-3 mb-3 flex-wrap">
+                            <div className="d-flex gap-3 mb-3">
                                 <Dropdown>
                                     <Dropdown.Toggle variant="outline-success" size="sm" className="rounded-2 px-3">
                                         Add Class Activities
@@ -851,22 +850,6 @@ const CourseView = () => {
                                         <Dropdown.Item onClick={() => setActiveTab('PLOs')}>View PLO Achievement</Dropdown.Item>
                                     </Dropdown.Menu>
                                 </Dropdown>
-                                <Button size="sm" variant="outline-primary" className="rounded-2 px-3" onClick={handleDownloadMarksTemplate}>
-                                    ⬇ Download Template
-                                </Button>
-                                <div className="position-relative">
-                                    <input
-                                        type="file"
-                                        accept=".xlsx,.xls"
-                                        onChange={handleImportMarks}
-                                        style={{ display: 'none' }}
-                                        id="marksFileInput"
-                                    />
-                                    <Button size="sm" variant="outline-primary" className="rounded-2 px-3"
-                                        onClick={() => document.getElementById('marksFileInput').click()}>
-                                        ⬆ Import Marks
-                                    </Button>
-                                </div>
                             </div>
 
                             {assessments.length === 0 ? (

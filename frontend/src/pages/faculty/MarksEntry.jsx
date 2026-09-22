@@ -3,9 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { Container, Table, Button, Form, Breadcrumb } from 'react-bootstrap';
-import { ArrowLeft, Save, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Save, CheckCircle2, Download, Upload } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
+import * as XLSX from 'xlsx';
 
 const MarksEntry = () => {
     const { courseId, assessmentId } = useParams();
@@ -115,6 +116,100 @@ const MarksEntry = () => {
     const totalFor = (studentId) =>
         Object.values(marks[studentId] || {}).reduce((s, v) => s + (Number(v) || 0), 0);
 
+    const handleDownloadExcel = () => {
+        try {
+            const headers = ['Student Reg No', 'Student Name', ...assessment.questions.map((q, i) => `${q.questionName || `Q${i + 1}`} (Max: ${q.maxMarks})`)];
+            const data = students.map(student => [
+                student.regNo,
+                student.name,
+                ...assessment.questions.map((_, qIdx) => marks[student._id]?.[qIdx] || '')
+            ]);
+
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+            ws['!cols'] = [
+                { wch: 15 },
+                { wch: 25 },
+                ...assessment.questions.map(() => ({ wch: 15 }))
+            ];
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Marks');
+
+            // Add info sheet
+            const infoData = [
+                ['Assessment Details'],
+                ['Title', assessment.title],
+                ['Type', assessment.type],
+                ['Total Marks', assessment.totalMarks],
+                ['Questions', assessment.questions.length],
+                ['Students', students.length]
+            ];
+            const wsInfo = XLSX.utils.aoa_to_sheet(infoData);
+            wsInfo['!cols'] = [{ wch: 20 }, { wch: 30 }];
+            XLSX.utils.book_append_sheet(wb, wsInfo, 'Assessment Info');
+
+            XLSX.writeFile(wb, `${assessment.title}-marks-${Date.now()}.xlsx`);
+            Swal.fire({ icon: 'success', title: 'Downloaded', text: 'Excel template downloaded successfully', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to download', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+        }
+    };
+
+    const handleImportExcel = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const wb = XLSX.read(event.target.result);
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+                if (rows.length < 2) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'Excel file is empty', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+                    return;
+                }
+
+                const headers = rows[0];
+                const regNoIdx = headers.findIndex(h => h && h.toString().toLowerCase().includes('reg'));
+
+                const newMarks = { ...marks };
+                let updatedCount = 0;
+
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    const regNo = row[regNoIdx]?.toString().trim();
+                    if (!regNo) continue;
+
+                    const student = students.find(s => s.regNo.toLowerCase() === regNo.toLowerCase());
+                    if (!student) {
+                        console.warn(`Student ${regNo} not found`);
+                        continue;
+                    }
+
+                    // Map marks from Excel columns to questions
+                    for (let qIdx = 0; qIdx < assessment.questions.length; qIdx++) {
+                        const colIdx = qIdx + 2;
+                        const markValue = row[colIdx];
+                        if (markValue !== undefined && markValue !== '') {
+                            newMarks[student._id][qIdx] = markValue;
+                            updatedCount++;
+                        }
+                    }
+                }
+
+                setMarks(newMarks);
+                setSavedAt(null);
+                Swal.fire({ icon: 'success', title: 'Imported', text: `Updated ${updatedCount} marks from Excel`, toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+            };
+            reader.readAsArrayBuffer(file);
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to import Excel', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+        }
+        e.target.value = '';
+    };
+
     if (loading) return (
         <div className="p-5 text-center text-muted">Loading marks entry...</div>
     );
@@ -146,7 +241,7 @@ const MarksEntry = () => {
                             &nbsp;·&nbsp; {students.length} student(s) enrolled
                         </p>
                     </div>
-                    <div className="d-flex align-items-center gap-3">
+                    <div className="d-flex align-items-center gap-2 flex-wrap">
                         {savedAt && (
                             <span className="d-flex align-items-center gap-1 text-success small fw-medium">
                                 <CheckCircle2 size={15} /> {savedAt}
@@ -162,6 +257,31 @@ const MarksEntry = () => {
                             <Save size={15} />
                             {saving ? 'Saving...' : 'Save All Marks'}
                         </Button>
+                        <Button
+                            size="sm"
+                            variant="outline-primary"
+                            className="px-3 d-flex align-items-center gap-1 rounded-2"
+                            onClick={handleDownloadExcel}
+                        >
+                            <Download size={14} /> Download Excel
+                        </Button>
+                        <div className="position-relative">
+                            <input
+                                type="file"
+                                accept=".xlsx,.xls"
+                                onChange={handleImportExcel}
+                                style={{ display: 'none' }}
+                                id="marksImportInput"
+                            />
+                            <Button
+                                size="sm"
+                                variant="outline-primary"
+                                className="px-3 d-flex align-items-center gap-1 rounded-2"
+                                onClick={() => document.getElementById('marksImportInput').click()}
+                            >
+                                <Upload size={14} /> Upload Excel
+                            </Button>
+                        </div>
                         <Button
                             variant="light"
                             size="sm"
