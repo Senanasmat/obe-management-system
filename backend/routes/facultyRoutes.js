@@ -17,7 +17,9 @@ const {
     removeCourseCLO,
     getAllStudents,
     getStudentGrades,
-    generateDMC
+    generateDMC,
+    generateMarksTemplate,
+    importMarksFromExcel
 } = require('../controllers/facultyController');
 
 router.get('/courses', protect, faculty, getAssignedCourses);
@@ -36,5 +38,14 @@ router.post('/students/dmc', protect, faculty, generateDMC);
 router.post('/courses/:courseId/clos', protect, faculty, createCourseCLO);
 router.put('/courses/:courseId/clos/:cloId', protect, faculty, updateCourseCLO);
 router.delete('/courses/:courseId/clos/:cloId', protect, faculty, removeCourseCLO);
+router.get('/courses/:courseId/marks/template', protect, faculty, generateMarksTemplate);
+router.post('/courses/:courseId/marks/import', protect, faculty, (req, res, next) => {
+    const multer = require('multer');
+    const upload = multer({ storage: multer.memoryStorage() });
+    upload.single('file')(req, res, (err) => {
+        if (err) return res.status(400).json({ message: err.message });
+        importMarksFromExcel(req, res);
+    });
+});
 
 module.exports = router;

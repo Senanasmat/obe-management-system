@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 const containerVariants = {
     hidden: { opacity: 0, y: 10 },
@@ -517,6 +518,40 @@ const CourseView = () => {
         setCourseClos(prev => prev.filter(c => c._id !== cloId));
     };
 
+    const handleDownloadMarksTemplate = async () => {
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` }, responseType: 'blob' };
+            const response = await api.get(`/api/faculty/courses/${courseId}/marks/template`, config);
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `marks-template-${courseId}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+            Swal.fire({ icon: 'success', title: 'Template Downloaded', text: 'Fill in the marks and upload it back', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to download template', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+        }
+    };
+
+    const handleImportMarks = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const response = await api.post(`/api/faculty/courses/${courseId}/marks/import`, formData, config);
+            Swal.fire({ icon: 'success', title: 'Marks Imported', text: `Successfully imported marks for ${response.data.count} entries`, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+            setAssessments([...assessments]);
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Failed to import marks', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+        }
+        e.target.value = '';
+    };
+
     const tabs = ['View', 'Students', 'Activities', 'CLOs'];
 
     if (!assignment) {
@@ -796,7 +831,7 @@ const CourseView = () => {
 
                             {/* Heading + action buttons */}
                             <h5 className="fw-semibold text-dark mb-3">Class Activities</h5>
-                            <div className="d-flex gap-3 mb-3">
+                            <div className="d-flex gap-3 mb-3 flex-wrap">
                                 <Dropdown>
                                     <Dropdown.Toggle variant="outline-success" size="sm" className="rounded-2 px-3">
                                         Add Class Activities
@@ -816,6 +851,22 @@ const CourseView = () => {
                                         <Dropdown.Item onClick={() => setActiveTab('PLOs')}>View PLO Achievement</Dropdown.Item>
                                     </Dropdown.Menu>
                                 </Dropdown>
+                                <Button size="sm" variant="outline-primary" className="rounded-2 px-3" onClick={handleDownloadMarksTemplate}>
+                                    ⬇ Download Template
+                                </Button>
+                                <div className="position-relative">
+                                    <input
+                                        type="file"
+                                        accept=".xlsx,.xls"
+                                        onChange={handleImportMarks}
+                                        style={{ display: 'none' }}
+                                        id="marksFileInput"
+                                    />
+                                    <Button size="sm" variant="outline-primary" className="rounded-2 px-3"
+                                        onClick={() => document.getElementById('marksFileInput').click()}>
+                                        ⬆ Import Marks
+                                    </Button>
+                                </div>
                             </div>
 
                             {assessments.length === 0 ? (
