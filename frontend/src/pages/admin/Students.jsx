@@ -143,13 +143,17 @@ const Students = () => {
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    const uniqueBatches = [...new Set(students.map(s => s.batch))].sort();
+    // Normalize batches to uppercase for consistent comparison
+    const uniqueBatches = [...new Set(students.map(s => s.batch?.toUpperCase() || s.batch))].sort();
 
     const filteredStudents = students.filter(s => {
         const matchesSearch =
             s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             s.regNo.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesBatch = batchFilter ? s.batch === batchFilter : true;
+        // Case-insensitive batch filter
+        const matchesBatch = batchFilter
+            ? (s.batch?.toUpperCase() || s.batch) === batchFilter.toUpperCase()
+            : true;
         return matchesSearch && matchesBatch;
     });
 
