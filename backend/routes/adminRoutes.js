@@ -16,7 +16,8 @@ const {
 // Multer: store file in memory for CSV parsing
 const upload = multer({ storage: multer.memoryStorage() });
 
-router.route('/plos').post(protect, admin, createPLO).get(protect, admin, getPLOs);
+router.post('/plos', protect, admin, createPLO);
+router.get('/plos', protect, getPLOs);
 router.put('/plos/:id', protect, admin, updatePLO);
 router.delete('/plos/:id', protect, admin, deletePLO);
 
