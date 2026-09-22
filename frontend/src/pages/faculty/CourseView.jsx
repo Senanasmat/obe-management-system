@@ -612,14 +612,15 @@ const CourseView = () => {
                                 >
                                     Delete All
                                 </Button>
-                                <Button
+                                {/* DMC feature commented out for now */}
+                                {/* <Button
                                     variant="outline-primary"
                                     size="sm"
                                     onClick={handleGenerateDMC}
                                     className="rounded-2 ms-2"
                                 >
                                     Generate DMC
-                                </Button>
+                                </Button> */}
                             </div>
 
                             {/* Students Table */}
