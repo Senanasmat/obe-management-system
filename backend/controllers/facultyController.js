@@ -661,24 +661,41 @@ const generateMarksTemplate = async (req, res) => {
         const xlsx = require('xlsx');
         const { courseId } = req.params;
 
-        const course = await Course.findById(courseId).populate('assessments students');
+        const course = await Course.findById(courseId);
         if (!course) return res.status(404).json({ message: 'Course not found' });
 
-        const assessments = await Promise.all(
-            course.assessments.map(async (assessmentId) => {
-                const found = await findAssessmentById(assessmentId);
-                return found ? { _id: found.doc._id, name: found.doc.name, totalMarks: found.doc.totalMarks } : null;
-            })
-        ).then(results => results.filter(Boolean));
+        // Get course assignment to access assessments
+        const assignment = await CourseAssignment.findOne({ course: courseId }).populate('course');
+        if (!assignment) return res.status(404).json({ message: 'Course assignment not found' });
 
-        const students = await Student.find({ _id: { $in: course.students } });
+        // Fetch all assessments for this course
+        const assessmentIds = assignment.course.assessments || [];
+        const assessments = [];
 
+        for (const assessmentId of assessmentIds) {
+            const found = await findAssessmentById(assessmentId);
+            if (found) {
+                assessments.push({ _id: found.doc._id, name: found.doc.name, totalMarks: found.doc.totalMarks });
+            }
+        }
+
+        // Get students enrolled in this course
+        const students = course.students && course.students.length > 0
+            ? await Student.find({ _id: { $in: course.students } })
+            : [];
+
+        // Create Excel data
         const headers = ['Student Reg No', 'Student Name', ...assessments.map(a => a.name)];
         const data = students.map(student => [
             student.regNo,
             student.name,
             ...assessments.map(() => '')
         ]);
+
+        // Handle empty data
+        if (data.length === 0) {
+            data.push(['', '', ...assessments.map(() => '')]);
+        }
 
         const ws = xlsx.utils.aoa_to_sheet([headers, ...data]);
         ws['!cols'] = [{ wch: 15 }, { wch: 25 }, ...assessments.map(() => ({ wch: 12 }))];
@@ -692,8 +709,8 @@ const generateMarksTemplate = async (req, res) => {
         const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
         res.end(buffer);
     } catch (error) {
-        console.error('Error generating template:', error);
-        res.status(500).json({ message: error.message });
+        console.error('Error generating template:', error.message, error.stack);
+        res.status(500).json({ message: `Error: ${error.message}` });
     }
 };
 
@@ -705,20 +722,31 @@ const importMarksFromExcel = async (req, res) => {
 
         if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
 
-        const course = await Course.findById(courseId).populate('assessments students');
+        const course = await Course.findById(courseId);
         if (!course) return res.status(404).json({ message: 'Course not found' });
 
-        const assessments = await Promise.all(
-            course.assessments.map(async (assessmentId) => {
-                const found = await findAssessmentById(assessmentId);
-                return found ? { _id: found.doc._id, name: found.doc.name, totalMarks: found.doc.totalMarks } : null;
-            })
-        ).then(results => results.filter(Boolean));
+        // Get course assignment to access assessments
+        const assignment = await CourseAssignment.findOne({ course: courseId }).populate('course');
+        if (!assignment) return res.status(404).json({ message: 'Course assignment not found' });
+
+        // Fetch all assessments for this course
+        const assessmentIds = assignment.course.assessments || [];
+        const assessments = [];
+
+        for (const assessmentId of assessmentIds) {
+            const found = await findAssessmentById(assessmentId);
+            if (found) {
+                assessments.push({ _id: found.doc._id, name: found.doc.name, totalMarks: found.doc.totalMarks });
+            }
+        }
+
+        // Get students enrolled in this course
+        const students = course.students && course.students.length > 0
+            ? await Student.find({ _id: { $in: course.students } })
+            : [];
 
         const studentMap = Object.fromEntries(
-            await Student.find({ _id: { $in: course.students } }).then(students =>
-                students.map(s => [s.regNo.toLowerCase(), s])
-            )
+            students.map(s => [s.regNo.toLowerCase(), s])
         );
 
         const wb = xlsx.read(req.file.buffer);
