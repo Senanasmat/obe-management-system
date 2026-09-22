@@ -176,15 +176,23 @@ const MarksEntry = () => {
 
                 const newMarks = { ...marks };
                 let updatedCount = 0;
+                let errorCount = 0;
+                const errors = [];
 
-                for (let i = 1; i < rows.length; i++) {
+                // Skip header rows (row 0 and row 1 if it has sub-headers)
+                const startRow = rows[1] && rows[1][0] === '' ? 2 : 1;
+
+                for (let i = startRow; i < rows.length; i++) {
                     const row = rows[i];
+                    if (!row || row.length === 0) continue;
+
                     const regNo = row[regNoIdx]?.toString().trim();
                     if (!regNo) continue;
 
                     const student = students.find(s => s.regNo.toLowerCase() === regNo.toLowerCase());
                     if (!student) {
-                        console.warn(`Student ${regNo} not found`);
+                        errors.push(`Row ${i + 1}: Student ${regNo} not found`);
+                        errorCount++;
                         continue;
                     }
 
@@ -192,20 +200,89 @@ const MarksEntry = () => {
                     for (let qIdx = 0; qIdx < assessment.questions.length; qIdx++) {
                         const colIdx = qIdx + 2;
                         const markValue = row[colIdx];
-                        if (markValue !== undefined && markValue !== '') {
-                            newMarks[student._id][qIdx] = markValue;
-                            updatedCount++;
+                        const maxMarks = assessment.questions[qIdx].maxMarks;
+
+                        // Skip empty cells
+                        if (markValue === undefined || markValue === '' || markValue === null) {
+                            continue;
                         }
+
+                        // Validate: must be a number
+                        const numValue = Number(markValue);
+                        if (isNaN(numValue)) {
+                            errors.push(`Row ${i + 1}, Q${qIdx + 1}: "${markValue}" is not a number`);
+                            errorCount++;
+                            continue;
+                        }
+
+                        // Validate: cannot be negative
+                        if (numValue < 0) {
+                            errors.push(`Row ${i + 1}, Q${qIdx + 1}: Marks cannot be negative (${numValue})`);
+                            errorCount++;
+                            continue;
+                        }
+
+                        // Validate: cannot exceed max marks
+                        if (numValue > maxMarks) {
+                            errors.push(`Row ${i + 1}, Q${qIdx + 1}: ${numValue} exceeds max of ${maxMarks}`);
+                            errorCount++;
+                            continue;
+                        }
+
+                        // Valid mark - update
+                        newMarks[student._id][qIdx] = numValue;
+                        updatedCount++;
                     }
                 }
 
-                setMarks(newMarks);
-                setSavedAt(null);
-                Swal.fire({ icon: 'success', title: 'Imported', text: `Updated ${updatedCount} marks from Excel`, toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+                // Show result
+                if (errorCount > 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Import Complete with Errors',
+                        html: `<div style="text-align: left; max-height: 300px; overflow-y: auto;">
+                            <p><strong>✓ Valid: ${updatedCount} marks imported</strong></p>
+                            <p><strong>✗ Errors: ${errorCount}</strong></p>
+                            <p style="font-size: 0.9rem; color: #d97706;">
+                                ${errors.slice(0, 10).join('<br/>')}
+                                ${errors.length > 10 ? `<br/>... and ${errors.length - 10} more errors` : ''}
+                            </p>
+                        </div>`,
+                        toast: false,
+                        position: 'center',
+                        allowOutsideClick: true,
+                        confirmButtonText: 'OK'
+                    });
+                } else if (updatedCount > 0) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Import Successful',
+                        text: `✓ Updated ${updatedCount} marks from Excel`,
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2500
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'No Marks Imported',
+                        text: 'No valid marks found in Excel file',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2500
+                    });
+                }
+
+                if (updatedCount > 0) {
+                    setMarks(newMarks);
+                    setSavedAt(null);
+                }
             };
             reader.readAsArrayBuffer(file);
         } catch (error) {
-            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to import Excel', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to import Excel: ' + error.message, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
         }
         e.target.value = '';
     };
