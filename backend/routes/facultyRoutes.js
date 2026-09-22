@@ -15,6 +15,7 @@ const {
     createCourseCLO,
     updateCourseCLO,
     removeCourseCLO,
+    updateCourseCLO,
     getAllStudents,
     getStudentGrades,
     generateDMC,

@@ -443,6 +443,30 @@ const removeCourseCLO = async (req, res) => {
     }
 };
 
+// UPDATE CLO
+const updateCourseCLO = async (req, res) => {
+    try {
+        const { cloId } = req.params;
+        const { code, description, plo } = req.body;
+
+        const clo = await CLO.findByIdAndUpdate(
+            cloId,
+            {
+                code,
+                description,
+                ...(plo && { plo })
+            },
+            { new: true }
+        );
+
+        if (!clo) return res.status(404).json({ message: 'CLO not found' });
+
+        res.json(clo);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // GET ALL STUDENTS (for batch copy functionality)
 const getAllStudents = async (req, res) => {
     try {
@@ -917,6 +941,7 @@ module.exports = {
     createCourseCLO,
     updateCourseCLO,
     removeCourseCLO,
+    updateCourseCLO,
     getAllStudents,
     getStudentGrades,
     generateDMC,
