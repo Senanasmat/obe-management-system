@@ -689,8 +689,8 @@ const generateMarksTemplate = async (req, res) => {
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename="marks-template-${courseId}.xlsx"`);
 
-        xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
-        res.end(xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' }));
+        const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+        res.end(buffer);
     } catch (error) {
         console.error('Error generating template:', error);
         res.status(500).json({ message: error.message });
