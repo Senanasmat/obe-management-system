@@ -106,6 +106,15 @@ const MarksEntry = () => {
                 })
             );
             setSavedAt(new Date().toLocaleTimeString());
+            Swal.fire({
+                icon: 'success',
+                title: 'Marks Saved',
+                text: `Successfully saved marks for ${students.length} student(s)`,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2500
+            });
         } catch (err) {
             Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || 'Failed to save marks', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
         } finally {
