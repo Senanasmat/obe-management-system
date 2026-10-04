@@ -3,30 +3,30 @@ const CourseAssignment = require('../models/courseAssignmentModel');
 // CREATE ASSIGNMENT
 const createAssignment = async (req, res) => {
     try {
-        const { faculty, course, semester } = req.body;
+        const { faculty, course, academicTerm } = req.body;
 
-        // Extra safety check (frontend + backend protection)
         const exists = await CourseAssignment.findOne({
             faculty,
             course,
-            semester
+            academicTerm
         });
 
         if (exists) {
             return res.status(400).json({
-                message: 'This course is already assigned to this faculty for this semester'
+                message: 'This course is already assigned to this faculty for this academic term'
             });
         }
 
         const assignment = await CourseAssignment.create({
             faculty,
             course,
-            semester
+            academicTerm
         });
 
         const populated = await assignment.populate([
             { path: 'faculty', select: 'name email' },
-            { path: 'course', select: 'name code' }
+            { path: 'course', select: 'name code' },
+            { path: 'academicTerm', select: 'name season year' }
         ]);
 
         res.status(201).json(populated);
@@ -44,6 +44,7 @@ const getAssignments = async (req, res) => {
         const assignments = await CourseAssignment.find({})
             .populate('faculty', 'name email')
             .populate('course', 'name code')
+            .populate('academicTerm', 'name season year')
             .sort({ createdAt: -1 });
 
         res.json(assignments);
@@ -78,47 +79,47 @@ const deleteAssignment = async (req, res) => {
 // UPDATE ASSIGNMENT
 const updateAssignment = async (req, res) => {
     try {
-        const { faculty, course, semester } = req.body;
+        const { faculty, course, academicTerm } = req.body;
 
         const assignment = await CourseAssignment.findById(req.params.id);
 
         if (!assignment) {
-            return res.status(404).json({ message: 'Assignment not found' });
+            return res.status(404).json({
+                message: 'Assignment not found'
+            });
         }
 
-        // IMPORTANT: exclude current record
         const exists = await CourseAssignment.findOne({
             faculty,
             course,
-            semester,
+            academicTerm,
             _id: { $ne: req.params.id }
         });
 
         if (exists) {
             return res.status(400).json({
-                message: 'This course is already assigned to this faculty for this semester'
+                message: 'This course is already assigned to this faculty for this academic term'
             });
         }
 
         assignment.faculty = faculty;
         assignment.course = course;
-        assignment.semester = semester;
+        assignment.academicTerm = academicTerm;
 
         const updated = await assignment.save();
 
         const populated = await updated.populate([
             { path: 'faculty', select: 'name email' },
-            { path: 'course', select: 'name code' }
+            { path: 'course', select: 'name code' },
+            { path: 'academicTerm', select: 'name season year' }
         ]);
 
         res.json(populated);
 
     } catch (error) {
-
-        // HANDLE DUPLICATE KEY ERROR
         if (error.code === 11000) {
             return res.status(400).json({
-                message: 'Duplicate assignment not allowed (same faculty, course, semester)'
+                message: 'Duplicate assignment not allowed'
             });
         }
 

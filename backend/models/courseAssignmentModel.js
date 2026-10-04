@@ -7,23 +7,28 @@ const courseAssignmentSchema = mongoose.Schema(
             ref: 'User',
             required: true
         },
+
         course: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Course',
             required: true
         },
-        semester: {
-            type: String,
+
+        academicTerm: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'AcademicTerm',
             required: true
         }
     },
     { timestamps: true }
 );
 
-// Prevent duplicate assignment (same faculty + course + semester)
 courseAssignmentSchema.index(
-    { faculty: 1, course: 1, semester: 1 },
+    { faculty: 1, course: 1, academicTerm: 1 },
     { unique: true }
 );
 
-module.exports = mongoose.model('CourseAssignment', courseAssignmentSchema);
+module.exports = mongoose.model(
+    'CourseAssignment',
+    courseAssignmentSchema
+);

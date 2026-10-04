@@ -1,4 +1,5 @@
 const { PLO, CLO, Course, Student } = require('../models/academicModels');
+const CourseAssignment = require('../models/courseAssignmentModel');
 const { parse } = require('csv-parse/sync');
 const { Result, ALL_MODELS } = require('../models/assessmentModel');
 const User = require('../models/userModel');
@@ -297,9 +298,14 @@ const updateCourse = async (req, res) => {
 
 const deleteCourse = async (req, res) => {
     try {
+        await CourseAssignment.deleteMany({
+            course: req.params.id
+        });
         await Course.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Course removed' });
-    } catch (error) { res.status(500).json({ message: error.message }); }
+        res.json({ message: 'Course and assignments removed' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
 const updateStudent = async (req, res) => {

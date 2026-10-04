@@ -15,13 +15,13 @@ const itemVariants = {
     visible: { opacity: 1, scale: 1 }
 };
 
-const SEMESTERS = ['Spring 2026', 'Fall 2026', 'Spring 2027', 'Fall 2027', 'Spring 2028', 'Fall 2028'];
 
 const Courses = () => {
     const { user } = useAuth();
     const [courses, setCourses] = useState([]);
     const [assignments, setAssignments] = useState([]);
     const [faculty, setFaculty] = useState([]);
+    const [academicTerms, setAcademicTerms] = useState([]);
     const [allStudents, setAllStudents] = useState([]);
     const [loading, setLoading] = useState(false);
 
@@ -35,8 +35,19 @@ const Courses = () => {
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [isEditingAssignment, setIsEditingAssignment] = useState(false);
     const [currentAssignmentId, setCurrentAssignmentId] = useState(null);
-    const [assignmentFormData, setAssignmentFormData] = useState({ facultyId: '', courseId: '', semester: '' });
+    const [assignmentFormData, setAssignmentFormData] = useState({ facultyId: '', courseId: '', academicTerm: '' });
     const [assignmentLoading, setAssignmentLoading] = useState(false);
+
+    // Academic Term modal
+    const [showTermModal, setShowTermModal] = useState(false);
+    const [isEditingTerm, setIsEditingTerm] = useState(false);
+    const [currentTermId, setCurrentTermId] = useState(null);
+    const [termLoading, setTermLoading] = useState(false);
+
+    const [termFormData, setTermFormData] = useState({
+        season: 'Fall',
+        year: ''
+    });
 
     // Enroll students modal
     const [showEnrollModal, setShowEnrollModal] = useState(false);
@@ -57,6 +68,8 @@ const Courses = () => {
                 api.get('/api/admin/students', config),
                 api.get('/api/admin/staff', config),
             ]);
+            const termsRes = await api.get('/api/academic-terms', config);
+            setAcademicTerms(termsRes.data);
             setCourses(courseRes.data);
             setAssignments(assignmentRes.data);
             setAllStudents(studentRes.data);
@@ -165,11 +178,6 @@ const Courses = () => {
         return matchesSearch && matchesBatch;
     });
 
-    // Get unique semesters/batches from students
-    const availableSemesters = useMemo(() => {
-        const batches = new Set(allStudents.map(s => s.batch).filter(Boolean));
-        return Array.from(batches).sort();
-    }, [allStudents]);
 
     // ── Course assignment handlers ──
     const handleOpenAssignModal = (assignment = null) => {
@@ -179,12 +187,12 @@ const Courses = () => {
             setAssignmentFormData({
                 facultyId: assignment.faculty?._id || '',
                 courseId: assignment.course?._id || '',
-                semester: assignment.semester || ''
+                academicTerm: assignment.academicTerm?._id || ''
             });
         } else {
             setIsEditingAssignment(false);
             setCurrentAssignmentId(null);
-            setAssignmentFormData({ facultyId: '', courseId: '', semester: '' });
+            setAssignmentFormData({ facultyId: '', courseId: '', academicTerm: '' });
         }
         setShowAssignModal(true);
     };
@@ -198,14 +206,14 @@ const Courses = () => {
                 await api.put(`/api/assignments/${currentAssignmentId}`, {
                     faculty: assignmentFormData.facultyId,
                     course: assignmentFormData.courseId,
-                    semester: assignmentFormData.semester
+                    academicTerm: assignmentFormData.academicTerm
                 }, config);
                 toast.fire({ icon: 'success', title: 'Assignment updated!' });
             } else {
                 await api.post('/api/assignments', {
                     faculty: assignmentFormData.facultyId,
                     course: assignmentFormData.courseId,
-                    semester: assignmentFormData.semester
+                    academicTerm: assignmentFormData.academicTerm
                 }, config);
                 toast.fire({ icon: 'success', title: 'Course assigned!' });
             }
@@ -228,6 +236,117 @@ const Courses = () => {
                 fetchData();
             } catch {
                 showError('Error', 'Could not delete assignment.');
+            }
+        }
+    };
+
+    const handleEditAcademicTerm = (term) => {
+        setIsEditingTerm(true);
+        setCurrentTermId(term._id);
+
+        setTermFormData({
+            season: term.season,
+            year: term.year
+        });
+
+        setShowTermModal(true);
+    };
+
+    const handleAcademicTermSubmit = async (e) => {
+        e.preventDefault();
+
+        setTermLoading(true);
+
+        try {
+            const config = {
+                headers: {
+                    Authorization: `Bearer ${user.token}`
+                }
+            };
+
+            const data = {
+                season: termFormData.season,
+                year: Number(termFormData.year)
+            };
+
+            if (isEditingTerm) {
+                await api.put(
+                    `/api/academic-terms/${currentTermId}`,
+                    data,
+                    config
+                );
+
+                toast.fire({
+                    icon: 'success',
+                    title: 'Academic term updated!'
+                });
+            } else {
+                await api.post(
+                    '/api/academic-terms',
+                    data,
+                    config
+                );
+
+                toast.fire({
+                    icon: 'success',
+                    title: 'Academic term created!'
+                });
+            }
+
+            setTermFormData({
+                season: 'Fall',
+                year: ''
+            });
+
+            setIsEditingTerm(false);
+            setCurrentTermId(null);
+            setShowTermModal(false);
+
+            fetchData();
+
+        } catch (err) {
+            showError(
+                'Error',
+                err.response?.data?.message ||
+                'Failed to save academic term.'
+            );
+        } finally {
+            setTermLoading(false);
+        }
+    };
+
+    const handleDeleteAcademicTerm = async (id) => {
+        const result = await showConfirm(
+            'Are you sure?',
+            'This will delete the academic term.'
+        );
+
+        if (result.isConfirmed) {
+            try {
+                const config = {
+                    headers: {
+                        Authorization: `Bearer ${user.token}`
+                    }
+                };
+
+                await api.delete(
+                    `/api/academic-terms/${id}`,
+                    config
+                );
+
+                toast.fire({
+                    icon: 'success',
+                    title: 'Academic term deleted!'
+                });
+
+                fetchData();
+
+            } catch (err) {
+                showError(
+                    'Error',
+                    err.response?.data?.message ||
+                    'Could not delete academic term.'
+                );
             }
         }
     };
@@ -317,11 +436,28 @@ const Courses = () => {
                                             </Card.Body>
 
                                             {/* Footer */}
-                                            <div className="border-top px-4 py-3 d-flex justify-content-end align-items-center gap-2"
-                                                style={{ backgroundColor: '#fafafa' }}>
-                                                <span className="text-muted small" style={{ fontSize: '0.75rem' }}>Created once</span>
-                                            </div>
+                                            <div
+                                                className="border-top px-4 py-3 d-flex justify-content-end align-items-center gap-2"
+                                                style={{ backgroundColor: '#fafafa' }}
+                                            >
+                                                <Button
+                                                    size="sm"
+                                                    variant="light"
+                                                    className="bg-primary-subtle text-primary border-0"
+                                                    onClick={() => handleOpenModal(course)}
+                                                >
+                                                    Edit
+                                                </Button>
 
+                                                <Button
+                                                    size="sm"
+                                                    variant="light"
+                                                    className="bg-danger-subtle text-danger border-0"
+                                                    onClick={() => handleDelete(course._id)}
+                                                >
+                                                    Delete
+                                                </Button>
+                                            </div>
                                         </Card>
                                     </motion.div>
                                 </Col>
@@ -339,6 +475,116 @@ const Courses = () => {
                         )}
                     </AnimatePresence>
                 </Row>
+
+                {/* ── Academic Terms Section ── */}
+                <div className="mt-5">
+                    <div className="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h5 className="fw-bold text-dark mb-0">Academic Terms</h5>
+                            <p className="text-muted small mb-0">
+                                {academicTerms.length} term{academicTerms.length !== 1 ? 's' : ''} registered
+                            </p>
+                        </div>
+
+                        <Button
+                            className="d-flex align-items-center gap-2 border-0 px-4"
+                            style={{ backgroundColor: '#4c1d95' }}
+                            onClick={() => {
+                                setIsEditingTerm(false);
+                                setCurrentTermId(null);
+
+                                setTermFormData({
+                                    season: 'Fall',
+                                    year: ''
+                                });
+
+                                setShowTermModal(true);
+                            }}
+                        >
+                            <Plus size={16} />
+                            Add Academic Term
+                        </Button>
+                    </div>
+
+                    <Card className="shadow-sm border-0">
+                        <Card.Body className="p-0">
+                            <Table hover responsive className="mb-0">
+                                <thead className="bg-white border-bottom">
+                                    <tr>
+                                        <th className="px-4 py-3 text-muted small">
+                                            Academic Term
+                                        </th>
+
+                                        <th className="px-4 py-3 text-muted small">
+                                            Season
+                                        </th>
+
+                                        <th className="px-4 py-3 text-muted small">
+                                            Year
+                                        </th>
+                                        <th className="px-4 py-3 text-muted small text-end">
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    {academicTerms.length > 0 ? (
+                                        academicTerms.map((term) => (
+                                            <tr key={term._id}>
+                                                <td className="px-4 py-3 fw-semibold">
+                                                    {term.name}
+                                                </td>
+
+                                                <td className="px-4 py-3">
+                                                    <span className="badge bg-light text-dark border px-3 py-2">
+                                                        {term.season}
+                                                    </span>
+                                                </td>
+
+                                                <td className="px-4 py-3 text-muted">
+                                                    {term.year}
+                                                </td>
+                                                <td className="px-4 py-3 text-end">
+                                                    <div className="d-flex justify-content-end gap-2">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="light"
+                                                            className="bg-primary-subtle text-primary border-0"
+                                                            onClick={() => handleEditAcademicTerm(term)}
+                                                        >
+                                                            Edit
+                                                        </Button>
+
+                                                        <Button
+                                                            size="sm"
+                                                            variant="light"
+                                                            className="bg-danger-subtle text-danger border-0"
+                                                            onClick={() => handleDeleteAcademicTerm(term._id)}
+                                                        >
+                                                            Delete
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td
+                                                colSpan="4"
+                                                className="text-center py-5"
+                                            >
+                                                <p className="text-muted mb-0">
+                                                    No academic terms found
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </Table>
+                        </Card.Body>
+                    </Card>
+                </div>
 
                 {/* ── Course Assignment Section ── */}
                 <div className="mt-5">
@@ -363,7 +609,7 @@ const Courses = () => {
                                     <tr>
                                         <th className="px-4 py-3 text-muted small">Course</th>
                                         <th className="px-4 py-3 text-muted small">Faculty</th>
-                                        <th className="px-4 py-3 text-muted small">Semester</th>
+                                        <th className="px-4 py-3 text-muted small">Academic Term</th>
                                         <th className="px-4 py-3 text-muted small text-end">Actions</th>
                                     </tr>
                                 </thead>
@@ -380,7 +626,7 @@ const Courses = () => {
                                                 <td className="px-4 py-3 text-muted">{a.faculty?.name}</td>
                                                 <td className="px-4 py-3">
                                                     <span className="badge bg-light text-dark border px-3 py-2">
-                                                        {a.semester}
+                                                        {a.academicTerm?.name}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-end">
@@ -475,6 +721,101 @@ const Courses = () => {
                     </Form>
                 </Modal>
 
+                {/* ── Create Academic Term Modal ── */}
+                <Modal
+                    show={showTermModal}
+                    onHide={() => setShowTermModal(false)}
+                    centered
+                >
+                    <Modal.Header closeButton>
+                        <Modal.Title>
+                            {isEditingTerm ? 'Edit Academic Term' : 'Create Academic Term'}
+                        </Modal.Title>
+                    </Modal.Header>
+
+                    <Form onSubmit={handleAcademicTermSubmit}>
+                        <Modal.Body className="d-flex flex-column gap-3">
+
+                            <Form.Group>
+                                <Form.Label>Season</Form.Label>
+
+                                <Form.Select
+                                    value={termFormData.season}
+                                    onChange={(e) =>
+                                        setTermFormData({
+                                            ...termFormData,
+                                            season: e.target.value
+                                        })
+                                    }
+                                    required
+                                    className="py-2 shadow-sm border-2"
+                                    style={{
+                                        backgroundColor: '#f8fafc',
+                                        borderColor: '#cbd5e1',
+                                        borderRadius: '10px',
+                                        fontSize: '0.95rem'
+                                    }}
+                                >
+                                    <option value="Fall">Fall</option>
+                                    <option value="Spring">Spring</option>
+                                </Form.Select>
+                            </Form.Group>
+
+                            <Form.Group>
+                                <Form.Label>Year</Form.Label>
+
+                                <Form.Control
+                                    type="number"
+                                    placeholder="e.g. 2026"
+                                    min="2000"
+                                    max="2100"
+                                    value={termFormData.year}
+                                    onChange={(e) =>
+                                        setTermFormData({
+                                            ...termFormData,
+                                            year: e.target.value
+                                        })
+                                    }
+                                    required
+                                    className="py-2 shadow-sm border-2"
+                                    style={{
+                                        backgroundColor: '#f8fafc',
+                                        borderColor: '#cbd5e1',
+                                        borderRadius: '10px',
+                                        fontSize: '0.95rem'
+                                    }}
+                                />
+                            </Form.Group>
+
+                        </Modal.Body>
+
+                        <Modal.Footer>
+                            <Button
+                                variant="secondary"
+                                onClick={() => setShowTermModal(false)}
+                            >
+                                Cancel
+                            </Button>
+
+                            <Button
+                                type="submit"
+                                disabled={termLoading}
+                                style={{
+                                    backgroundColor: '#4c1d95',
+                                    border: 'none'
+                                }}
+                            >
+                                {termLoading
+                                    ? 'Saving...'
+                                    : isEditingTerm
+                                        ? 'Update Term'
+                                        : 'Create Term'
+                                }
+                            </Button>
+                        </Modal.Footer>
+                    </Form>
+                </Modal>
+
                 {/* ── Course Assignment Modal ── */}
                 <Modal show={showAssignModal} onHide={() => setShowAssignModal(false)} centered>
                     <Modal.Header closeButton>
@@ -529,10 +870,16 @@ const Courses = () => {
                             </Form.Group>
 
                             <Form.Group>
-                                <Form.Label>Semester</Form.Label>
+                                <Form.Label>Academic Term</Form.Label>
+
                                 <Form.Select
-                                    value={assignmentFormData.semester}
-                                    onChange={e => setAssignmentFormData({ ...assignmentFormData, semester: e.target.value })}
+                                    value={assignmentFormData.academicTerm}
+                                    onChange={(e) =>
+                                        setAssignmentFormData({
+                                            ...assignmentFormData,
+                                            academicTerm: e.target.value
+                                        })
+                                    }
                                     required
                                     className="py-2 shadow-sm border-2"
                                     style={{
@@ -542,10 +889,11 @@ const Courses = () => {
                                         fontSize: '0.95rem'
                                     }}
                                 >
-                                    <option value="">Select Semester</option>
-                                    {availableSemesters.map(sem => (
-                                        <option key={sem} value={sem}>
-                                            {sem}
+                                    <option value="">Select Academic Term</option>
+
+                                    {academicTerms.map((term) => (
+                                        <option key={term._id} value={term._id}>
+                                            {term.name}
                                         </option>
                                     ))}
                                 </Form.Select>
@@ -695,3 +1043,4 @@ const Courses = () => {
 };
 
 export default Courses;
+

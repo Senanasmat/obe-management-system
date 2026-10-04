@@ -2,6 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const academicTermRoutes = require('./routes/academicTermRoutes');
 
 console.log('=== ENVIRONMENT DEBUG ===');
 console.log('NODE_ENV:', process.env.NODE_ENV);
@@ -58,6 +59,9 @@ try {
     app.use('/api/admin/catch-all', (req, res) => {
         res.json({ message: 'Catch-all route hit' });
     });
+
+    console.log('Loading academic term routes...');
+    app.use('/api/academic-terms', academicTermRoutes);
 
     console.log('Loading faculty routes...');
     app.use('/api/faculty', require('./routes/facultyRoutes'));

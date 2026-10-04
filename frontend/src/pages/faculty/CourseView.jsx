@@ -4,7 +4,7 @@ import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Container, Card, Row, Col, Button, Badge, Dropdown, Table, Breadcrumb, Modal, Form } from 'react-bootstrap';
-import { PlusCircle, FileText, ClipboardList, ChevronDown, XCircle, CheckCircle, Plus, Trash2, Users, Search, Check } from 'lucide-react';
+import { PlusCircle, FileText, ClipboardList, ChevronDown, XCircle, CheckCircle, Plus, Pencil, Trash2, Users, Search, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
@@ -32,8 +32,16 @@ const CourseView = () => {
     const [assessments, setAssessments] = useState([]);
     const [courseClos, setCourseClos] = useState([]);
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'View');
-    const [cloForm, setCloForm] = useState({ code: '', description: '' });
+    const [cloForm, setCloForm] = useState({ code: '', description: '', plo: '' });
     const [cloLoading, setCloLoading] = useState(false);
+    const [plos, setPlos] = useState([]);
+    const [editingClo, setEditingClo] = useState(null);
+    const [editCloForm, setEditCloForm] = useState({
+        code: '',
+        description: '',
+        plo: ''
+    });
+    const [editCloLoading, setEditCloLoading] = useState(false);
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [showEnrollModal, setShowEnrollModal] = useState(false);
     const [showBatchModal, setShowBatchModal] = useState(false);
@@ -85,6 +93,11 @@ const CourseView = () => {
             setCourseClos(found?.course?.clos || []);
             setEnrolledStudentIds(new Set((found?.course?.students || []).map(s => s._id)));
         }).catch(console.error);
+
+        // Load all PLOs created by Superadmin
+        api.get('/api/faculty/plos', config)
+            .then(r => setPlos(r.data || []))
+            .catch(err => console.error('Error fetching PLOs:', err));
 
         api.get(`/api/faculty/analytics/${courseId}`, config).then(r => setAnalytics(r.data)).catch(console.error);
         api.get(`/api/faculty/courses/${courseId}/assessments`, config).then(r => setAssessments(r.data)).catch(console.error);
@@ -348,17 +361,152 @@ const CourseView = () => {
 
     const handleAddClo = async (e) => {
         e.preventDefault();
-        if (!cloForm.code.trim() || !cloForm.description.trim()) return;
+
+        if (
+            !cloForm.code.trim() ||
+            !cloForm.description.trim() ||
+            !cloForm.plo
+        ) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Missing Information',
+                text: 'Please enter CLO code, description and select a PLO.',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000
+            });
+            return;
+        }
+
         setCloLoading(true);
+
         try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            const { data } = await api.post(`/api/faculty/courses/${courseId}/clos`, cloForm, config);
+            const config = {
+                headers: {
+                    Authorization: `Bearer ${user.token}`
+                }
+            };
+
+            const { data } = await api.post(
+                `/api/faculty/courses/${courseId}/clos`,
+                {
+                    code: cloForm.code,
+                    description: cloForm.description,
+                    plo: cloForm.plo
+                },
+                config
+            );
+
             setCourseClos(prev => [...prev, data]);
-            setCloForm({ code: '', description: '' });
+
+            setCloForm({
+                code: '',
+                description: '',
+                plo: ''
+            });
+
         } catch (err) {
-            Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.message || 'Failed to add CLO', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: err.response?.data?.message || 'Failed to add CLO',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000
+            });
         } finally {
             setCloLoading(false);
+        }
+    };
+
+    const handleEditClo = (clo) => {
+        setEditingClo(clo);
+
+        setEditCloForm({
+            code: clo.code || '',
+            description: clo.description || '',
+            plo: clo.plo?._id || clo.plo || ''
+        });
+    };
+
+    const handleUpdateClo = async (e) => {
+        e.preventDefault();
+
+        if (
+            !editCloForm.code.trim() ||
+            !editCloForm.description.trim() ||
+            !editCloForm.plo
+        ) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Missing Information',
+                text: 'Please enter CLO code, description and select a PLO.',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000
+            });
+
+            return;
+        }
+
+        setEditCloLoading(true);
+
+        try {
+            const config = {
+                headers: {
+                    Authorization: `Bearer ${user.token}`
+                }
+            };
+
+            const { data } = await api.put(
+                `/api/faculty/courses/${courseId}/clos/${editingClo._id}`,
+                {
+                    code: editCloForm.code,
+                    description: editCloForm.description,
+                    plo: editCloForm.plo
+                },
+                config
+            );
+
+            setCourseClos(prev =>
+                prev.map(clo =>
+                    clo._id === editingClo._id ? data : clo
+                )
+            );
+
+            setEditingClo(null);
+
+            setEditCloForm({
+                code: '',
+                description: '',
+                plo: ''
+            });
+
+            Swal.fire({
+                icon: 'success',
+                title: 'CLO Updated',
+                text: 'The CLO has been updated successfully.',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000
+            });
+
+        } catch (err) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: err.response?.data?.message || 'Failed to update CLO',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000
+            });
+        } finally {
+            setEditCloLoading(false);
         }
     };
 
@@ -795,37 +943,87 @@ const CourseView = () => {
                                     <h6 className="fw-semibold text-dark mb-3">Add Course Learning Outcome (CLO)</h6>
                                     <form onSubmit={handleAddClo}>
                                         <Row className="g-3 align-items-end">
-                                            <Col md={3}>
-                                                <label className="small text-muted mb-1">CLO Code</label>
+
+                                            {/* CLO CODE */}
+                                            <Col md={2}>
+                                                <label className="form-label small fw-semibold">
+                                                    CLO Code
+                                                </label>
+
                                                 <input
+                                                    type="text"
                                                     className="form-control"
-                                                    placeholder="e.g. CLO-1"
+                                                    placeholder="CLO-1"
                                                     value={cloForm.code}
-                                                    onChange={e => setCloForm(f => ({ ...f, code: e.target.value }))}
+                                                    onChange={e =>
+                                                        setCloForm(f => ({
+                                                            ...f,
+                                                            code: e.target.value
+                                                        }))
+                                                    }
                                                     required
                                                 />
                                             </Col>
-                                            <Col md={7}>
-                                                <label className="small text-muted mb-1">Description</label>
+
+                                            {/* DESCRIPTION */}
+                                            <Col md={5}>
+                                                <label className="form-label small fw-semibold">
+                                                    Description
+                                                </label>
+
                                                 <input
+                                                    type="text"
                                                     className="form-control"
-                                                    placeholder="Describe what students will be able to do..."
+                                                    placeholder="Enter CLO description"
                                                     value={cloForm.description}
-                                                    onChange={e => setCloForm(f => ({ ...f, description: e.target.value }))}
+                                                    onChange={e =>
+                                                        setCloForm(f => ({
+                                                            ...f,
+                                                            description: e.target.value
+                                                        }))
+                                                    }
                                                     required
                                                 />
                                             </Col>
+
+                                            {/* MAP TO PLO */}
+                                            <Col md={3}>
+                                                <label className="form-label small fw-semibold">
+                                                    Map to PLO
+                                                </label>
+
+                                                <Form.Select
+                                                    value={cloForm.plo}
+                                                    onChange={e =>
+                                                        setCloForm(f => ({
+                                                            ...f,
+                                                            plo: e.target.value
+                                                        }))
+                                                    }
+                                                    required
+                                                >
+                                                    <option value="">Select PLO</option>
+
+                                                    {plos.map(plo => (
+                                                        <option key={plo._id} value={plo._id}>
+                                                            {plo.code} - {plo.title}
+                                                        </option>
+                                                    ))}
+                                                </Form.Select>
+                                            </Col>
+
+                                            {/* ADD BUTTON */}
                                             <Col md={2}>
                                                 <Button
                                                     type="submit"
-                                                    size="sm"
-                                                    className="w-100 d-flex align-items-center justify-content-center gap-1 border-0"
-                                                    style={{ backgroundColor: '#4c1d95' }}
+                                                    className="w-100"
                                                     disabled={cloLoading}
                                                 >
-                                                    <Plus size={15} /> {cloLoading ? 'Adding...' : 'Add CLO'}
+                                                    <Plus size={15} />
+                                                    {cloLoading ? 'Adding...' : 'Add CLO'}
                                                 </Button>
                                             </Col>
+
                                         </Row>
                                     </form>
                                 </Card.Body>
@@ -848,7 +1046,8 @@ const CourseView = () => {
                                                 <th className="px-4 py-2 text-muted fw-semibold" style={{ width: 40 }}>#</th>
                                                 <th className="px-3 py-2 fw-semibold" style={{ color: '#6d28d9', width: 120 }}>Code</th>
                                                 <th className="px-3 py-2 text-muted fw-semibold">Description</th>
-                                                <th className="px-3 py-2 text-muted fw-semibold text-center" style={{ width: 80 }}>Remove</th>
+                                                <th className="px-3 py-2 text-muted fw-semibold">Mapped PLO</th>
+                                                <th className="px-3 py-2 text-muted fw-semibold text-center" style={{ width: 80 }}>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -857,14 +1056,36 @@ const CourseView = () => {
                                                     <td className="px-4 py-2 text-muted">{i + 1}</td>
                                                     <td className="px-3 py-2 fw-semibold" style={{ color: '#6d28d9' }}>{clo.code}</td>
                                                     <td className="px-3 py-2 text-dark">{clo.description}</td>
+                                                    <td className="px-3 py-2 text-dark">{clo.plo ? (
+                                                            <Badge bg="primary">
+                                                                {clo.plo.code}
+                                                            </Badge>
+                                                        ) : (
+                                                            <span className="text-muted">
+                                                                Not mapped
+                                                            </span>
+                                                        )}
+                                                    </td>
                                                     <td className="px-3 py-2 text-center">
-                                                        <button
-                                                            className="btn btn-sm btn-outline-danger rounded-2 p-1"
-                                                            onClick={() => handleRemoveClo(clo._id)}
-                                                            title="Remove CLO"
-                                                        >
-                                                            <Trash2 size={14} />
-                                                        </button>
+                                                        <div className="d-flex gap-2">
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-sm btn-outline-primary"
+                                                                onClick={() => handleEditClo(clo)}
+                                                                title="Edit CLO"
+                                                            >
+                                                                <Pencil size={14} />
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-sm btn-outline-danger"
+                                                                onClick={() => handleRemoveClo(clo._id)}
+                                                                title="Remove CLO"
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -872,6 +1093,109 @@ const CourseView = () => {
                                     </Table>
                                 </div>
                             )}
+
+                            <Modal
+                                show={!!editingClo}
+                                onHide={() => setEditingClo(null)}
+                                centered
+                            >
+                                <Modal.Header closeButton>
+                                    <Modal.Title>Edit Course Learning Outcome</Modal.Title>
+                                </Modal.Header>
+
+                                <Form onSubmit={handleUpdateClo}>
+                                    <Modal.Body>
+
+                                        <Form.Group className="mb-3">
+                                            <Form.Label>
+                                                CLO Code
+                                            </Form.Label>
+
+                                            <Form.Control
+                                                type="text"
+                                                value={editCloForm.code}
+                                                onChange={e =>
+                                                    setEditCloForm(f => ({
+                                                        ...f,
+                                                        code: e.target.value
+                                                    }))
+                                                }
+                                                placeholder="CLO-1"
+                                                required
+                                            />
+                                        </Form.Group>
+
+                                        <Form.Group className="mb-3">
+                                            <Form.Label>
+                                                Description
+                                            </Form.Label>
+
+                                            <Form.Control
+                                                type="text"
+                                                value={editCloForm.description}
+                                                onChange={e =>
+                                                    setEditCloForm(f => ({
+                                                        ...f,
+                                                        description: e.target.value
+                                                    }))
+                                                }
+                                                placeholder="Enter CLO description"
+                                                required
+                                            />
+                                        </Form.Group>
+
+                                        <Form.Group className="mb-3">
+                                            <Form.Label>
+                                                Map to PLO
+                                            </Form.Label>
+
+                                            <Form.Select
+                                                value={editCloForm.plo}
+                                                onChange={e =>
+                                                    setEditCloForm(f => ({
+                                                        ...f,
+                                                        plo: e.target.value
+                                                    }))
+                                                }
+                                                required
+                                            >
+                                                <option value="">
+                                                    Select PLO
+                                                </option>
+
+                                                {plos.map(plo => (
+                                                    <option
+                                                        key={plo._id}
+                                                        value={plo._id}
+                                                    >
+                                                        {plo.code} - {plo.title}
+                                                    </option>
+                                                ))}
+                                            </Form.Select>
+                                        </Form.Group>
+
+                                    </Modal.Body>
+
+                                    <Modal.Footer>
+                                        <Button
+                                            variant="secondary"
+                                            type="button"
+                                            onClick={() => setEditingClo(null)}
+                                            disabled={editCloLoading}
+                                        >
+                                            Cancel
+                                        </Button>
+
+                                        <Button
+                                            variant="primary"
+                                            type="submit"
+                                            disabled={editCloLoading}
+                                        >
+                                            {editCloLoading ? 'Updating...' : 'Update CLO'}
+                                        </Button>
+                                    </Modal.Footer>
+                                </Form>
+                            </Modal>
 
                             {/* Achievement chart — shown if marks exist */}
                             {analytics?.cloStats?.length > 0 && (

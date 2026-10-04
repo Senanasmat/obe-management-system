@@ -1,6 +1,6 @@
 const CourseAssignment = require('../models/courseAssignmentModel');
 const { Result, ALL_MODELS, getModelByType, findAssessmentById } = require('../models/assessmentModel');
-const { CLO, Course, Student } = require('../models/academicModels');
+const { PLO, CLO, Course, Student } = require('../models/academicModels');
 
 // Grade Scale constant
 const GRADE_SCALE = [
@@ -28,12 +28,26 @@ const getAssignedCourses = async (req, res) => {
         const assignments = await CourseAssignment.find({
             faculty: req.user._id
         })
-        .populate('course', 'name code creditHours')
-        .populate('faculty', 'name email')
-        .sort({ createdAt: -1 });
+            .populate({
+                path: 'course',
+                select: 'name code creditHours faculty clos students',
+                populate: [
+                    {
+                        path: 'clos',
+                        populate: {
+                            path: 'plo'
+                        }
+                    },
+                    {
+                        path: 'students',
+                        select: 'name regNo batch'
+                    }
+                ]
+            })
+            .populate('faculty', 'name email')
+            .sort({ createdAt: -1 });
 
         res.json(assignments);
-
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -271,19 +285,150 @@ const deleteAssessment = async (req, res) => {
     }
 };
 
+// GET ALL PLOs FOR FACULTY
+const getPLOsForFaculty = async (req, res) => {
+    try {
+        const plos = await PLO.find({}).sort({ code: 1 });
+        res.json(plos);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // CREATE CLO FOR COURSE
 const createCourseCLO = async (req, res) => {
     try {
-        const { code, description } = req.body;
+        const { code, description, plo } = req.body;
         const { courseId } = req.params;
 
-        const clo = await CLO.create({ code, description });
+        if (!code || !description || !plo) {
+            return res.status(400).json({
+                message: 'CLO code, description and PLO are required'
+            });
+        }
 
-        await Course.findByIdAndUpdate(courseId, { $push: { clos: clo._id } });
+        // Check whether this CLO code already exists in this course
+        const course = await Course.findById(courseId).populate('clos');
+
+        if (!course) {
+            return res.status(404).json({
+                message: 'Course not found'
+            });
+        }
+
+        const duplicateClo = course.clos.find(
+            clo => clo.code.trim().toLowerCase() === code.trim().toLowerCase()
+        );
+
+        if (duplicateClo) {
+            return res.status(409).json({
+                message: `${duplicateClo.code} is already created`
+            });
+        }
+
+        // Check that selected PLO exists
+        const ploExists = await PLO.findById(plo);
+
+        if (!ploExists) {
+            return res.status(404).json({
+                message: 'Selected PLO not found'
+            });
+        }
+
+        const clo = await CLO.create({
+            code: code.trim(),
+            description: description.trim(),
+            plo
+        });
+
+        await Course.findByIdAndUpdate(
+            courseId,
+            { $push: { clos: clo._id } }
+        );
+
+        await clo.populate('plo');
 
         res.status(201).json(clo);
+
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({
+            message: error.message
+        });
+    }
+};
+
+// UPDATE COURSE CLO
+const updateCourseCLO = async (req, res) => {
+    try {
+        const { courseId, cloId } = req.params;
+        const { code, description, plo } = req.body;
+
+        if (!code || !description || !plo) {
+            return res.status(400).json({
+                message: 'CLO code, description and PLO are required'
+            });
+        }
+
+        const course = await Course.findById(courseId).populate('clos');
+
+        if (!course) {
+            return res.status(404).json({
+                message: 'Course not found'
+            });
+        }
+
+        // Make sure CLO belongs to this course
+        const currentClo = course.clos.find(
+            clo => clo._id.toString() === cloId
+        );
+
+        if (!currentClo) {
+            return res.status(404).json({
+                message: 'CLO not found in this course'
+            });
+        }
+
+        // Check duplicate code, excluding the CLO currently being edited
+        const duplicateClo = course.clos.find(
+            clo =>
+                clo._id.toString() !== cloId &&
+                clo.code.trim().toLowerCase() === code.trim().toLowerCase()
+        );
+
+        if (duplicateClo) {
+            return res.status(409).json({
+                message: `${duplicateClo.code} is already created`
+            });
+        }
+
+        // Check PLO exists
+        const ploExists = await PLO.findById(plo);
+
+        if (!ploExists) {
+            return res.status(404).json({
+                message: 'Selected PLO not found'
+            });
+        }
+
+        const updatedClo = await CLO.findByIdAndUpdate(
+            cloId,
+            {
+                code: code.trim(),
+                description: description.trim(),
+                plo
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        ).populate('plo');
+
+        res.json(updatedClo);
+
+    } catch (error) {
+        res.status(400).json({
+            message: error.message
+        });
     }
 };
 
@@ -512,6 +657,7 @@ const generateDMC = async (req, res) => {
 
 module.exports = {
     getAssignedCourses,
+    getPLOsForFaculty,
     createAssessment,
     enterMarks,
     getCourseAnalytics,
@@ -521,6 +667,7 @@ module.exports = {
     updateAssessment,
     deleteAssessment,
     createCourseCLO,
+    updateCourseCLO,
     removeCourseCLO,
     getAllStudents,
     getStudentGrades,

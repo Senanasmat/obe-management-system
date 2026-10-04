@@ -18,28 +18,60 @@ const CoursesList = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [assignments, setAssignments] = useState([]);
-    const [semester, setSemester] = useState('');
+    const [academicTerms, setAcademicTerms] = useState([]);
+    const [selectedTerm, setSelectedTerm] = useState('');
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const config = { headers: { Authorization: `Bearer ${user.token}` } };
-                const { data } = await api.get('/api/assignments/my', config);
-                setAssignments(data);
+                const config = {
+                    headers: {
+                        Authorization: `Bearer ${user.token}`
+                    }
+                };
+
+                const [assignmentsRes, termsRes] = await Promise.all([
+                    api.get('/api/assignments/my', config),
+                    api.get('/api/academic-terms', config)
+                ]);
+
+                setAssignments(assignmentsRes.data);
+                setAcademicTerms(termsRes.data);
             } catch (err) {
-                console.error(err);
+                console.error('Courses List Error:', err);
+            } finally {
+                setLoading(false);
             }
         };
-        if (user?.token) fetchData();
+
+        if (user?.token) {
+            fetchData();
+        }
     }, [user?.token]);
 
-    const semesters = [...new Set(assignments.map(a => a.semester))].sort().reverse();
+    const sortedAcademicTerms = [...academicTerms].sort((a, b) => {
+        if (b.year !== a.year) {
+            return b.year - a.year;
+        }
+
+        const seasonOrder = {
+            Fall: 2,
+            Spring: 1
+        };
+
+        return (seasonOrder[b.season] || 0) - (seasonOrder[a.season] || 0);
+    });
 
     useEffect(() => {
-        if (semesters.length > 0) setSemester(semesters[0]);
-    }, [assignments]);
+        if (sortedAcademicTerms.length > 0 && !selectedTerm) {
+            setSelectedTerm(sortedAcademicTerms[0]._id);
+        }
+    }, [sortedAcademicTerms, selectedTerm]);
 
-    const filtered = assignments.filter(a => a.semester === semester);
+    const filtered = assignments.filter(
+        a => a.academicTerm?._id === selectedTerm
+    );
 
     return (
         <Container fluid className="py-4 px-4">
@@ -48,14 +80,19 @@ const CoursesList = () => {
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h3 className="fw-bold mb-0">My Courses</h3>
                 <div className="d-flex align-items-center gap-2">
-                    <span className="fw-semibold text-muted small">Select Semester</span>
+                    <span className="fw-semibold text-muted small">
+                        Select Academic Term
+                    </span>
+
                     <select
                         className="form-select w-auto"
-                        value={semester}
-                        onChange={(e) => setSemester(e.target.value)}
+                        value={selectedTerm}
+                        onChange={(e) => setSelectedTerm(e.target.value)}
                     >
-                        {semesters.map((s, i) => (
-                            <option key={i} value={s}>{s}</option>
+                        {sortedAcademicTerms.map((term) => (
+                            <option key={term._id} value={term._id}>
+                                {term.name}
+                            </option>
                         ))}
                     </select>
                 </div>
@@ -98,7 +135,7 @@ const CoursesList = () => {
 
                                 {/* Code + Semester */}
                                 <p className="mb-1" style={{ color: '#7c3aed', fontSize: '0.82rem' }}>
-                                    {a.course.code} - {a.semester}
+                                    {a.course.code} - {a.academicTerm?.name}
                                 </p>
 
                                 {/* Faculty Name */}
@@ -161,7 +198,7 @@ const CoursesList = () => {
             </Row>
 
             {/* Empty State */}
-            {assignments.length === 0 && (
+            {!loading && filtered.length === 0 && (
                 <div className="text-center py-5 bg-white rounded-4 shadow-sm mt-3">
                     <div className="d-inline-block p-4 rounded-circle mb-3 bg-light">
                         <BookOpen size={36} className="text-muted" />

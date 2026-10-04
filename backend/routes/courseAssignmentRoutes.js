@@ -22,12 +22,13 @@ router.get('/my/summary', protect, async (req, res) => {
         const assignments = await CourseAssignment.find({ faculty: req.user._id })
             .populate('course', 'name code students clos')
             .populate('faculty', 'name department')
+            .populate('academicTerm', 'name season year')
             .lean();
 
         const result = assignments.map(a => ({
             _id: a._id,
-            semester: a.semester,
             faculty: a.faculty,
+            academicTerm: a.academicTerm,
             course: {
                 _id: a.course._id,
                 name: a.course.name,
@@ -50,15 +51,26 @@ router.get('/my', protect, async (req, res) => {
         const assignments = await CourseAssignment.find({
             faculty: req.user._id
         })
-        .populate({
-            path: 'course',
-            populate: [
-                { path: 'students', select: 'name regNo batch' },
-                { path: 'clos', select: 'code description' }
-            ]
-        })
-        .populate('faculty', 'name email department')
-        .lean();
+            .populate({
+                path: 'course',
+                populate: [
+                    { 
+                        path: 'students', 
+                        select: 'name regNo batch' 
+                    },
+                    {
+                        path: 'clos',
+                        select: 'code description plo',
+                        populate: {
+                            path: 'plo',
+                            select: 'code title description'
+                        }
+                    }
+                ]
+            })
+            .populate('faculty', 'name email department')
+            .populate('academicTerm', 'name season year')
+            .lean();
 
         res.json(assignments);
     } catch (err) {

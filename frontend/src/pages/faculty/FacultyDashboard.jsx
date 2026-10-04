@@ -47,7 +47,7 @@ const SkeletonCard = () => (
     </Col>
 );
 
-const CACHE_KEY = 'faculty_dashboard_assignments';
+const CACHE_KEY = 'faculty_dashboard_assignments_v2';
 
 const FacultyDashboard = () => {
     const [assignments, setAssignments] = useState(() => {
@@ -56,39 +56,70 @@ const FacultyDashboard = () => {
             return cached ? JSON.parse(cached) : [];
         } catch { return []; }
     });
-    const [semester, setSemester] = useState('');
+    const [academicTerms, setAcademicTerms] = useState([]);
+    const [selectedTerm, setSelectedTerm] = useState('');
     const [loading, setLoading] = useState(() => !localStorage.getItem(CACHE_KEY));
     const { user } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
         if (!user?.token) return;
-        const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        api.get('/api/assignments/my/summary', config)
-            .then(({ data }) => {
-                setAssignments(data);
-                localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-            })
-            .catch(console.error)
-            .finally(() => setLoading(false));
+
+        const fetchData = async () => {
+            try {
+            const config = {
+                headers: {
+                Authorization: `Bearer ${user.token}`
+                }
+            };
+
+            const [assignmentsRes, termsRes] = await Promise.all([
+                api.get('/api/assignments/my/summary', config),
+                api.get('/api/academic-terms', config)
+            ]);
+
+            setAssignments(assignmentsRes.data);
+            setAcademicTerms(termsRes.data);
+
+            localStorage.setItem(
+                CACHE_KEY,
+                JSON.stringify(assignmentsRes.data)
+            );
+            } catch (error) {
+            console.error('Faculty Dashboard Error:', error);
+            } finally {
+            setLoading(false);
+            }
+        };
+
+        fetchData();
     }, [user?.token]);
 
-    // Generate sorted unique semesters (latest first)
-    const semesters = [...new Set(assignments.map(a => a.semester))]
-        .sort()
-        .reverse();
+    // Sort academic terms with the latest term first
+    const sortedAcademicTerms = [...academicTerms].sort((a, b) => {
+    if (b.year !== a.year) {
+        return b.year - a.year;
+    }
 
-    // Set default semester (latest one)
+    const seasonOrder = {
+        Fall: 2,
+        Spring: 1
+    };
+
+    return (seasonOrder[b.season] || 0) - (seasonOrder[a.season] || 0);
+    });
+
     useEffect(() => {
-        if (semesters.length > 0) {
-            setSemester(semesters[0]);
-        }
-    }, [assignments]);
+    if (sortedAcademicTerms.length > 0 && !selectedTerm) {
+        setSelectedTerm(sortedAcademicTerms[0]._id);
+    }
+    }, [sortedAcademicTerms, selectedTerm]);
 
-    // Filter only selected semester
-    const filtered = assignments.filter(a => a.semester === semester);
+    const filtered = assignments.filter(
+    a => a.academicTerm?._id === selectedTerm
+    );
 
-    const totalStudents = assignments.reduce(
+    const totalStudents = filtered.reduce(
         (sum, a) => sum + (a.course?.studentsCount || 0),
         0
     );
@@ -118,19 +149,20 @@ const FacultyDashboard = () => {
                 <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                     <h5 className="fw-bold text-dark mb-0" style={{ fontSize: '0.95rem' }}>My Courses</h5>
 
-                    <div className="d-flex align-items-center gap-1">
-                        <span className="fw-semibold text-muted small" style={{ fontSize: '0.8rem' }}>
-                            Semester:
+                    <div className="d-flex align-items-center gap-2">
+                        <span className="fw-semibold text-muted small">
+                            Select Academic Term
                         </span>
 
                         <select
                             className="form-select w-auto"
-                            style={{ fontSize: '0.85rem', padding: '0.3rem 0.5rem' }}
-                            value={semester}
-                            onChange={(e) => setSemester(e.target.value)}
+                            value={selectedTerm}
+                            onChange={(e) => setSelectedTerm(e.target.value)}
                         >
-                            {semesters.map((s, i) => (
-                                <option key={i} value={s}>{s}</option>
+                            {sortedAcademicTerms.map((term) => (
+                            <option key={term._id} value={term._id}>
+                                {term.name}
+                            </option>
                             ))}
                         </select>
                     </div>
@@ -188,7 +220,7 @@ const FacultyDashboard = () => {
 
                                     {/* Code + Semester */}
                                     <p className="mb-1" style={{ color: '#7c3aed', fontSize: '0.82rem' }}>
-                                        {a.course.code} - {a.semester}
+                                        {a.course.code} - {a.academicTerm?.name}
                                     </p>
 
                                     {/* Faculty Name */}
@@ -250,7 +282,7 @@ const FacultyDashboard = () => {
                 </Row>
 
                 {/* Empty State */}
-                {!loading && assignments.length === 0 && (
+                {!loading && filtered.length === 0 && (
                     <div className="text-center py-5 bg-white rounded-4 shadow-sm">
                         <div className="bg-light d-inline-block p-4 rounded-circle mb-3">
                             <BookOpen size={40} className="text-muted" />
