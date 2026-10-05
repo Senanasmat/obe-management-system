@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Form, Button, Alert, ButtonGroup, ToggleButton } from 'react-bootstrap';
-import { Lock, Mail, ArrowRight } from 'lucide-react';
-import obeLogo from '../assets/obe-logo.png';
+import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import Toast from '../components/Toast';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -11,6 +11,7 @@ const Login = () => {
     const [role, setRole] = useState('faculty');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const { login, logout } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
@@ -45,85 +46,35 @@ const Login = () => {
     };
 
     return (
-        <div style={{
-            minHeight: '100vh',
-            background: 'rgba(224, 234, 252, 0.5)',
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px'
-        }}>
+        <>
+            {success && <Toast message={success} type="success" duration={3000} />}
             <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                gap: '30px',
-                maxWidth: '850px',
-                width: '100%',
-                alignItems: 'center'
+                minHeight: '100vh',
+                background: 'rgba(224, 234, 252, 0.5)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '20px'
             }}>
-                {/* Left Side - Logo & Text */}
                 <div style={{
                     display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
                     justifyContent: 'center',
-                    color: '#4c1d95',
-                    textAlign: 'left'
+                    maxWidth: '400px',
+                    width: '100%'
                 }}>
+                    {/* Login Form */}
                     <div style={{
-                        marginBottom: '20px',
-                        width: '100px',
-                        height: '100px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: 'transparent',
-                        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+                        background: 'rgba(255, 255, 255, 0.95)',
+                        borderRadius: '20px',
+                        padding: '35px 30px',
+                        boxShadow: '0 20px 60px rgba(102, 126, 234, 0.15)',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255, 255, 255, 1)',
+                        WebkitBackdropFilter: 'blur(10px)',
+                        width: '100%'
                     }}>
-                        <img
-                            src={obeLogo}
-                            alt="OBE Logo"
-                            style={{
-                                width: '85%',
-                                height: '85%',
-                                objectFit: 'contain',
-                                backgroundColor: 'transparent',
-                                filter: 'saturate(1.1) contrast(1.05)'
-                            }}
-                        />
-                    </div>
-                    <h1 style={{
-                        fontSize: '36px',
-                        fontWeight: 'bold',
-                        marginBottom: '12px',
-                        lineHeight: '1.2'
-                    }}>
-                        OBE<br />Management<br />System
-                    </h1>
-                    <p style={{
-                        fontSize: '14px',
-                        opacity: 0.8,
-                        marginBottom: '20px',
-                        lineHeight: '1.6'
-                    }}>
-                        Outcome-Based Education<br />
-                        Platform for Academic<br />
-                        Excellence
-                    </p>
-                </div>
-
-                {/* Right Side - Login Form */}
-                <div style={{
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    borderRadius: '20px',
-                    padding: '35px 30px',
-                    boxShadow: '0 20px 60px rgba(102, 126, 234, 0.15)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 1)',
-                    WebkitBackdropFilter: 'blur(10px)'
-                }}>
                     <h3 style={{
                         fontSize: '24px',
                         fontWeight: '700',
@@ -141,11 +92,6 @@ const Login = () => {
                     {error && (
                         <Alert variant="danger" className="border-0 bg-danger-subtle text-danger py-2 d-flex align-items-center mb-3" style={{ fontSize: '0.85rem' }}>
                             <Lock size={16} className="me-2" /> {error}
-                        </Alert>
-                    )}
-                    {success && (
-                        <Alert variant="success" className="border-0 bg-success-subtle text-success py-2 d-flex align-items-center mb-3" style={{ fontSize: '0.85rem' }}>
-                            ✓ {success}
                         </Alert>
                     )}
 
@@ -241,14 +187,14 @@ const Login = () => {
                             <Form.Label style={{ fontSize: '12px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>Your Password</Form.Label>
                             <div style={{ position: 'relative' }}>
                                 <Form.Control
-                                    type="password"
+                                    type={showPassword ? 'text' : 'password'}
                                     placeholder="••••••••"
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     style={{
                                         paddingLeft: '40px',
-                                        paddingRight: '16px',
+                                        paddingRight: '45px',
                                         paddingTop: '14px',
                                         paddingBottom: '14px',
                                         border: '1.5px solid rgba(102, 126, 234, 0.5)',
@@ -279,6 +225,26 @@ const Login = () => {
                                     transform: 'translateY(-50%)',
                                     color: '#999'
                                 }} />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    style={{
+                                        position: 'absolute',
+                                        right: '12px',
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        background: 'none',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        color: '#999',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        padding: '0'
+                                    }}
+                                >
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
                             </div>
                         </Form.Group>
 
@@ -332,9 +298,10 @@ const Login = () => {
                             Need access? <span style={{ color: '#667eea', fontWeight: '600', cursor: 'pointer' }}>Contact Admin</span>
                         </p>
                     </Form>
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 
