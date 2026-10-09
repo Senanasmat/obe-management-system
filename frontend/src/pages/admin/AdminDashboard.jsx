@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -22,29 +23,29 @@ const itemVariants = {
 };
 
 const STAT_COLORS = {
-    'bg-purple':    { bg: '#ede9fe', icon: '#6d28d9', bar: '#4c1d95' },
+    'bg-purple':    { bg: '#ede9fe', icon: '#6d28d9', bar: '#6d28d9' },
     'bg-success':   { bg: '#dcfce7', icon: '#16a34a', bar: '#16a34a' },
-    'bg-secondary': { bg: '#f1f5f9', icon: '#64748b', bar: '#64748b' },
     'bg-warning':   { bg: '#fef9c3', icon: '#ca8a04', bar: '#ca8a04' },
+    'bg-secondary': { bg: '#dbeafe', icon: '#0284c7', bar: '#0284c7' },
+    'bg-info':      { bg: '#cffafe', icon: '#0891b2', bar: '#0891b2' },
 };
 
 const StatCard = ({ title, count, icon: Icon, color }) => {
     const c = STAT_COLORS[color] || STAT_COLORS['bg-purple'];
     return (
         <motion.div variants={itemVariants} whileHover={{ y: -5, transition: { duration: 0.2 } }} className="h-100" style={{ overflow: 'visible' }}>
-            <Card className="h-100 shadow-sm border-0 position-relative" style={{ minHeight: '130px', overflow: 'visible' }}>
+            <Card className="h-100 shadow-sm border-0 position-relative" style={{ minHeight: '130px', overflow: 'visible', backgroundColor: c.bg }}>
                 <Card.Body className="d-flex flex-column p-3 h-100 justify-content-center">
                     <div className="d-flex align-items-center justify-content-between gap-2">
                         <div className="text-truncate" style={{ minWidth: 0 }}>
-                            <div className="text-muted mb-1 text-uppercase fw-bold small" style={{ fontSize: '0.72rem', letterSpacing: '0.05em' }}>{title}</div>
-                            <div className="fw-bold mb-0 text-dark" style={{ fontSize: 'clamp(1.4rem, 5vw, 1.8rem)', lineHeight: '1.2' }}>{count}</div>
+                            <div className="mb-1 text-uppercase fw-bold small" style={{ fontSize: '0.72rem', letterSpacing: '0.05em', color: '#666' }}>{title}</div>
+                            <div className="fw-bold mb-0" style={{ fontSize: 'clamp(1.4rem, 5vw, 1.8rem)', lineHeight: '1.2', color: '#1a1a1a' }}>{count}</div>
                         </div>
-                        <div className="p-2 rounded-3 flex-shrink-0" style={{ backgroundColor: c.bg }}>
-                            <Icon size={24} style={{ color: c.icon }} />
+                        <div className="p-3 rounded-3 flex-shrink-0" style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)' }}>
+                            <Icon size={28} style={{ color: c.bar }} />
                         </div>
                     </div>
                 </Card.Body>
-                <div className="position-absolute bottom-0 start-0 w-100 rounded-bottom" style={{ height: '4px', backgroundColor: c.bar, opacity: 0.7 }} />
             </Card>
         </motion.div>
     );
@@ -143,13 +144,7 @@ const AdminDashboard = () => {
         { name: 'PLOs', value: stats.totalPLOs },
     ], [stats]);
 
-    // if (loading) return (
-    //     <div className="d-flex justify-content-center align-items-center min-vh-100">
-    //         <div className="spinner-border text-primary" role="status">
-    //             <span className="visually-hidden">Loading...</span>
-    //         </div>
-    //     </div>
-    // );
+    if (loading) return <LoadingSpinner />;
 
     return (
         <motion.div
@@ -185,7 +180,7 @@ const AdminDashboard = () => {
                             title="Active Faculty"
                             count={stats.totalFaculty}
                             icon={Users}
-                            color="bg-purple"
+                            color="bg-success"
                         />
                     </Col>
                     <Col xs={12} sm={6} md={4} lg>
@@ -193,7 +188,7 @@ const AdminDashboard = () => {
                             title="Active Courses"
                             count={stats.totalCourses}
                             icon={BookOpen}
-                            color="bg-purple"
+                            color="bg-warning"
                         />
                     </Col>
                     <Col xs={12} sm={6} md={4} lg>
@@ -201,7 +196,7 @@ const AdminDashboard = () => {
                             title="Total PLOs"
                             count={stats.totalPLOs}
                             icon={GraduationCap}
-                            color="bg-secondary"
+                            color="bg-info"
                         />
                     </Col>
                 </Row>

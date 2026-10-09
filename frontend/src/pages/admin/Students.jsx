@@ -41,8 +41,10 @@ const Students = () => {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
             const { data } = await api.get('/api/admin/students', config);
             setStudents(data);
+            return data;
         } catch (error) {
             console.error("Error fetching students:", error);
+            throw error;
         }
     };
 
@@ -71,7 +73,8 @@ const Students = () => {
                 await api.post('/api/admin/students', formData, config);
                 toast.fire({ icon: 'success', title: 'Student registered successfully!' });
             }
-            fetchStudents();
+            // Wait for fetch to complete before closing modal
+            await fetchStudents();
             setShowModal(false);
         } catch (error) {
             showError('Error', error.response?.data?.message || 'Error processing student data');
@@ -143,13 +146,17 @@ const Students = () => {
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    const uniqueBatches = [...new Set(students.map(s => s.batch))].sort();
+    // Normalize batches to uppercase for consistent comparison
+    const uniqueBatches = [...new Set(students.map(s => s.batch?.toUpperCase() || s.batch))].sort();
 
     const filteredStudents = students.filter(s => {
         const matchesSearch =
             s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             s.regNo.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesBatch = batchFilter ? s.batch === batchFilter : true;
+        // Case-insensitive batch filter
+        const matchesBatch = batchFilter
+            ? (s.batch?.toUpperCase() || s.batch) === batchFilter.toUpperCase()
+            : true;
         return matchesSearch && matchesBatch;
     });
 

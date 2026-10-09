@@ -528,6 +528,8 @@ const removeCourseCLO = async (req, res) => {
     }
 };
 
+
+
 // GET ALL STUDENTS (for batch copy functionality)
 const getAllStudents = async (req, res) => {
     try {
@@ -892,6 +894,255 @@ const generateDMC = async (req, res) => {
     }
 };
 
+// GENERATE MARKS TEMPLATE EXCEL
+const generateMarksTemplate = async (req, res) => {
+    try {
+        const xlsx = require('xlsx');
+        const { courseId } = req.params;
+
+        const course = await Course.findById(courseId);
+        if (!course) return res.status(404).json({ message: 'Course not found' });
+
+        // Get course assignment to access assessments
+        const assignment = await CourseAssignment.findOne({ course: courseId }).populate('course');
+        if (!assignment) return res.status(404).json({ message: 'Course assignment not found' });
+
+        // Fetch all assessments with their questions
+        const assessmentIds = assignment.course.assessments || [];
+        const assessments = [];
+
+        for (const assessmentId of assessmentIds) {
+            const found = await findAssessmentById(assessmentId);
+            if (found) {
+                assessments.push({
+                    _id: found.doc._id,
+                    name: found.doc.name,
+                    type: found.doc.type || 'Assessment',
+                    totalMarks: found.doc.totalMarks,
+                    questions: found.doc.questions || []
+                });
+            }
+        }
+
+        // Get students enrolled in this course
+        const students = course.students && course.students.length > 0
+            ? await Student.find({ _id: { $in: course.students } })
+            : [];
+
+        // Build column structure with individual questions
+        const columns = [
+            { header: 'Student Reg No', width: 15 },
+            { header: 'Student Name', width: 25 }
+        ];
+
+        // Add question columns for each assessment
+        assessments.forEach((assessment) => {
+            if (assessment.questions.length > 0) {
+                assessment.questions.forEach((q, idx) => {
+                    columns.push({
+                        header: `${assessment.name} - Q${idx + 1}`,
+                        subheader: `${assessment.type} (Max: ${q.maxMarks || 0})`,
+                        width: 12
+                    });
+                });
+            }
+        });
+
+        // Create Excel workbook
+        const wsData = [];
+
+        // Add main headers (row 1)
+        const row1 = columns.map(c => c.header);
+        wsData.push(row1);
+
+        // Add sub-headers (row 2)
+        const row2 = columns.map(c => c.subheader || '');
+        wsData.push(row2);
+
+        // Add student data (rows 3+)
+        students.forEach(student => {
+            const row = [student.regNo, student.name];
+            for (let i = 2; i < columns.length; i++) {
+                row.push('');
+            }
+            wsData.push(row);
+        });
+
+        if (wsData.length === 2) {
+            wsData.push(['', '', ...Array(columns.length - 2).fill('')]);
+        }
+
+        const ws = xlsx.utils.aoa_to_sheet(wsData);
+        ws['!cols'] = columns.map(c => ({ wch: c.width }));
+
+        // Create workbook
+        const wb = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(wb, ws, 'Marks Template');
+
+        // Add info sheet with activity summary
+        const infoData = [
+            ['Activity Summary'],
+            ['Activity Name', 'Type', 'Questions', 'Max Marks'],
+            ...assessments.map(a => [a.name, a.type, a.questions.length, a.totalMarks])
+        ];
+        const wsInfo = xlsx.utils.aoa_to_sheet(infoData);
+        wsInfo['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 12 }, { wch: 12 }];
+        xlsx.utils.book_append_sheet(wb, wsInfo, 'Activity Info');
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="marks-template-${courseId}.xlsx"`);
+
+        const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+        res.end(buffer);
+    } catch (error) {
+        console.error('Error generating template:', error.message, error.stack);
+        res.status(500).json({ message: `Error: ${error.message}` });
+    }
+};
+
+// IMPORT MARKS FROM EXCEL
+const importMarksFromExcel = async (req, res) => {
+    try {
+        const xlsx = require('xlsx');
+        const { courseId } = req.params;
+
+        if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+
+        const course = await Course.findById(courseId);
+        if (!course) return res.status(404).json({ message: 'Course not found' });
+
+        // Get course assignment to access assessments
+        const assignment = await CourseAssignment.findOne({ course: courseId }).populate('course');
+        if (!assignment) return res.status(404).json({ message: 'Course assignment not found' });
+
+        // Fetch all assessments with questions
+        const assessmentIds = assignment.course.assessments || [];
+        const assessments = [];
+
+        for (const assessmentId of assessmentIds) {
+            const found = await findAssessmentById(assessmentId);
+            if (found) {
+                assessments.push({
+                    _id: found.doc._id,
+                    name: found.doc.name,
+                    questions: found.doc.questions || [],
+                    Model: found.Model,
+                    doc: found.doc
+                });
+            }
+        }
+
+        // Get students enrolled in this course
+        const students = course.students && course.students.length > 0
+            ? await Student.find({ _id: { $in: course.students } })
+            : [];
+
+        const studentMap = Object.fromEntries(
+            students.map(s => [s.regNo.toLowerCase(), s])
+        );
+
+        // Read Excel
+        const wb = xlsx.read(req.file.buffer);
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = xlsx.utils.sheet_to_json(ws, { header: 1 });
+
+        if (rows.length < 3) return res.status(400).json({ message: 'Excel file format invalid - needs headers and student data' });
+
+        // Parse headers (row 1 contains question headers like "Activity Name - Q1")
+        const headers = rows[0];
+        const regNoIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('reg'));
+
+        // Build mapping of header to assessment + question
+        const headerMap = {};
+        headers.forEach((header, idx) => {
+            if (idx <= 1) return;
+            const headerStr = header.toString();
+
+            // Find matching assessment and question
+            for (const assessment of assessments) {
+                for (let q = 0; q < assessment.questions.length; q++) {
+                    if (headerStr.includes(`- Q${q + 1}`)) {
+                        headerMap[idx] = {
+                            assessmentId: assessment._id,
+                            questionId: assessment.questions[q]._id,
+                            Model: assessment.Model,
+                            assessment: assessment.doc
+                        };
+                        break;
+                    }
+                }
+            }
+        });
+
+        let importCount = 0;
+
+        // Skip headers (rows 0-1) and process student data (rows 2+)
+        for (let i = 2; i < rows.length; i++) {
+            const row = rows[i];
+            const regNo = row[regNoIndex]?.toString().trim();
+            if (!regNo) continue;
+
+            const student = studentMap[regNo.toLowerCase()];
+            if (!student) {
+                console.warn(`Student with Reg No ${regNo} not found`);
+                continue;
+            }
+
+            // Group marks by assessment
+            const marksPerAssessment = {};
+
+            for (let colIdx = 2; colIdx < headers.length; colIdx++) {
+                const marks = parseFloat(row[colIdx]);
+                if (isNaN(marks) || marks < 0) continue;
+
+                const mapping = headerMap[colIdx];
+                if (!mapping) continue;
+
+                if (!marksPerAssessment[mapping.assessmentId]) {
+                    marksPerAssessment[mapping.assessmentId] = [];
+                }
+
+                marksPerAssessment[mapping.assessmentId].push({
+                    questionId: mapping.questionId,
+                    marks: marks
+                });
+            }
+
+            // Save marks to database
+            for (const [assessmentId, questionMarks] of Object.entries(marksPerAssessment)) {
+                const assessment = assessments.find(a => a._id.toString() === assessmentId);
+                if (!assessment) continue;
+
+                const resultData = {
+                    student: student._id,
+                    assessment: assessmentId,
+                    questionAnswers: assessment.questions.map(q => {
+                        const qMark = questionMarks.find(m => m.questionId.toString() === q._id.toString());
+                        return {
+                            question: q._id,
+                            obtainedMarks: qMark ? qMark.marks : 0
+                        };
+                    })
+                };
+
+                await Result.findOneAndUpdate(
+                    { student: student._id, assessment: assessmentId },
+                    resultData,
+                    { upsert: true, new: true }
+                );
+
+                importCount++;
+            }
+        }
+
+        res.json({ message: `Successfully imported marks for ${importCount} assessment-student pairs`, count: importCount });
+    } catch (error) {
+        console.error('Error importing marks:', error.message);
+        res.status(500).json({ message: `Error: ${error.message}` });
+    }
+};
+
+
 module.exports = {
     getAssignedCourses,
     getPLOsForFaculty,
@@ -906,9 +1157,12 @@ module.exports = {
     createCourseCLO,
     updateCourseCLO,
     removeCourseCLO,
+    updateCourseCLO,
     getAllStudents,
     getStudentGrades,
     getCourseAwardList,
     getStudentCLOAnalytics,
-    generateDMC
+    generateDMC,
+    generateMarksTemplate,
+    importMarksFromExcel
 };

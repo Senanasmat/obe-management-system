@@ -25,6 +25,7 @@ import * as XLSX from 'xlsx-js-style';
 import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
 
+
 const MarksEntry = () => {
     const { courseId, assessmentId } = useParams();
     const navigate = useNavigate();
@@ -201,7 +202,7 @@ const MarksEntry = () => {
             Swal.fire({
                 icon: 'success',
                 title: 'Marks Saved',
-                text: 'All marks have been saved successfully.',
+                text: `Successfully saved marks for ${students.length} student(s)`,
                 toast: true,
                 position: 'top-end',
                 showConfirmButton: false,
@@ -224,256 +225,212 @@ const MarksEntry = () => {
         }
     };
 
-    // =========================================================
-    // EXCEL TEMPLATE DOWNLOAD
-    // =========================================================
+    
+        // =========================================================
+        // EXCEL TEMPLATE DOWNLOAD
+        // =========================================================
 
-    const downloadTemplate = () => {
-        if (
-            !students.length ||
-            !assessment?.questions?.length
-        ) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'No Data Available',
-                text: 'There are no students or questions available for this assessment.',
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000
-            });
+        const downloadTemplate = () => {
+            if (!students.length || !assessment?.questions?.length) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No Data Available',
+                    text: 'There are no students or questions available for this assessment.',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+                return;
+            }
 
-            return;
+            try {
+                const headers = [
+                    'Student Reg No',
+                    'Student Name',
+                    ...assessment.questions.map((q, i) =>
+                        `${q.questionName || `Q${i + 1}`} (Max: ${q.maxMarks})`
+                    )
+                ];
+
+                const data = students.map(student => [
+                    student.regNo,
+                    student.name,
+                    ...assessment.questions.map((_, qIdx) =>
+                        marks[student._id]?.[qIdx] ?? ''
+                    )
+                ]);
+
+                const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+                ws['!cols'] = [
+                    { wch: 18 },
+                    { wch: 25 },
+                    ...assessment.questions.map(() => ({ wch: 18 }))
+                ];
+
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Marks');
+
+                const infoData = [
+                    ['Assessment Details'],
+                    ['Title', assessment.title],
+                    ['Type', assessment.type],
+                    ['Total Marks', assessment.totalMarks],
+                    ['Questions', assessment.questions.length],
+                    ['Students', students.length]
+                ];
+
+                const wsInfo = XLSX.utils.aoa_to_sheet(infoData);
+                wsInfo['!cols'] = [{ wch: 20 }, { wch: 30 }];
+                XLSX.utils.book_append_sheet(wb, wsInfo, 'Assessment Info');
+
+                XLSX.writeFile(
+                    wb,
+                    `${assessment.title}-marks-${Date.now()}.xlsx`
+                );
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Downloaded',
+                    text: 'Excel template downloaded successfully.',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to download: ' + error.message,
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            }
+        };
+
+        const handleDownloadExcel = downloadTemplate;
+
+        const handleImportExcel = async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            try {
+                const buffer = await file.arrayBuffer();
+                const workbook = XLSX.read(buffer);
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(worksheet, {
+                    header: 1,
+                    defval: ''
+                });
+
+                if (rows.length < 2) {
+                    throw new Error('The Excel file contains no student marks.');
+                }
+
+                const headers = rows[0].map(value =>
+                    String(value).trim().toLowerCase()
+                );
+                const regNoIdx = headers.findIndex(header =>
+                    header.includes('reg')
+                );
+
+                if (regNoIdx === -1) {
+                    throw new Error('Could not find a registration number column.');
+                }
+
+                const newMarks = { ...marks };
+                const errors = [];
+                let updatedCount = 0;
+
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    const regNo = String(row[regNoIdx] ?? '').trim();
+
+                    if (!regNo) continue;
+
+                    const student = students.find(
+                        s => String(s.regNo).trim().toLowerCase() === regNo.toLowerCase()
+                    );
+
+                    if (!student) {
+                        errors.push(`Row ${i + 1}: Student ${regNo} not found.`);
+                        continue;
+                    }
+
+                    newMarks[student._id] = {
+                        ...(newMarks[student._id] || {})
+                    };
+
+                    for (let qIdx = 0; qIdx < assessment.questions.length; qIdx++) {
+                        const value = row[qIdx + 2];
+
+                        if (value === '' || value === null || value === undefined) {
+                            continue;
+                        }
+
+                        const score = Number(value);
+                        const maxMarks = Number(assessment.questions[qIdx].maxMarks);
+
+                        if (!Number.isFinite(score) || score < 0 || score > maxMarks) {
+                            errors.push(
+                                `Row ${i + 1}, Q${qIdx + 1}: Enter a number from 0 to ${maxMarks}.`
+                            );
+                            continue;
+                        }
+
+                        newMarks[student._id][qIdx] = score;
+                        updatedCount++;
+                    }
+                }
+
+                if (updatedCount > 0) {
+                    setMarks(newMarks);
+                    setSavedAt(null);
+                }
+
+                await Swal.fire({
+                    icon: errors.length ? 'warning' : updatedCount ? 'success' : 'info',
+                    title: errors.length
+                        ? 'Import Completed with Errors'
+                        : updatedCount
+                            ? 'Import Successful'
+                            : 'No Marks Imported',
+                    text: `${updatedCount} mark(s) imported. ${errors.length} error(s).`,
+                    ...(errors.length
+                        ? { html: `<p>${updatedCount} mark(s) imported.</p><p>${errors.slice(0, 10).join('<br/>')}</p>` }
+                        : {}),
+                    toast: !errors.length,
+                    position: errors.length ? 'center' : 'top-end',
+                    showConfirmButton: Boolean(errors.length),
+                    timer: errors.length ? undefined : 2500
+                });
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Import Failed',
+                    text: error.message,
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            } finally {
+                e.target.value = '';
+            }
+        };
+
+        if (loading) {
+            return (
+                <div className="p-5 text-center text-muted">
+                    Loading marks entry...
+                </div>
+            );
         }
 
-        const questionHeaders =
-            assessment.questions.map(
-                (q, index) =>
-                    q.questionName || `Q${index + 1}`
-            );
-
-        const headers = [
-            'S.No',
-            'Student Name',
-            'Reg No',
-            ...questionHeaders,
-            'Total'
-        ];
-
-        const rows = students.map((student, index) => [
-            index + 1,
-            student.name,
-            student.regNo,
-            ...assessment.questions.map(() => ''),
-            ''
-        ]);
-
-        const worksheet =
-            XLSX.utils.aoa_to_sheet([
-                headers,
-                ...rows
-            ]);
-
-        // Column widths
-        worksheet['!cols'] = [
-            { wch: 8 },
-            { wch: 28 },
-            { wch: 20 },
-            ...assessment.questions.map(() => ({
-                wch: 14
-            })),
-            { wch: 12 }
-        ];
-
-        // Header styling
-        headers.forEach((_, columnIndex) => {
-            const cell =
-                XLSX.utils.encode_cell({
-                    r: 0,
-                    c: columnIndex
-                });
-
-            if (worksheet[cell]) {
-                worksheet[cell].s = {
-                    font: {
-                        bold: true,
-                        color: {
-                            rgb: 'FFFFFF'
-                        }
-                    },
-                    fill: {
-                        fgColor: {
-                            rgb: '4C1D95'
-                        }
-                    },
-                    alignment: {
-                        horizontal: 'center',
-                        vertical: 'center'
-                    },
-                    border: {
-                        top: {
-                            style: 'thin',
-                            color: {
-                                rgb: 'D1D5DB'
-                            }
-                        },
-                        bottom: {
-                            style: 'thin',
-                            color: {
-                                rgb: 'D1D5DB'
-                            }
-                        },
-                        left: {
-                            style: 'thin',
-                            color: {
-                                rgb: 'D1D5DB'
-                            }
-                        },
-                        right: {
-                            style: 'thin',
-                            color: {
-                                rgb: 'D1D5DB'
-                            }
-                        }
-                    }
-                };
-            }
-        });
-
-        // Student information cells
-        students.forEach((_, rowIndex) => {
-            [0, 1, 2].forEach(columnIndex => {
-                const cell =
-                    XLSX.utils.encode_cell({
-                        r: rowIndex + 1,
-                        c: columnIndex
-                    });
-
-                if (worksheet[cell]) {
-                    worksheet[cell].s = {
-                        fill: {
-                            fgColor: {
-                                rgb: 'F3F4F6'
-                            }
-                        },
-                        font: {
-                            color: {
-                                rgb: '6B7280'
-                            }
-                        },
-                        alignment: {
-                            vertical: 'center'
-                        }
-                    };
-                }
-            });
-        });
-
-        // Editable marks cells
-        assessment.questions.forEach(
-            (_, questionIndex) => {
-                const columnIndex =
-                    questionIndex + 3;
-
-                students.forEach((_, rowIndex) => {
-                    const cell =
-                        XLSX.utils.encode_cell({
-                            r: rowIndex + 1,
-                            c: columnIndex
-                        });
-
-                    if (worksheet[cell]) {
-                        worksheet[cell].s = {
-                            fill: {
-                                fgColor: {
-                                    rgb: 'FEFCE8'
-                                }
-                            },
-                            alignment: {
-                                horizontal: 'center'
-                            },
-                            border: {
-                                top: {
-                                    style: 'thin',
-                                    color: {
-                                        rgb: 'E5E7EB'
-                                    }
-                                },
-                                bottom: {
-                                    style: 'thin',
-                                    color: {
-                                        rgb: 'E5E7EB'
-                                    }
-                                },
-                                left: {
-                                    style: 'thin',
-                                    color: {
-                                        rgb: 'E5E7EB'
-                                    }
-                                },
-                                right: {
-                                    style: 'thin',
-                                    color: {
-                                        rgb: 'E5E7EB'
-                                    }
-                                }
-                            }
-                        };
-                    }
-                });
-            }
-        );
-
-        // Total column
-        const totalColumn =
-            headers.length - 1;
-
-        students.forEach((_, rowIndex) => {
-            const cell =
-                XLSX.utils.encode_cell({
-                    r: rowIndex + 1,
-                    c: totalColumn
-                });
-
-            if (worksheet[cell]) {
-                worksheet[cell].s = {
-                    fill: {
-                        fgColor: {
-                            rgb: 'F5F3FF'
-                        }
-                    },
-                    font: {
-                        bold: true,
-                        color: {
-                            rgb: '6D28D9'
-                        }
-                    },
-                    alignment: {
-                        horizontal: 'center'
-                    }
-                };
-            }
-        });
-
-        const workbook =
-            XLSX.utils.book_new();
-
-        XLSX.utils.book_append_sheet(
-            workbook,
-            worksheet,
-            'Marks Entry'
-        );
-
-        const safeTitle =
-            assessment.title
-                .replace(/[^a-z0-9]/gi, '_')
-                .replace(/_+/g, '_');
-
-        XLSX.writeFile(
-            workbook,
-            `${safeTitle}_Marks_Template.xlsx`
-        );
-    };
+        
 
     // =========================================================
     // EXCEL IMPORT
@@ -911,8 +868,7 @@ const MarksEntry = () => {
                             enrolled
                         </p>
                     </div>
-
-                    <div className="d-flex align-items-center gap-2">
+                    <div className="d-flex align-items-center gap-2 flex-wrap">
                         {savedAt && (
                             <span className="d-flex align-items-center gap-1 text-success small fw-medium me-2">
                                 <CheckCircle2
@@ -973,6 +929,31 @@ const MarksEntry = () => {
 
                         {/* BACK */}
 
+                        <Button
+                            size="sm"
+                            variant="outline-primary"
+                            className="px-3 d-flex align-items-center gap-1 rounded-2"
+                            onClick={handleDownloadExcel}
+                        >
+                            <Download size={14} /> Download Excel
+                        </Button>
+                        <div className="position-relative">
+                            <input
+                                type="file"
+                                accept=".xlsx,.xls"
+                                onChange={handleImportExcel}
+                                style={{ display: 'none' }}
+                                id="marksImportInput"
+                            />
+                            <Button
+                                size="sm"
+                                variant="outline-primary"
+                                className="px-3 d-flex align-items-center gap-1 rounded-2"
+                                onClick={() => document.getElementById('marksImportInput').click()}
+                            >
+                                <Upload size={14} /> Upload Excel
+                            </Button>
+                        </div>
                         <Button
                             variant="light"
                             size="sm"

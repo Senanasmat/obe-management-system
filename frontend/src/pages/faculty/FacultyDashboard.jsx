@@ -200,12 +200,12 @@ const FacultyDashboard = () => {
                                     }}
                                 >
                                     {/* Avatar */}
-                                    <div className="d-flex justify-content-center mb-3">
+                                    <div className="d-flex justify-content-center mb-3" title={a.course.name}>
                                         <div
                                             className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
                                             style={{ width: 68, height: 68, backgroundColor: '#637a62', fontSize: '1.3rem', letterSpacing: 1 }}
                                         >
-                                            {a.course.code.split('-')[0] || '??'}
+                                            {getInitials(a.course.name) || getInitials(a.course.code) || '??'}
                                         </div>
                                     </div>
 

@@ -4,14 +4,27 @@ import { Navbar as BsNavbar, Container, Form, Dropdown } from 'react-bootstrap';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useState } from 'react';
+import Toast from './Toast';
 
 const Navbar = ({ user }) => {
     const { logout } = useAuth();
     const navigate = useNavigate();
+    const [showLogoutToast, setShowLogoutToast] = useState(false);
+
+    const handleLogout = () => {
+        setShowLogoutToast(true);
+        logout();
+        setTimeout(() => {
+            navigate('/');
+        }, 1500);
+    };
 
     return (
-        <BsNavbar bg="white" className="border-bottom py-2 shadow-sm sticky-top" style={{ zIndex: 900, height: '70px' }}>
-            <Container fluid className="px-3 d-flex justify-content-between align-items-center h-100">
+        <>
+            {showLogoutToast && <Toast message="You have been logged out successfully!" type="success" duration={3000} />}
+            <BsNavbar bg="white" className="border-bottom py-2 shadow-sm sticky-top" style={{ zIndex: 900, height: '70px' }}>
+                <Container fluid className="px-3 d-flex justify-content-between align-items-center h-100">
 
                 {/* LEFT SIDE: LOGO */}
                 <div className="d-flex align-items-center gap-2 h-100">
@@ -51,7 +64,7 @@ const Navbar = ({ user }) => {
                                     <User size={14} className="me-2" />
                                     Profile
                                 </Dropdown.Item>
-                                <Dropdown.Item onClick={logout} className="text-danger small">
+                                <Dropdown.Item onClick={handleLogout} className="text-danger small">
                                     <LogOut size={14} className="me-2" />
                                     Sign Out
                                 </Dropdown.Item>
@@ -63,11 +76,12 @@ const Navbar = ({ user }) => {
                 </div>
             </Container>
 
-            <style>{`
-                .cursor-pointer { cursor: pointer; }
-                .smaller { font-size: 0.75rem; }
-            `}</style>
-        </BsNavbar>
+                <style>{`
+                    .cursor-pointer { cursor: pointer; }
+                    .smaller { font-size: 0.75rem; }
+                `}</style>
+            </BsNavbar>
+        </>
     );
 };
 
