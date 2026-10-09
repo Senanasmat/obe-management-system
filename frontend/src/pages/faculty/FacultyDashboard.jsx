@@ -184,7 +184,7 @@ const FacultyDashboard = () => {
                                 
                                 <Card
                                     className="h-100 rounded-4 text-center p-4"
-                                    onClick={() => navigate(`/faculty/courses/${a.course._id}?tab=Activities`)}
+                                    onClick={() => navigate(`/faculty/courses/${a.course._id}`)}
                                     style={{
                                         border: '1px solid #e5e7eb',
                                         boxShadow: '0 6px 18px rgba(0,0,0,0.06)',

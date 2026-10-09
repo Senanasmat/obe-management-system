@@ -210,7 +210,7 @@ const getDashboardStats = async (req, res) => {
 
         // Calculate CLO Achievements
         const cloAchievements = await Promise.all(clos.map(async (clo) => {
-            const perModel = await Promise.all(ALL_MODELS.map(M => M.find({ 'questions.clo': clo._id })));
+            const perModel = await Promise.all(ALL_MODELS.map(M => M.find({ 'questions.clos': clo._id  })));
             const assessments = perModel.flat();
             let totalObtained = 0;
             let totalMax = 0;
@@ -220,7 +220,13 @@ const getDashboardStats = async (req, res) => {
 
                 // Identify question indices for this CLO
                 const cloQuestionIndices = assessment.questions
-                    .map((q, idx) => q.clo?.toString() === clo._id.toString() ? idx : -1)
+                    .map((q, idx) =>
+                        q.clos?.some(
+                            cloId => cloId.toString() === clo._id.toString()
+                        )
+                            ? idx
+                            : -1
+                    )
                     .filter(idx => idx !== -1);
 
                 for (const result of results) {
@@ -269,6 +275,150 @@ const getDashboardStats = async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+};
+
+const getBatchPLOAchievements = async (req, res) => {
+    try {
+        const { batch } = req.query;
+
+        if (!batch) {
+            return res.status(400).json({
+                message: 'Batch is required'
+            });
+        }
+
+        // Get students from selected batch
+        const students = await Student.find({ batch });
+
+        if (!students.length) {
+            return res.json({
+                batch,
+                ploAchievements: []
+            });
+        }
+
+        const studentIds = students.map(student => student._id);
+
+        const plos = await PLO.find({});
+        const clos = await CLO.find({});
+
+        // Get courses containing students from this batch
+        const courses = await Course.find({
+            students: { $in: studentIds }
+        });
+
+        const courseIds = courses.map(course => course._id);
+
+        // Get all assessments belonging to those courses
+        const assessmentResults = await Promise.all(
+            ALL_MODELS.map(Model =>
+                Model.find({
+                    course: { $in: courseIds }
+                })
+            )
+        );
+
+        const assessments = assessmentResults.flat();
+
+        const assessmentIds = assessments.map(a => a._id);
+
+        // Get results only for students of selected batch
+        const results = await Result.find({
+            assessment: { $in: assessmentIds },
+            student: { $in: studentIds }
+        });
+
+        // Calculate achievement for every CLO
+        const cloAchievements = [];
+
+        for (const clo of clos) {
+            let totalObtained = 0;
+            let totalMax = 0;
+
+            const cloAssessments = assessments.filter(assessment =>
+                assessment.questions.some(
+                    question =>
+                        question.clos?.some(
+                            cloId => cloId.toString() === clo._id.toString()
+                        )
+                )
+            );
+
+            for (const assessment of cloAssessments) {
+                const cloQuestionIndices = assessment.questions
+                    .map((question, index) =>
+                        question.clos?.some(
+                            cloId => cloId.toString() === clo._id.toString()
+                        )
+                            ? index
+                            : -1
+                    )
+                    .filter(index => index !== -1);
+
+                const assessmentResults = results.filter(
+                    result =>
+                        result.assessment.toString() ===
+                        assessment._id.toString()
+                );
+
+                for (const result of assessmentResults) {
+                    for (const index of cloQuestionIndices) {
+                        const markRecord = result.obtainedMarks.find(
+                            mark => mark.questionIndex === index
+                        );
+
+                        if (markRecord) {
+                            totalObtained += markRecord.marks;
+                            totalMax += assessment.questions[index].maxMarks;
+                        }
+                    }
+                }
+            }
+
+            cloAchievements.push({
+                cloId: clo._id,
+                code: clo.code,
+                achievement:
+                    totalMax > 0
+                        ? (totalObtained / totalMax) * 100
+                        : 0,
+                plo: clo.plo
+            });
+        }
+
+        // Calculate PLO achievement from its related CLOs
+        const ploAchievements = plos.map(plo => {
+            const relatedCLOs = cloAchievements.filter(
+                clo =>
+                    clo.plo &&
+                    clo.plo.toString() === plo._id.toString()
+            );
+
+            const achievement =
+                relatedCLOs.length > 0
+                    ? relatedCLOs.reduce(
+                        (sum, clo) => sum + clo.achievement,
+                        0
+                    ) / relatedCLOs.length
+                    : 0;
+
+            return {
+                code: plo.code,
+                achievement: Number(achievement.toFixed(2))
+            };
+        });
+
+        res.json({
+            batch,
+            ploAchievements
+        });
+
+    } catch (error) {
+        console.error('Batch PLO achievement error:', error);
+        res.status(500).json({
+            message: error.message
+        });
     }
 };
 
@@ -401,5 +551,6 @@ module.exports = {
     createCourse, getCourses, updateCourse, deleteCourse, assignFaculty, enrollStudents,
     createStudent, getStudents, updateStudent, deleteStudent, bulkImportStudents,
     getFaculty, createFacultyMember, updateFacultyMember, deleteFacultyMember,
+    getBatchPLOAchievements,
     getDashboardStats
 };

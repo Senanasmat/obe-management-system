@@ -161,7 +161,6 @@ const CoursesList = () => {
                                             <Dropdown.Item onClick={() => navigate(`/faculty/courses/${a.course._id}?tab=Activities`)}>
                                                 Class Activities
                                             </Dropdown.Item>
-                                            <Dropdown.Item>Activity Weights</Dropdown.Item>
                                         </Dropdown.Menu>
                                     </Dropdown>
 

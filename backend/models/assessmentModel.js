@@ -6,7 +6,7 @@ const questionSchema = {
     maxMarks: { type: Number, required: true },
     obeWeight: { type: Number, default: 0 },
     complexity: { type: String, enum: ['Low', 'Medium', 'High', ''], default: '' },
-    clo: { type: mongoose.Schema.Types.ObjectId, ref: 'CLO' },
+    clos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'CLO' }],
     notForOBE: { type: Boolean, default: false }
 };
 

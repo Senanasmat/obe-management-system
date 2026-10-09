@@ -19,7 +19,7 @@ const emptyQuestion = (index) => ({
     maxMarks: '',
     obeWeight: '0.00',
     complexity: '',
-    clo: '',
+    clos: [],
     notForOBE: false,
     questionText: '',
 });
@@ -101,7 +101,9 @@ const AssessmentCreation = () => {
                         maxMarks: q.maxMarks ?? '',
                         obeWeight: q.obeWeight ?? '0.00',
                         complexity: q.complexity || '',
-                        clo: q.clo || '',
+                        clos: q.clos?.map(clo =>
+                            typeof clo === 'object' ? clo._id : clo
+                        ) || [],
                         notForOBE: q.notForOBE || false,
                         questionText: q.questionText || '',
                     })));
@@ -117,6 +119,32 @@ const AssessmentCreation = () => {
             // Auto-sync OBE Weight with Max Marks
             if (field === 'maxMarks') updated.obeWeight = value;
             return updated;
+        }));
+    };
+
+    const addCLO = (index, cloId) => {
+        if (!cloId) return;
+
+        setQuestions(prev => prev.map((q, i) => {
+            if (i !== index) return q;
+
+            if (q.clos.includes(cloId)) return q;
+
+            return {
+                ...q,
+                clos: [...q.clos, cloId]
+            };
+        }));
+    };
+
+    const removeCLO = (index, cloId) => {
+        setQuestions(prev => prev.map((q, i) => {
+            if (i !== index) return q;
+
+            return {
+                ...q,
+                clos: q.clos.filter(id => id !== cloId)
+            };
         }));
     };
 
@@ -158,7 +186,7 @@ const AssessmentCreation = () => {
                 maxMarks: Number(q.maxMarks) || 0,
                 obeWeight: parseFloat(q.obeWeight) || 0,
                 complexity: q.complexity,
-                clo: q.clo || undefined,
+                clos: q.clos || [],
                 notForOBE: q.notForOBE,
             }))
         };
@@ -412,20 +440,76 @@ const AssessmentCreation = () => {
                                         {/* Row 2: CLOs | Not for OBE */}
                                         <Row className="g-3 mb-3 align-items-end">
                                             <Col md={8}>
-                                                <Form.Label className="small text-dark mb-1">CLOs</Form.Label>
-                                                <Form.Select
-                                                    value={q.clo}
-                                                    onChange={e => handleQuestionChange(index, 'clo', e.target.value)}
-                                                    className="bg-white"
-                                                    style={{ borderColor: '#ccc' }}
+                                                <Form.Label className="small text-dark mb-1">
+                                                    CLOs
+                                                </Form.Label>
+
+                                                <div
+                                                    className="bg-white border rounded p-2"
+                                                    style={{ borderColor: '#ccc', minHeight: '58px' }}
                                                 >
-                                                    <option value="">- Select CLO -</option>
-                                                    {clos.map(clo => (
-                                                        <option key={clo._id} value={clo._id}>
-                                                            {clo.code} — {clo.description?.slice(0, 60)}
-                                                        </option>
-                                                    ))}
-                                                </Form.Select>
+                                                    {/* Selected CLOs */}
+                                                    <div className="d-flex flex-wrap gap-2 mb-2">
+                                                        {q.clos.map(cloId => {
+                                                            const selectedCLO = clos.find(
+                                                                clo => clo._id === cloId
+                                                            );
+
+                                                            if (!selectedCLO) return null;
+
+                                                            return (
+                                                                <span
+                                                                    key={cloId}
+                                                                    className="badge bg-light text-dark border d-flex align-items-center"
+                                                                    style={{
+                                                                        fontSize: '13px',
+                                                                        padding: '7px 9px'
+                                                                    }}
+                                                                >
+                                                                    {selectedCLO.code} — {selectedCLO.description?.slice(0, 50)}
+
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn-close ms-2"
+                                                                        style={{
+                                                                            fontSize: '8px'
+                                                                        }}
+                                                                        onClick={() =>
+                                                                            removeCLO(index, cloId)
+                                                                        }
+                                                                    />
+                                                                </span>
+                                                            );
+                                                        })}
+                                                    </div>
+
+                                                    {/* Add another CLO */}
+                                                    <div className="d-flex gap-2">
+                                                        <Form.Select
+                                                            value=""
+                                                            onChange={e =>
+                                                                addCLO(index, e.target.value)
+                                                            }
+                                                            className="bg-white"
+                                                            style={{ borderColor: '#ccc' }}
+                                                        >
+                                                            <option value="">
+                                                                + Select CLO to add
+                                                            </option>
+
+                                                            {clos
+                                                                .filter(clo => !q.clos.includes(clo._id))
+                                                                .map(clo => (
+                                                                    <option
+                                                                        key={clo._id}
+                                                                        value={clo._id}
+                                                                    >
+                                                                        {clo.code} — {clo.description?.slice(0, 60)}
+                                                                    </option>
+                                                                ))}
+                                                        </Form.Select>
+                                                    </div>
+                                                </div>
                                             </Col>
                                             <Col md={4}>
                                                 <div className="d-flex align-items-center gap-2 pb-1">

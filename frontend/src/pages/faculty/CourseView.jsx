@@ -3,12 +3,13 @@ import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Container, Card, Row, Col, Button, Badge, Dropdown, Table, Breadcrumb, Modal, Form } from 'react-bootstrap';
+import { Container, Card, Row, Col, Button, Spinner, Badge, Dropdown, Table, Breadcrumb, Modal, Form } from 'react-bootstrap';
 import { PlusCircle, FileText, ClipboardList, ChevronDown, XCircle, CheckCircle, Plus, Pencil, Trash2, Users, Search, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import * as XLSX from 'xlsx-js-style';
 
 const containerVariants = {
     hidden: { opacity: 0, y: 10 },
@@ -31,6 +32,15 @@ const CourseView = () => {
     const [analytics, setAnalytics] = useState(null);
     const [assessments, setAssessments] = useState([]);
     const [courseClos, setCourseClos] = useState([]);
+    const [awardList, setAwardList] = useState([]);
+    const [awardCourse, setAwardCourse] = useState(null);
+    const [awardLoading, setAwardLoading] = useState(false);
+
+    const [awardSettings, setAwardSettings] = useState({
+        examDate: '',
+        examSession: '2024-2028 (Regular)',
+        examHeld: 'March, 2026'
+    });
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'View');
     const [cloForm, setCloForm] = useState({ code: '', description: '', plo: '' });
     const [cloLoading, setCloLoading] = useState(false);
@@ -54,13 +64,15 @@ const CourseView = () => {
     const [batchStudentIds, setBatchStudentIds] = useState(new Set());
     const [studentCheckboxes, setStudentCheckboxes] = useState(new Set());
     const [studentGrades, setStudentGrades] = useState({});
+    const [selectedCloStudent, setSelectedCloStudent] = useState(null);
 
     const formatDate = (d) => {
         if (!d) return '—';
         const dt = new Date(d);
         return `${String(dt.getDate()).padStart(2,'0')}-${String(dt.getMonth()+1).padStart(2,'0')}-${dt.getFullYear()}`;
     };
-    const hasOutcomes = (a) => a.questions?.some(q => q.clo);
+    const hasOutcomes = (a) =>
+        a.questions?.some(q => q.clos?.length > 0);
     const grouped = assessments.reduce((acc, a) => { (acc[a.type] = acc[a.type] || []).push(a); return acc; }, {});
 
     const toggleSelect = (id) => setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -116,6 +128,21 @@ const CourseView = () => {
                 setStudentGrades(gradesMap);
             })
             .catch(err => console.error('Error fetching grades:', err));
+        
+        // Fetch Award List
+        setAwardLoading(true);
+        api.get(`/api/faculty/courses/${courseId}/award-list`, config)
+            .then(r => {
+                setAwardList(r.data.awardList || []);
+                setAwardCourse(r.data.course || null);
+            })
+            .catch(err => {
+                console.error('Error fetching award list:', err);
+                setAwardList([]);
+            })
+            .finally(() => {
+                setAwardLoading(false);
+            });
 
         // Fetch all students for batch copy
         api.get('/api/admin/students', config)
@@ -287,76 +314,306 @@ const CourseView = () => {
         }
     };
 
-    const handleGenerateDMC = async () => {
-        if (studentCheckboxes.size === 0) {
-            Swal.fire({ icon: 'warning', title: 'Select Students', text: 'Please select at least one student to generate DMC', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+
+const handleSelectCloStudent = async (student) => {
+    const config = {
+        headers: {
+            Authorization: `Bearer ${user.token}`
+        }
+    };
+
+    try {
+        setSelectedCloStudent({
+            ...student,
+            loading: true,
+            cloStats: []
+        });
+
+        const response = await api.get(
+            `/api/faculty/courses/${courseId}/students/${student._id}/clo-analytics`,
+            config
+        );
+
+        setSelectedCloStudent({
+            ...student,
+            loading: false,
+            cloStats: response.data.cloStats || []
+        });
+
+    } catch (error) {
+        console.error(
+            'Failed to load student CLO analytics:',
+            error.response?.data || error.message
+        );
+
+        setSelectedCloStudent({
+            ...student,
+            loading: false,
+            cloStats: []
+        });
+    }
+};
+
+
+    // const handleGenerateDMC = async () => {
+    //     if (studentCheckboxes.size === 0) {
+    //         Swal.fire({ icon: 'warning', title: 'Select Students', text: 'Please select at least one student to generate DMC', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+    //         return;
+    //     }
+
+    //     try {
+    //         const config = { headers: { Authorization: `Bearer ${user.token}` } };
+    //         const { data } = await api.post(
+    //             '/api/faculty/students/dmc',
+    //             { studentIds: [...studentCheckboxes] },
+    //             config
+    //         );
+
+    //         if (!data.students || data.students.length === 0) {
+    //             Swal.fire({ icon: 'error', title: 'Error', text: 'No data received from server', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+    //             return;
+    //         }
+
+    //         const doc = new jsPDF();
+    //         const now = new Date().toLocaleDateString();
+
+    //         data.students.forEach((studentData, idx) => {
+    //             if (idx > 0) doc.addPage();
+
+    //             // Header
+    //             doc.setFontSize(16);
+    //             doc.text('DETAILED MARKS CERTIFICATE', 14, 15);
+
+    //             doc.setFontSize(10);
+    //             doc.text(`Student Name: ${studentData.student.name}`, 14, 25);
+    //             doc.text(`Registration No: ${studentData.student.regNo}`, 14, 31);
+    //             doc.text(`Batch: ${studentData.student.batch}`, 14, 37);
+    //             doc.text(`Generated: ${now}`, 14, 43);
+
+    //             // Table
+    //             const tableData = studentData.courses.map(course => [
+    //                 course.code,
+    //                 course.name,
+    //                 course.creditHours,
+    //                 course.semester,
+    //                 `${course.totalObtained}/${course.totalMaxMarks}`,
+    //                 `${course.percentage}%`,
+    //                 course.grade,
+    //                 course.gpa !== null ? course.gpa.toFixed(2) : 'N/A'
+    //             ]);
+
+    //             if (tableData.length > 0 && typeof doc.autoTable === 'function') {
+    //                 doc.autoTable({
+    //                     head: [['Code', 'Course', 'Cr Hrs', 'Semester', 'Obtained/Total', '%', 'Grade', 'GPA']],
+    //                     body: tableData,
+    //                     startY: 50,
+    //                     margin: { left: 14, right: 14 }
+    //                 });
+
+    //                 const finalY = doc.lastAutoTable.finalY + 8;
+    //                 doc.setFontSize(10);
+    //                 doc.text(`Total Credit Hours: ${studentData.totalCreditHours}   Overall GPA: ${studentData.overallGPA.toFixed(2)}`, 14, finalY);
+    //             } else if (tableData.length === 0) {
+    //                 doc.setFontSize(10);
+    //                 doc.text('No courses enrolled.', 14, 50);
+    //             }
+    //         });
+
+    //         doc.save(`DMC-${Date.now()}.pdf`);
+    //         Swal.fire({ icon: 'success', title: 'Success', text: 'DMC generated successfully!', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+    //     } catch (error) {
+    //         console.error('Error generating DMC:', error);
+    //         Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || error.message, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+    //     }
+    // };
+
+    const handleDownloadAwardList = () => {
+        if (!awardList || awardList.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'No Award List',
+                text: 'There is no award list data available to export.',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000
+            });
             return;
         }
 
-        try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            const { data } = await api.post(
-                '/api/faculty/students/dmc',
-                { studentIds: [...studentCheckboxes] },
-                config
-            );
+        const courseName = awardCourse?.name || course?.name || '';
+        const courseCode = awardCourse?.code || course?.code || '';
 
-            if (!data.students || data.students.length === 0) {
-                Swal.fire({ icon: 'error', title: 'Error', text: 'No data received from server', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
-                return;
+        const headers = [
+            'S.No',
+            'Registration No.',
+            'Student Name',
+            'Batch',
+            'Sessional (20)',
+            'Midterm (30)',
+            'Final (50)',
+            'Total (100)',
+            'Grade',
+            'GPA'
+        ];
+
+        const rows = awardList.map((student, index) => [
+            index + 1,
+            student.regNo,
+            student.name,
+            student.batch,
+            student.sessional,
+            student.midterm,
+            student.final,
+            student.total,
+            student.grade,
+            student.gpa
+        ]);
+
+        const excelData = [
+            ['COURSE AWARD LIST'],
+            [`Course Name: ${courseName}`],
+            [`Course Code: ${courseCode}`],
+            [],
+            headers,
+            ...rows
+        ];
+
+        const worksheet = XLSX.utils.aoa_to_sheet(excelData);
+
+        worksheet['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } },
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 9 } },
+            { s: { r: 2, c: 0 }, e: { r: 2, c: 9 } }
+        ];
+
+        // Course Award List title
+        worksheet['A1'].s = {
+            font: {
+                bold: true,
+                sz: 16
+            },
+            alignment: {
+                horizontal: 'center',
+                vertical: 'center'
             }
+        };
 
-            const doc = new jsPDF();
-            const now = new Date().toLocaleDateString();
+        // Course Name
+        worksheet['A2'].s = {
+            font: {
+                bold: true,
+                sz: 12
+            },
+            alignment: {
+                horizontal: 'center',
+                vertical: 'center'
+            }
+        };
 
-            data.students.forEach((studentData, idx) => {
-                if (idx > 0) doc.addPage();
+        // Course Code
+        worksheet['A3'].s = {
+            font: {
+                bold: true,
+                sz: 12
+            },
+            alignment: {
+                horizontal: 'center',
+                vertical: 'center'
+            }
+        };
 
-                // Header
-                doc.setFontSize(16);
-                doc.text('DETAILED MARKS CERTIFICATE', 14, 15);
-
-                doc.setFontSize(10);
-                doc.text(`Student Name: ${studentData.student.name}`, 14, 25);
-                doc.text(`Registration No: ${studentData.student.regNo}`, 14, 31);
-                doc.text(`Batch: ${studentData.student.batch}`, 14, 37);
-                doc.text(`Generated: ${now}`, 14, 43);
-
-                // Table
-                const tableData = studentData.courses.map(course => [
-                    course.code,
-                    course.name,
-                    course.creditHours,
-                    course.semester,
-                    `${course.totalObtained}/${course.totalMaxMarks}`,
-                    `${course.percentage}%`,
-                    course.grade,
-                    course.gpa !== null ? course.gpa.toFixed(2) : 'N/A'
-                ]);
-
-                if (tableData.length > 0 && typeof doc.autoTable === 'function') {
-                    doc.autoTable({
-                        head: [['Code', 'Course', 'Cr Hrs', 'Semester', 'Obtained/Total', '%', 'Grade', 'GPA']],
-                        body: tableData,
-                        startY: 50,
-                        margin: { left: 14, right: 14 }
-                    });
-
-                    const finalY = doc.lastAutoTable.finalY + 8;
-                    doc.setFontSize(10);
-                    doc.text(`Total Credit Hours: ${studentData.totalCreditHours}   Overall GPA: ${studentData.overallGPA.toFixed(2)}`, 14, finalY);
-                } else if (tableData.length === 0) {
-                    doc.setFontSize(10);
-                    doc.text('No courses enrolled.', 14, 50);
-                }
+        // Table headings
+        headers.forEach((_, index) => {
+            const cellAddress = XLSX.utils.encode_cell({
+                r: 4,
+                c: index
             });
 
-            doc.save(`DMC-${Date.now()}.pdf`);
-            Swal.fire({ icon: 'success', title: 'Success', text: 'DMC generated successfully!', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
-        } catch (error) {
-            console.error('Error generating DMC:', error);
-            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || error.message, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
-        }
+            worksheet[cellAddress].s = {
+                font: {
+                    bold: true,
+                    sz: 11
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'center'
+                },
+                border: {
+                    top: {
+                        style: 'thin',
+                        color: { rgb: '000000' }
+                    },
+                    bottom: {
+                        style: 'thin',
+                        color: { rgb: '000000' }
+                    },
+                    left: {
+                        style: 'thin',
+                        color: { rgb: '000000' }
+                    },
+                    right: {
+                        style: 'thin',
+                        color: { rgb: '000000' }
+                    }
+                }
+            };
+        });
+
+        // Center numeric/table values
+        rows.forEach((_, rowIndex) => {
+            headers.forEach((_, colIndex) => {
+                const cellAddress = XLSX.utils.encode_cell({
+                    r: rowIndex + 5,
+                    c: colIndex
+                });
+
+                if (worksheet[cellAddress]) {
+                    worksheet[cellAddress].s = {
+                        alignment: {
+                            horizontal: 'center',
+                            vertical: 'center'
+                        }
+                    };
+                }
+            });
+        });
+
+        // Column widths
+        worksheet['!cols'] = [
+            { wch: 8 },
+            { wch: 20 },
+            { wch: 25 },
+            { wch: 15 },
+            { wch: 16 },
+            { wch: 14 },
+            { wch: 14 },
+            { wch: 14 },
+            { wch: 10 },
+            { wch: 10 }
+        ];
+
+        // Row heights
+        worksheet['!rows'] = [
+            { hpt: 25 },
+            { hpt: 20 },
+            { hpt: 20 },
+            { hpt: 8 },
+            { hpt: 25 }
+        ];
+
+        const workbook = XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(
+            workbook,
+            worksheet,
+            'Award List'
+        );
+
+        XLSX.writeFile(
+            workbook,
+            `Award-List-${courseCode || 'Course'}.xlsx`
+        );
     };
 
     const handleAddClo = async (e) => {
@@ -517,7 +774,7 @@ const CourseView = () => {
         setCourseClos(prev => prev.filter(c => c._id !== cloId));
     };
 
-    const tabs = ['View', 'Students', 'Activities', 'CLOs'];
+    const tabs = ['View', 'CLOs', 'Students', 'Activities', 'Reports'];
 
     if (!assignment) {
         return <div className="p-5 text-center text-muted">Loading course details...</div>;
@@ -545,7 +802,7 @@ const CourseView = () => {
                 <Breadcrumb className="small mb-4" style={{ fontSize: '0.85rem' }}>
                     <Breadcrumb.Item linkAs={Link} linkProps={{ to: '/faculty' }} className="text-muted text-decoration-none">Home</Breadcrumb.Item>
                     <Breadcrumb.Item linkAs={Link} linkProps={{ to: '/faculty/courses' }} className="text-muted text-decoration-none">Course Sections</Breadcrumb.Item>
-                    <Breadcrumb.Item active className="text-muted">{course.code} - {assignment.semester}</Breadcrumb.Item>
+                    <Breadcrumb.Item active className="text-muted">{course.code} - {assignment.academicTerm?.name}</Breadcrumb.Item>
                 </Breadcrumb>
 
                 {/* Course Banner */}
@@ -556,7 +813,7 @@ const CourseView = () => {
                     <div>
                         <h5 className="mb-1 fw-bold text-dark" style={{ color: '#4a4a4a' }}>{course.code}- {course.name}</h5>
                         <p className="mb-0 text-muted" style={{ fontSize: '0.9rem' }}>
-                            <span style={{ color: '#a085b4' }}>{course.code} - {assignment.semester}</span> / {faculty?.name} / {assignment.semester}
+                            <span style={{ color: '#a085b4' }}></span> {faculty?.name} / Semester: {assignment.academicTerm?.name}
                         </p>
                     </div>
                 </div>
@@ -607,7 +864,7 @@ const CourseView = () => {
                                         </tr>
                                         <tr className="border-bottom">
                                             <td className="fw-semibold text-muted" style={{ backgroundColor: '#f4f5f7' }}>Semester</td>
-                                            <td>{assignment.semester}</td>
+                                            <td>{assignment.academicTerm?.name}</td>
                                             <td className="fw-semibold text-muted" style={{ backgroundColor: '#f4f5f7' }}>Credit Hours</td>
                                             <td>{course.creditHours}</td>
                                         </tr>
@@ -679,14 +936,14 @@ const CourseView = () => {
                                 >
                                     Delete All
                                 </Button>
-                                <Button
+                                {/* <Button
                                     variant="outline-primary"
                                     size="sm"
                                     onClick={handleGenerateDMC}
                                     className="rounded-2 ms-2"
                                 >
                                     Generate DMC
-                                </Button>
+                                </Button> */}
                             </div>
 
                             {/* Students Table */}
@@ -788,6 +1045,127 @@ const CourseView = () => {
                             <p className="text-muted small mt-3">
                                 Total Enrolled: <strong>{course.students?.length || 0}</strong> student{(course.students?.length || 0) !== 1 ? 's' : ''}
                             </p>
+
+                            {/* Student CLO Achievement */}
+                            {course.students?.length > 0 && (
+                                <Card className="shadow-sm border rounded-3 mt-4">
+                                    <Card.Body className="p-4">
+                                        <h6 className="fw-semibold mb-1">
+                                            Student CLO Achievement
+                                        </h6>
+
+                                        <p className="text-muted small mb-3">
+                                            Select a student to view their individual CLO achievement.
+                                        </p>
+
+                                        <Form.Select
+                                            value={selectedCloStudent?._id || ''}
+                                            onChange={e => {
+                                                const student = course.students.find(
+                                                    s => s._id === e.target.value
+                                                );
+
+                                                if (student) {
+                                                    handleSelectCloStudent(student);
+                                                }
+                                            }}
+                                        >
+                                            <option value="">
+                                                Select Student
+                                            </option>
+
+                                            {course.students.map(student => (
+                                                <option key={student._id} value={student._id}>
+                                                    {student.regNo} — {student.name}
+                                                </option>
+                                            ))}
+                                        </Form.Select>
+
+                                        {selectedCloStudent && (
+                                            <div className="mt-4">
+                                                {selectedCloStudent.loading ? (
+                                                    <div className="text-center py-4">
+                                                        <Spinner animation="border" size="sm" />
+                                                        <div className="text-muted small mt-2">
+                                                            Loading CLO achievement...
+                                                        </div>
+                                                    </div>
+                                                ) : selectedCloStudent.cloStats?.length > 0 ? (
+                                                    <div className="col-lg-7 col-md-9 col-12">
+                                                        <div
+                                                            className="border rounded-3 p-3 bg-white shadow-sm"
+                                                            style={{ height: 350 }}>
+                                                            <ResponsiveContainer width="100%" height="100%">
+                                                                <BarChart
+                                                                    data={selectedCloStudent.cloStats}
+                                                                    margin={{
+                                                                        top: 20,
+                                                                        right: 30,
+                                                                        left: 10,
+                                                                        bottom: 20
+                                                                    }}
+                                                                >
+                                                                    <CartesianGrid
+                                                                        strokeDasharray="3 3"
+                                                                        vertical={false}
+                                                                    />
+
+                                                                    <XAxis
+                                                                        dataKey="cloCode"
+                                                                        tick={{ fontSize: 13 }}
+                                                                        axisLine={{ stroke: '#dee2e6' }}
+                                                                        tickLine={false}
+                                                                    />
+
+                                                                    <YAxis
+                                                                        domain={[0, 100]}
+                                                                        ticks={[0, 25, 50, 75, 100]}
+                                                                        tickFormatter={(value) => `${value}%`}
+                                                                        orientation="left"
+                                                                        axisLine={{ stroke: '#dee2e6' }}
+                                                                        tickLine={false}
+                                                                        tick={{ fontSize: 12 }}
+                                                                    />
+
+                                                                    <Tooltip
+                                                                        formatter={(value) => [
+                                                                            `${Number(value).toFixed(1)}%`,
+                                                                            'Achievement'
+                                                                        ]}
+                                                                        cursor={{ fill: 'rgba(109, 40, 217, 0.05)' }}
+                                                                    />
+
+                                                                    <Bar
+                                                                        dataKey="percentage"
+                                                                        name="CLO Achievement"
+                                                                        radius={[6, 6, 0, 0]}
+                                                                        barSize={45}
+                                                                    >
+                                                                        {selectedCloStudent.cloStats.map((clo, index) => (
+                                                                            <Cell
+                                                                                key={`cell-${clo.cloCode}`}
+                                                                                fill={COLORS_CLO[index % COLORS_CLO.length]}
+                                                                            />
+                                                                        ))}
+                                                                    </Bar>
+                                                                </BarChart>
+                                                            </ResponsiveContainer>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-center py-4 border rounded-3">
+                                                        <p className="text-muted small mb-0">
+                                                            No CLO assessment data found for this student.
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                    </Card.Body>
+                                </Card>
+                            )}
+
                         </motion.div>
                     )}
 
@@ -1199,28 +1577,396 @@ const CourseView = () => {
 
                             {/* Achievement chart — shown if marks exist */}
                             {analytics?.cloStats?.length > 0 && (
-                                <Card className="shadow-sm border rounded-3 mt-4">
-                                    <Card.Body className="p-4">
-                                        <h6 className="fw-semibold mb-1">CLO Achievement</h6>
-                                        <p className="text-muted small mb-3">Percentage achievement per CLO based on entered marks</p>
-                                        <div style={{ height: 260 }}>
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <BarChart data={analytics.cloStats} barSize={36}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                                    <XAxis dataKey="cloCode" tick={{ fontSize: 12, fill: '#6b7280' }} />
-                                                    <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: '#6b7280' }} tickFormatter={v => `${v}%`} />
-                                                    <Tooltip formatter={v => [`${v.toFixed(1)}%`, 'Achievement']} />
-                                                    <Bar dataKey="percentage" radius={[4, 4, 0, 0]}>
-                                                        {analytics.cloStats.map((_, i) => <Cell key={i} fill={COLORS_CLO[i % COLORS_CLO.length]} />)}
-                                                    </Bar>
-                                                </BarChart>
-                                            </ResponsiveContainer>
-                                        </div>
-                                    </Card.Body>
-                                </Card>
+                                <div className="row mt-4">
+                                    <div className="col-lg-7 col-md-9 col-12">
+                                        <Card className="shadow-sm border rounded-3">
+                                            <Card.Body className="p-4">
+                                                <h6 className="fw-semibold mb-1">
+                                                    CLO Achievement
+                                                </h6>
+
+                                                <p className="text-muted small mb-3">
+                                                    Percentage achievement per CLO based on entered marks. Overall achievement of students for each CLO based on entered marks
+                                                </p>
+
+                                                <div style={{ height: 300 }}>
+                                                    <ResponsiveContainer width="100%" height="100%">
+                                                        <BarChart
+                                                            data={analytics.cloStats}
+                                                            barSize={36}
+                                                            margin={{
+                                                                top: 10,
+                                                                right: 20,
+                                                                left: 10,
+                                                                bottom: 10
+                                                            }}
+                                                        >
+                                                            <CartesianGrid
+                                                                strokeDasharray="3 3"
+                                                                vertical={false}
+                                                                stroke="#f0f0f0"
+                                                            />
+
+                                                            <XAxis
+                                                                dataKey="cloCode"
+                                                                tick={{
+                                                                    fontSize: 12,
+                                                                    fill: '#6b7280'
+                                                                }}
+                                                                axisLine={{
+                                                                    stroke: '#dee2e6'
+                                                                }}
+                                                                tickLine={false}
+                                                            />
+
+                                                            <YAxis
+                                                                domain={[0, 100]}
+                                                                ticks={[0, 25, 50, 75, 100]}
+                                                                tick={{
+                                                                    fontSize: 12,
+                                                                    fill: '#6b7280'
+                                                                }}
+                                                                tickFormatter={v => `${v}%`}
+                                                                axisLine={{
+                                                                    stroke: '#dee2e6'
+                                                                }}
+                                                                tickLine={false}
+                                                            />
+
+                                                            <Tooltip
+                                                                formatter={v => [
+                                                                    `${Number(v).toFixed(1)}%`,
+                                                                    'Achievement'
+                                                                ]}
+                                                            />
+
+                                                            <Bar
+                                                                dataKey="percentage"
+                                                                radius={[4, 4, 0, 0]}
+                                                            >
+                                                                {analytics.cloStats.map((_, i) => (
+                                                                    <Cell
+                                                                        key={i}
+                                                                        fill={
+                                                                            COLORS_CLO[
+                                                                                i % COLORS_CLO.length
+                                                                            ]
+                                                                        }
+                                                                    />
+                                                                ))}
+                                                            </Bar>
+                                                        </BarChart>
+                                                    </ResponsiveContainer>
+                                                </div>
+                                            </Card.Body>
+                                        </Card>
+                                    </div>
+                                </div>
                             )}
                         </motion.div>
                     )}
+
+                    {activeTab === 'Reports' && (
+                        <motion.div
+                            key="reports"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            {/* Award List Header */}
+                            <div className="d-flex justify-content-between align-items-center mb-4">
+                                <div>
+                                    <h5 className="fw-bold text-dark mb-1">
+                                        Course Award List
+                                    </h5>
+
+                                    <p className="text-muted small mb-0">
+                                        {awardCourse?.name || course.name}
+                                        {' '}—{' '}
+                                        {awardCourse?.code || course.code}
+                                    </p>
+                                </div>
+
+                                <Button
+                                    variant="success"
+                                    size="sm"
+                                    onClick={handleDownloadAwardList}
+                                    disabled={awardLoading || awardList.length === 0}
+                                    className="rounded-2 px-3"
+                                >
+                                    <i className="bi bi-file-earmark-excel me-2"></i>
+                                    Download Excel
+                                </Button>
+                            </div>
+
+                            {/* Loading */}
+                            {awardLoading ? (
+                                <div className="text-center py-5">
+                                    <div
+                                        className="spinner-border text-primary"
+                                        role="status"
+                                    >
+                                        <span className="visually-hidden">
+                                            Loading...
+                                        </span>
+                                    </div>
+
+                                    <p className="text-muted mt-3 mb-0">
+                                        Loading award list...
+                                    </p>
+                                </div>
+
+                            ) : awardList.length === 0 ? (
+
+                                /* Empty State */
+                                <div className="text-center py-5 bg-white border rounded-3">
+                                    <div
+                                        className="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+                                        style={{
+                                            width: 55,
+                                            height: 55,
+                                            backgroundColor: '#ede9fe'
+                                        }}
+                                    >
+                                        <FileText size={26} color="#6d28d9" />
+                                    </div>
+
+                                    <h6 className="fw-bold text-dark">
+                                        No Award List Available
+                                    </h6>
+
+                                    <p className="text-muted small mb-0">
+                                        There are currently no students or marks available
+                                        for this course.
+                                    </p>
+                                </div>
+
+                            ) : (
+
+                                /* Award List */
+                                <>
+                                    {/* Course Information */}
+                                    <div
+                                        className="border rounded-3 mb-3 p-3"
+                                        style={{ backgroundColor: '#f8f7ff' }}
+                                    >
+                                        <Row className="align-items-center g-0">
+                                            <Col md={5} className="px-3">
+                                                <div className="fw-semibold text-dark d-inline">
+                                                    Course Name:{' '}
+                                                </div>
+
+                                                <span className="fw-semibold text-dark">
+                                                    {awardCourse?.name || course.name}
+                                                </span>
+                                            </Col>
+
+                                            <Col
+                                                md={3}
+                                                className="px-3 border-start"
+                                            >
+                                                <div className="fw-semibold text-dark d-inline">
+                                                    Course Code:{' '}
+                                                </div>
+
+                                                <span
+                                                    className="fw-semibold"
+                                                    style={{ color: '#6d28d9' }}
+                                                >
+                                                    {awardCourse?.code || course.code}
+                                                </span>
+                                            </Col>
+
+                                            <Col
+                                                md={4}
+                                                className="px-3 border-start"
+                                            >
+                                                <div className="fw-semibold text-dark d-inline">
+                                                    Total Students:{' '}
+                                                </div>
+
+                                                <span className="fw-semibold text-dark">
+                                                    {awardList.length}
+                                                </span>
+                                            </Col>
+                                        </Row>
+                                    </div>
+
+                                    {/* Table */}
+                                    <div className="border rounded-3 overflow-hidden">
+                                        <div className="table-responsive">
+                                            <Table
+                                                hover
+                                                className="mb-0 align-middle"
+                                                style={{ fontSize: '0.85rem' }}
+                                            >
+                                                <thead
+                                                    style={{
+                                                        backgroundColor: '#f8f7ff'
+                                                    }}
+                                                >
+                                                    <tr>
+                                                        <th
+                                                            className="px-3 py-3 text-center fw-semibold text-muted"
+                                                            style={{ width: 65 }}
+                                                        >
+                                                            S.No
+                                                        </th>
+
+                                                        <th className="px-3 py-3 fw-semibold">
+                                                            Registration No.
+                                                        </th>
+
+                                                        <th className="px-3 py-3 fw-semibold">
+                                                            Student Name
+                                                        </th>
+
+                                                        <th className="px-3 py-3 fw-semibold">
+                                                            Batch
+                                                        </th>
+
+                                                        <th
+                                                            className="px-3 py-3 text-center fw-semibold"
+                                                        >
+                                                            Sessional
+                                                            <div className="text-muted small fw-normal">
+                                                                / 20
+                                                            </div>
+                                                        </th>
+
+                                                        <th
+                                                            className="px-3 py-3 text-center fw-semibold"
+                                                        >
+                                                            Midterm
+                                                            <div className="text-muted small fw-normal">
+                                                                / 30
+                                                            </div>
+                                                        </th>
+
+                                                        <th
+                                                            className="px-3 py-3 text-center fw-semibold"
+                                                        >
+                                                            Final
+                                                            <div className="text-muted small fw-normal">
+                                                                / 50
+                                                            </div>
+                                                        </th>
+
+                                                        <th
+                                                            className="px-3 py-3 text-center fw-semibold"
+                                                        >
+                                                            Total
+                                                            <div className="text-muted small fw-normal">
+                                                                / 100
+                                                            </div>
+                                                        </th>
+
+                                                        <th
+                                                            className="px-3 py-3 text-center fw-semibold"
+                                                        >
+                                                            Grade
+                                                        </th>
+
+                                                        <th
+                                                            className="px-3 py-3 text-center fw-semibold"
+                                                        >
+                                                            GPA
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+
+                                                <tbody>
+                                                    {awardList.map((student, index) => (
+                                                        <tr
+                                                            key={
+                                                                student.studentId || index
+                                                            }
+                                                        >
+                                                            <td className="px-3 py-3 text-center text-muted">
+                                                                {index + 1}
+                                                            </td>
+
+                                                            <td className="px-3 py-3 text-muted">
+                                                                {student.regNo}
+                                                            </td>
+
+                                                            <td className="px-3 py-3 fw-semibold text-dark">
+                                                                {student.name}
+                                                            </td>
+
+                                                            <td className="px-3 py-3">
+                                                                <span
+                                                                    className="badge bg-light text-dark border rounded-pill px-2 py-1"
+                                                                    style={{
+                                                                        fontSize: '0.75rem'
+                                                                    }}
+                                                                >
+                                                                    {student.batch}
+                                                                </span>
+                                                            </td>
+
+                                                            <td className="px-3 py-3 text-center">
+                                                                {student.sessional}
+                                                            </td>
+
+                                                            <td className="px-3 py-3 text-center">
+                                                                {student.midterm}
+                                                            </td>
+
+                                                            <td className="px-3 py-3 text-center">
+                                                                {student.final}
+                                                            </td>
+
+                                                            <td className="px-3 py-3 text-center fw-bold">
+                                                                {student.total}
+                                                            </td>
+
+                                                            <td className="px-3 py-3 text-center">
+                                                                <span
+                                                                    className={`badge ${
+                                                                        student.grade === 'F'
+                                                                            ? 'bg-danger'
+                                                                            : student.grade?.startsWith('A')
+                                                                                ? 'bg-success'
+                                                                                : student.grade?.startsWith('B')
+                                                                                    ? 'bg-primary'
+                                                                                    : 'bg-warning text-dark'
+                                                                    }`}
+                                                                    style={{
+                                                                        fontSize: '0.8rem',
+                                                                        padding: '0.4rem 0.7rem'
+                                                                    }}
+                                                                >
+                                                                    {student.grade}
+                                                                </span>
+                                                            </td>
+
+                                                            <td className="px-3 py-3 text-center fw-semibold">
+                                                                {student.gpa}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </Table>
+                                        </div>
+                                    </div>
+
+                                    {/* Total Students */}
+                                    <div className="mt-3">
+                                        <span className="text-muted small">
+                                            Total Students:{' '}
+                                            <strong className="text-dark">
+                                                {awardList.length}
+                                            </strong>
+                                        </span>
+                                    </div>
+                                </>
+                            )}
+                        </motion.div>
+                    )}
+
+
                 </AnimatePresence>
 
                 {/* Copy from Program Batch Modal */}

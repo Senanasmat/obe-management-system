@@ -9,6 +9,7 @@ const {
     createStudent, getStudents, updateStudent, deleteStudent,
     bulkImportStudents,
     getDashboardStats,
+    getBatchPLOAchievements,
     getFaculty, createFacultyMember, updateFacultyMember, deleteFacultyMember,
     deleteCourse, updateCourse
 } = require('../controllers/adminController');
@@ -41,5 +42,6 @@ router.put('/staff/:id', protect, admin, updateFacultyMember);
 router.delete('/staff/:id', protect, admin, deleteFacultyMember);
 
 router.get('/stats', protect, admin, getDashboardStats);
+router.get('/stats/plo-achievements', protect, admin, getBatchPLOAchievements);
 
 module.exports = router;

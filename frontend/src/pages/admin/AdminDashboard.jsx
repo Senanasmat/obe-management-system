@@ -65,12 +65,31 @@ const AdminDashboard = () => {
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const [batches, setBatches] = useState([]);
+    const [selectedBatch, setSelectedBatch] = useState('');
+
+    const [batchPLOAchievements, setBatchPLOAchievements] = useState([]);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const config = { headers: { Authorization: `Bearer ${user.token}` } };
                 const statsRes = await api.get('/api/admin/stats', config);
                 setStats(statsRes.data);
+
+                // Get students and extract unique batches
+                const studentsRes = await api.get('/api/admin/students', config);
+
+                const uniqueBatches = [
+                    ...new Set(
+                        studentsRes.data
+                            .map(student => student.batch)
+                            .filter(Boolean)
+                    )
+                ].sort();
+
+                setBatches(uniqueBatches);
+
                 setLoading(false);
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
@@ -85,6 +104,35 @@ const AdminDashboard = () => {
             return () => clearInterval(interval);
         }
     }, [user]);
+
+    useEffect(() => {
+        const fetchBatchPLOAchievements = async () => {
+            if (!selectedBatch || !user?.token) {
+                setBatchPLOAchievements([]);
+                return;
+            }
+
+            try {
+                const config = {
+                    headers: {
+                        Authorization: `Bearer ${user.token}`
+                    }
+                };
+
+                const res = await api.get(
+                    `/api/admin/stats/plo-achievements?batch=${encodeURIComponent(selectedBatch)}`,
+                    config
+                );
+
+                setBatchPLOAchievements(res.data.ploAchievements || []);
+            } catch (error) {
+                console.error("Error fetching batch PLO achievements:", error);
+                setBatchPLOAchievements([]);
+            }
+        };
+
+        fetchBatchPLOAchievements();
+    }, [selectedBatch, user]);
 
     const COLORS = ['#4c1d95', '#7c3aed', '#198754', '#6c757d'];
 
@@ -191,45 +239,152 @@ const AdminDashboard = () => {
                     <Col lg={12}>
                         <motion.div variants={itemVariants}>
                             <Card className="shadow-sm border-0 h-100 overflow-hidden">
-                                <Card.Header className="bg-white border-0 pt-3 px-3 pb-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                    <h5 className="fw-bold mb-0" style={{ fontSize: '1rem' }}>PLO Achievement Performance</h5>
-                                    <Badge bg="success-subtle" className="text-success px-3 py-1 rounded-pill fw-medium" style={{ fontSize: '0.8rem' }}>PLOs</Badge>
-                                </Card.Header>
-                                <Card.Body className="p-3">
-                                    <div style={{ width: '100%', height: 'clamp(280px, 60vw, 380px)' }}>
-                                        <ResponsiveContainer>
-                                            <BarChart data={stats.ploAchievements || []} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                                                <XAxis
-                                                    dataKey="code"
-                                                    axisLine={false}
-                                                    tickLine={false}
-                                                    tick={{ fill: '#999', fontSize: 12 }}
-                                                />
-                                                <YAxis
-                                                    unit="%"
-                                                    axisLine={false}
-                                                    tickLine={false}
-                                                    tick={{ fill: '#999', fontSize: 12 }}
-                                                />
-                                                <Tooltip
-                                                    cursor={{ fill: 'rgba(0,0,0,0.02)' }}
-                                                    contentStyle={{
-                                                        borderRadius: '12px',
-                                                        border: 'none',
-                                                        boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                                                        padding: '12px'
-                                                    }}
-                                                />
-                                                <Bar
-                                                    dataKey="achievement"
-                                                    fill="#198754"
-                                                    radius={[6, 6, 0, 0]}
-                                                    barSize={40}
-                                                />
-                                            </BarChart>
-                                        </ResponsiveContainer>
+
+                                <Card.Header className="bg-white border-0 pt-3 px-3 pb-0">
+                                    <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
+
+                                        <div>
+                                            <h5
+                                                className="fw-bold mb-1"
+                                                style={{ fontSize: '1rem' }}
+                                            >
+                                                PLO Attainment
+                                            </h5>
+
+                                            <p className="text-muted small mb-0">
+                                                Select a batch to view PLO attainment
+                                            </p>
+                                        </div>
+
+                                        <div className="d-flex align-items-center gap-2">
+                                            <label
+                                                className="fw-semibold text-muted small mb-0"
+                                                htmlFor="batchSelect"
+                                            >
+                                                Batch:
+                                            </label>
+
+                                            <select
+                                                id="batchSelect"
+                                                className="form-select form-select-sm"
+                                                value={selectedBatch}
+                                                onChange={(e) => setSelectedBatch(e.target.value)}
+                                                style={{
+                                                    minWidth: '150px',
+                                                    borderRadius: '8px'
+                                                }}
+                                            >
+                                                <option value="">
+                                                    Select Batch
+                                                </option>
+
+                                                {batches.map((batch) => (
+                                                    <option key={batch} value={batch}>
+                                                        {batch}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
                                     </div>
+                                </Card.Header>
+
+                                <Card.Body className="p-3">
+
+                                    {!selectedBatch ? (
+                                        <div
+                                            className="d-flex flex-column justify-content-center align-items-center text-center text-muted"
+                                            style={{
+                                                height: 'clamp(280px, 60vw, 380px)'
+                                            }}
+                                        >
+                                            <GraduationCap
+                                                size={48}
+                                                strokeWidth={1.5}
+                                                className="mb-3 opacity-50"
+                                            />
+
+                                            <h6 className="fw-semibold mb-1">
+                                                Select a batch to view PLO attainment
+                                            </h6>
+
+                                            <p className="small mb-0">
+                                                Choose a batch from the dropdown above.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div
+                                            style={{
+                                                width: '100%',
+                                                height: 'clamp(280px, 60vw, 380px)'
+                                            }}
+                                        >
+                                            <ResponsiveContainer>
+                                                <BarChart
+                                                    data={batchPLOAchievements}
+                                                    margin={{
+                                                        top: 20,
+                                                        right: 30,
+                                                        left: 0,
+                                                        bottom: 0
+                                                    }}
+                                                >
+                                                    <CartesianGrid
+                                                        strokeDasharray="3 3"
+                                                        vertical={false}
+                                                        stroke="#f0f0f0"
+                                                    />
+
+                                                    <XAxis
+                                                        dataKey="code"
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        tick={{
+                                                            fill: '#999',
+                                                            fontSize: 12
+                                                        }}
+                                                    />
+
+                                                    <YAxis
+                                                        domain={[0, 100]}
+                                                        ticks={[0, 25, 50, 75, 100]}
+                                                        tickFormatter={(value) => `${value}%`}
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        tick={{
+                                                            fill: '#999',
+                                                            fontSize: 12
+                                                        }}
+                                                    />
+
+                                                    <Tooltip
+                                                        cursor={{
+                                                            fill: 'rgba(0,0,0,0.02)'
+                                                        }}
+                                                        formatter={(value) => [
+                                                            `${Number(value).toFixed(2)}%`,
+                                                            'PLO Attainment'
+                                                        ]}
+                                                        contentStyle={{
+                                                            borderRadius: '12px',
+                                                            border: 'none',
+                                                            boxShadow:
+                                                                '0 8px 24px rgba(0,0,0,0.12)',
+                                                            padding: '12px'
+                                                        }}
+                                                    />
+
+                                                    <Bar
+                                                        dataKey="achievement"
+                                                        fill="#198754"
+                                                        radius={[6, 6, 0, 0]}
+                                                        barSize={40}
+                                                    />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    )}
+
                                 </Card.Body>
                             </Card>
                         </motion.div>

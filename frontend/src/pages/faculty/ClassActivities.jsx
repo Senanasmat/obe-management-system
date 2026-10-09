@@ -21,7 +21,8 @@ const ClassActivities = () => {
         const dt = new Date(d);
         return `${String(dt.getDate()).padStart(2,'0')}-${String(dt.getMonth()+1).padStart(2,'0')}-${dt.getFullYear()}`;
     };
-    const hasOutcomes = (a) => a.questions?.some(q => q.clo);
+    const hasOutcomes = (a) =>
+        a.questions?.some(q => q.clos?.length > 0);
     const grouped = assessments.reduce((acc, a) => { (acc[a.type] = acc[a.type] || []).push(a); return acc; }, {});
 
     const toggleSelect = (id) => setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });

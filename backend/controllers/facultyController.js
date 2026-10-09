@@ -74,7 +74,7 @@ const createAssessment = async (req, res) => {
                 ...q,
                 maxMarks: Number(q.maxMarks),
                 obeWeight: Number(q.obeWeight) || 0,
-                clo: q.clo || undefined
+                clos: q.clos || []
             }))
         });
 
@@ -119,7 +119,14 @@ const getCourseAnalytics = async (req, res) => {
 
     try {
         const allResults = await Promise.all(
-            ALL_MODELS.map(Model => Model.find({ course: courseId }).populate('questions.clo'))
+            ALL_MODELS.map(Model =>
+                Model.find({ course: courseId }).populate({
+                    path: 'questions.clos',
+                    populate: {
+                        path: 'plo'
+                    }
+                })
+            )
         );
         const assessments = allResults.flat();
 
@@ -141,20 +148,22 @@ const getCourseAnalytics = async (req, res) => {
             result.obtainedMarks.forEach(om => {
                 const question = assessment.questions[om.questionIndex];
 
-                if (question && question.clo) {
-                    const cloId = question.clo._id.toString();
+                if (question && question.clos?.length) {
+                    question.clos.forEach(clo => {
+                        const cloId = clo._id.toString();
 
-                    if (!cloMap[cloId]) {
-                        cloMap[cloId] = {
-                            code: question.clo.code,
-                            totalMax: 0,
-                            totalObtained: 0,
-                            plo: question.clo.plo
-                        };
-                    }
+                        if (!cloMap[cloId]) {
+                            cloMap[cloId] = {
+                                code: clo.code,
+                                totalMax: 0,
+                                totalObtained: 0,
+                                plo: clo.plo
+                            };
+                        }
 
-                    cloMap[cloId].totalMax += question.maxMarks;
-                    cloMap[cloId].totalObtained += om.marks;
+                        cloMap[cloId].totalMax += question.maxMarks;
+                        cloMap[cloId].totalObtained += om.marks;
+                    });
                 }
             });
         });
@@ -207,6 +216,82 @@ const getCourseAnalytics = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+};
+
+const getStudentCLOAnalytics = async (req, res) => {
+    const { courseId, studentId } = req.params;
+
+    try {
+        const allResults = await Promise.all(
+            ALL_MODELS.map(Model =>
+                Model.find({ course: courseId }).populate('questions.clos')
+            )
+        );
+
+        const assessments = allResults.flat();
+
+        const assessmentIds = assessments.map(a => a._id);
+
+        const results = await Result.find({
+            assessment: { $in: assessmentIds }
+        }).populate('student', 'name regNo');
+
+        const studentResults = results.filter(
+            result =>
+                result.student?._id?.toString() === studentId.toString()
+        );
+
+        const cloMap = {};
+
+        studentResults.forEach(result => {
+            const assessment = assessments.find(
+                a => a._id.toString() === result.assessment.toString()
+            );
+
+            if (!assessment) return;
+
+            result.obtainedMarks.forEach(om => {
+                const question = assessment.questions[om.questionIndex];
+
+                if (!question || !question.clos?.length) return;
+
+                    question.clos.forEach(clo => {
+                        const cloId = clo._id.toString();
+
+                        if (!cloMap[cloId]) {
+                            cloMap[cloId] = {
+                                code: clo.code,
+                                totalMax: 0,
+                                totalObtained: 0
+                            };
+                        }
+
+                        cloMap[cloId].totalMax += question.maxMarks;
+                        cloMap[cloId].totalObtained += om.marks;
+                    });
+            });
+        });
+
+        const cloStats = Object.values(cloMap).map(clo => ({
+            cloCode: clo.code,
+            percentage:
+                clo.totalMax > 0
+                    ? parseFloat(
+                        ((clo.totalObtained / clo.totalMax) * 100).toFixed(2)
+                    )
+                    : 0
+        }));
+
+        res.json({
+            studentId,
+            cloStats
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
     }
 };
 
@@ -263,7 +348,7 @@ const updateAssessment = async (req, res) => {
             ...q,
             maxMarks: Number(q.maxMarks),
             obeWeight: Number(q.obeWeight) || 0,
-            clo: q.clo || undefined
+            clos: q.clos || []
         }));
 
         await doc.save();
@@ -547,6 +632,158 @@ const getStudentGrades = async (req, res) => {
     }
 };
 
+// GET AWARD LIST FOR A COURSE
+const getCourseAwardList = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+
+        const course = await Course.findById(courseId).populate(
+            'students',
+            'name regNo batch'
+        );
+
+        if (!course) {
+            return res.status(404).json({
+                message: 'Course not found'
+            });
+        }
+
+        // Get all assessments for this course
+        const assessments = await Promise.all(
+            ALL_MODELS.map(Model => Model.find({ course: courseId }))
+        );
+
+        const allAssessments = assessments.flat();
+
+        // Get all results for these assessments
+        const results = await Result.find({
+            assessment: { $in: allAssessments.map(a => a._id) }
+        });
+
+        // Create student award list
+        const awardList = course.students.map(student => {
+
+            let midtermObtained = 0;
+            let midtermMax = 0;
+
+            let finalObtained = 0;
+            let finalMax = 0;
+
+            let sessionalObtained = 0;
+            let sessionalMax = 0;
+
+            // Get this student's results
+            const studentResults = results.filter(
+                result =>
+                    result.student.toString() === student._id.toString()
+            );
+
+            studentResults.forEach(result => {
+
+                const assessment = allAssessments.find(
+                    assessment =>
+                        assessment._id.toString() ===
+                        result.assessment.toString()
+                );
+
+                if (!assessment) return;
+
+                const maxMarks = assessment.questions.reduce(
+                    (sum, question) => sum + (question.maxMarks || 0),
+                    0
+                );
+
+                const obtainedMarks = result.obtainedMarks.reduce(
+                    (sum, mark) => sum + (mark.marks || 0),
+                    0
+                );
+
+                if (assessment.type === 'Midterm') {
+
+                    midtermObtained += obtainedMarks;
+                    midtermMax += maxMarks;
+
+                } else if (assessment.type === 'Final') {
+
+                    finalObtained += obtainedMarks;
+                    finalMax += maxMarks;
+
+                } else {
+
+                    // Quiz, Assignment and Project = Sessional
+                    sessionalObtained += obtainedMarks;
+                    sessionalMax += maxMarks;
+                }
+            });
+
+            // Convert each category to its weighted marks
+            const midtermMarks =
+                midtermMax > 0
+                    ? (midtermObtained / midtermMax) * 30
+                    : 0;
+
+            const finalMarks =
+                finalMax > 0
+                    ? (finalObtained / finalMax) * 50
+                    : 0;
+
+            const sessionalMarks =
+                sessionalMax > 0
+                    ? (sessionalObtained / sessionalMax) * 20
+                    : 0;
+
+            const total =
+                midtermMarks +
+                finalMarks +
+                sessionalMarks;
+
+            const gradeInfo = getGradeInfo(total);
+
+            return {
+                studentId: student._id,
+                name: student.name,
+                regNo: student.regNo,
+                batch: student.batch,
+
+                midterm: parseFloat(midtermMarks.toFixed(2)),
+                final: parseFloat(finalMarks.toFixed(2)),
+                sessional: parseFloat(sessionalMarks.toFixed(2)),
+
+                total: parseFloat(total.toFixed(2)),
+
+                grade: gradeInfo.grade,
+                gpa: gradeInfo.gpa
+            };
+        });
+
+        // Sort by total marks — highest first
+        awardList.sort((a, b) => b.total - a.total);
+
+        res.json({
+            course: {
+                id: course._id,
+                name: course.name,
+                code: course.code
+            },
+
+            weights: {
+                final: 50,
+                midterm: 30,
+                sessional: 20
+            },
+
+            awardList
+        });
+
+    } catch (error) {
+        console.error('Error generating award list:', error);
+
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
 // GENERATE DMC (DETAILED MARKS CERTIFICATE) FOR STUDENTS
 const generateDMC = async (req, res) => {
     try {
@@ -671,5 +908,7 @@ module.exports = {
     removeCourseCLO,
     getAllStudents,
     getStudentGrades,
+    getCourseAwardList,
+    getStudentCLOAnalytics,
     generateDMC
 };
