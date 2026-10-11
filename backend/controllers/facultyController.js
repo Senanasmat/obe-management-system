@@ -1,25 +1,51 @@
 const CourseAssignment = require('../models/courseAssignmentModel');
 const { Result, ALL_MODELS, getModelByType, findAssessmentById } = require('../models/assessmentModel');
 const { PLO, CLO, Course, Student } = require('../models/academicModels');
+const CLOMapping = require('../models/cloMappingModel');
+const AcademicTerm = require('../models/academicTermModel');
+
+const ASSESSMENT_WEIGHTS = {
+    Quiz: 10,
+    Assignment: 10,
+    Midterm: 30,
+    Final: 50
+};
 
 // Grade Scale constant
 const GRADE_SCALE = [
-    { min: 90, max: 100, gpa: 4.0, grade: 'A+' },
-    { min: 85, max: 89.99, gpa: 3.9, grade: 'A' },
-    { min: 80, max: 84.99, gpa: 3.7, grade: 'A-' },
-    { min: 75, max: 79.99, gpa: 3.5, grade: 'B+' },
-    { min: 70, max: 74.99, gpa: 3.0, grade: 'B' },
-    { min: 65, max: 69.99, gpa: 2.7, grade: 'B-' },
-    { min: 60, max: 64.99, gpa: 2.5, grade: 'C+' },
-    { min: 55, max: 59.99, gpa: 2.0, grade: 'C' },
-    { min: 50, max: 54.99, gpa: 1.5, grade: 'D' },
-    { min: 0, max: 49.99, gpa: 0.0, grade: 'F' }
+    { min: 85, gpa: 4.00, grade: 'A' },
+    { min: 80, gpa: 3.66, grade: 'A-' },
+    { min: 75, gpa: 3.33, grade: 'B+' },
+    { min: 71, gpa: 3.00, grade: 'B' },
+    { min: 68, gpa: 2.66, grade: 'B-' },
+    { min: 64, gpa: 2.33, grade: 'C+' },
+    { min: 61, gpa: 2.00, grade: 'C' },
+    { min: 58, gpa: 1.66, grade: 'C-' },
+    { min: 54, gpa: 1.30, grade: 'D+' },
+    { min: 50, gpa: 1.00, grade: 'D' },
+    { min: 0, gpa: 0.00, grade: 'F' }
 ];
 
-// Helper to get grade info
 const getGradeInfo = (percentage) => {
-    const gradeInfo = GRADE_SCALE.find(g => percentage >= g.min && percentage <= g.max);
-    return gradeInfo ? { gpa: gradeInfo.gpa, grade: gradeInfo.grade } : { gpa: null, grade: 'N/A' };
+    if (
+        typeof percentage !== 'number' ||
+        !Number.isFinite(percentage) ||
+        percentage < 0 ||
+        percentage > 100
+    ) {
+        return { gpa: null, grade: 'N/A' };
+    }
+
+    // Round to a whole-number percentage for the integer-based grading bands.
+    const roundedPercentage = Math.round(percentage);
+
+    const gradeInfo = GRADE_SCALE.find(
+        item => roundedPercentage >= item.min
+    );
+
+    return gradeInfo
+        ? { gpa: gradeInfo.gpa, grade: gradeInfo.grade }
+        : { gpa: null, grade: 'N/A' };
 };
 
 // GET ASSIGNED COURSES
@@ -383,12 +409,12 @@ const getPLOsForFaculty = async (req, res) => {
 // CREATE CLO FOR COURSE
 const createCourseCLO = async (req, res) => {
     try {
-        const { code, description, plo } = req.body;
+        const { code, description } = req.body;
         const { courseId } = req.params;
 
-        if (!code || !description || !plo) {
+        if (!code?.trim() || !description?.trim()) {
             return res.status(400).json({
-                message: 'CLO code, description and PLO are required'
+                message: 'CLO code and description are required.'
             });
         }
 
@@ -422,16 +448,12 @@ const createCourseCLO = async (req, res) => {
 
         const clo = await CLO.create({
             code: code.trim(),
-            description: description.trim(),
-            plo
+            description: description.trim()
         });
 
-        await Course.findByIdAndUpdate(
-            courseId,
-            { $push: { clos: clo._id } }
-        );
-
-        await clo.populate('plo');
+        await Course.findByIdAndUpdate(courseId, {
+            $push: { clos: clo._id }
+        });
 
         res.status(201).json(clo);
 
@@ -786,113 +808,6 @@ const getCourseAwardList = async (req, res) => {
     }
 };
 
-// GENERATE DMC (DETAILED MARKS CERTIFICATE) FOR STUDENTS
-const generateDMC = async (req, res) => {
-    try {
-        const { studentIds } = req.body;
-        if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
-            return res.status(400).json({ message: 'No students selected' });
-        }
-
-        const studentsData = [];
-
-        for (const studentId of studentIds) {
-            // Get all courses this student is enrolled in
-            const enrolledCourses = await Course.find({ students: studentId })
-                .select('_id name code creditHours');
-
-            if (enrolledCourses.length === 0) {
-                // Student enrolled in no courses, still add entry
-                const student = await Student.findById(studentId);
-                studentsData.push({
-                    student: student,
-                    courses: [],
-                    totalCreditHours: 0,
-                    overallGPA: 0
-                });
-                continue;
-            }
-
-            const studentCourseData = [];
-            let totalCreditHours = 0;
-            let totalGPAPoints = 0;
-            let gradeableCoursesCount = 0;
-
-            for (const course of enrolledCourses) {
-                // Get semester info for this course
-                const assignment = await CourseAssignment.findOne({ course: course._id });
-                const semester = assignment?.semester || 'N/A';
-
-                // Get assessments for this course
-                const assessments = await Promise.all(
-                    ALL_MODELS.map(Model => Model.find({ course: course._id }))
-                );
-                const allAssessments = assessments.flat();
-
-                // Get results for this student in this course
-                const results = await Result.find({
-                    assessment: { $in: allAssessments.map(a => a._id) },
-                    student: studentId
-                });
-
-                let totalObtained = 0;
-                let totalMaxMarks = 0;
-
-                results.forEach(result => {
-                    const assessment = allAssessments.find(a => a._id.toString() === result.assessment.toString());
-                    if (assessment) {
-                        const maxInAssessment = assessment.questions.reduce((sum, q) => sum + (q.maxMarks || 0), 0);
-                        const obtainedInAssessment = result.obtainedMarks.reduce((sum, om) => sum + (om.marks || 0), 0);
-                        totalObtained += obtainedInAssessment;
-                        totalMaxMarks += maxInAssessment;
-                    }
-                });
-
-                let percentage = 0, gpa = null, grade = 'N/A';
-                if (totalMaxMarks > 0) {
-                    percentage = (totalObtained / totalMaxMarks) * 100;
-                    const gradeInfo = getGradeInfo(percentage);
-                    gpa = gradeInfo.gpa;
-                    grade = gradeInfo.grade;
-                    totalGPAPoints += gpa * (course.creditHours || 0);
-                    gradeableCoursesCount += 1;
-                }
-
-                totalCreditHours += course.creditHours || 0;
-
-                studentCourseData.push({
-                    courseId: course._id,
-                    code: course.code,
-                    name: course.name,
-                    creditHours: course.creditHours || 0,
-                    semester: semester,
-                    totalObtained: totalObtained,
-                    totalMaxMarks: totalMaxMarks,
-                    percentage: percentage.toFixed(2),
-                    gpa: gpa,
-                    grade: grade
-                });
-            }
-
-            const overallGPA = gradeableCoursesCount > 0
-                ? (totalGPAPoints / totalCreditHours).toFixed(2)
-                : 0;
-
-            const student = await Student.findById(studentId);
-            studentsData.push({
-                student: student,
-                courses: studentCourseData,
-                totalCreditHours: totalCreditHours,
-                overallGPA: parseFloat(overallGPA)
-            });
-        }
-
-        res.json({ students: studentsData });
-    } catch (error) {
-        console.error('Error generating DMC:', error);
-        res.status(500).json({ message: error.message });
-    }
-};
 
 // GENERATE MARKS TEMPLATE EXCEL
 const generateMarksTemplate = async (req, res) => {
@@ -1143,6 +1058,145 @@ const importMarksFromExcel = async (req, res) => {
 };
 
 
+const getCourseCLOMappings = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+
+        const assignment = await CourseAssignment.findOne({
+            faculty: req.user._id,
+            course: courseId
+        });
+
+        if (!assignment) {
+            return res.status(403).json({
+                message: 'This course is not assigned to you.'
+            });
+        }
+
+        const mappings = await CLOMapping.find({ course: courseId })
+            .populate('clo', 'code description')
+            .populate('plo', 'code title description')
+            .populate('academicTerm', 'name season year')
+            .sort({ createdAt: 1 });
+
+        res.json(mappings);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const createCourseCLOMapping = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        const {
+            cloId,
+            ploId,
+            academicTermId,
+            batch,
+            learningType,
+            level,
+            emphasisLevel
+        } = req.body;
+
+        if (!cloId || !ploId || !academicTermId || !batch?.trim()) {
+            return res.status(400).json({
+                message: 'CLO, PLO, academic term, and batch are required.'
+            });
+        }
+
+        // Verify that the faculty member is assigned to this course.
+        const assignment = await CourseAssignment.findOne({
+            faculty: req.user._id,
+            course: courseId
+        });
+
+        if (!assignment) {
+            return res.status(403).json({
+                message: 'This course is not assigned to you.'
+            });
+        }
+
+        // Verify the CLO belongs to this course.
+        const course = await Course.findById(courseId);
+
+        if (!course) {
+            return res.status(404).json({
+                message: 'Course not found.'
+            });
+        }
+
+        const belongsToCourse = course.clos.some(
+            id => id.toString() === cloId
+        );
+
+        if (!belongsToCourse) {
+            return res.status(400).json({
+                message: 'The selected CLO does not belong to this course.'
+            });
+        }
+
+        const [plo, academicTerm, studentExists] = await Promise.all([
+            PLO.findById(ploId),
+            AcademicTerm.findById(academicTermId),
+            Student.exists({ batch: batch.trim() })
+        ]);
+
+        if (!plo) {
+            return res.status(404).json({ message: 'PLO not found.' });
+        }
+
+        if (!academicTerm) {
+            return res.status(404).json({
+                message: 'Academic term not found.'
+            });
+        }
+
+        if (!studentExists) {
+            return res.status(400).json({
+                message: 'No students were found in this batch.'
+            });
+        }
+
+        const mapping = await CLOMapping.create({
+            course: courseId,
+            clo: cloId,
+            plo: ploId,
+            academicTerm: academicTermId,
+            batch: batch.trim(),
+            learningType,
+            level,
+            emphasisLevel
+        });
+
+        const populatedMapping = await CLOMapping.findById(mapping._id)
+            .populate('clo', 'code description')
+            .populate('plo', 'code title description')
+            .populate('academicTerm', 'name season year');
+
+        res.status(201).json(populatedMapping);
+    } catch (error) {
+        if (error.code === 11000) {
+            return res.status(409).json({
+                message: 'This CLO is already mapped to that PLO for this batch and academic term.'
+            });
+        }
+
+        res.status(400).json({ message: error.message });
+    }
+};
+
+const getAcademicTermsForFaculty = async (req, res) => {
+    try {
+        const terms = await AcademicTerm.find({})
+            .sort({ year: -1, season: 1 });
+
+        res.json(terms);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+
 module.exports = {
     getAssignedCourses,
     getPLOsForFaculty,
@@ -1155,14 +1209,15 @@ module.exports = {
     updateAssessment,
     deleteAssessment,
     createCourseCLO,
-    updateCourseCLO,
     removeCourseCLO,
     updateCourseCLO,
     getAllStudents,
     getStudentGrades,
     getCourseAwardList,
     getStudentCLOAnalytics,
-    generateDMC,
+    getCourseCLOMappings,
+    createCourseCLOMapping,
+    getAcademicTermsForFaculty,
     generateMarksTemplate,
     importMarksFromExcel
 };

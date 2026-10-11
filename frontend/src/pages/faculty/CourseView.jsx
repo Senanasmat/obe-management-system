@@ -10,6 +10,8 @@ import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx-js-style';
+import CLOList from './CLOList';
+import CLOAttainment from './CLOAttainment';
 
 const containerVariants = {
     hidden: { opacity: 0, y: 10 },
@@ -41,7 +43,11 @@ const CourseView = () => {
         examSession: '2024-2028 (Regular)',
         examHeld: 'March, 2026'
     });
-    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'View');
+    const [activeTab, setActiveTab] = useState(
+        searchParams.get('tab') || 'View'
+    );
+
+    const [activePage, setActivePage] = useState('View');
     const [cloForm, setCloForm] = useState({ code: '', description: '', plo: '' });
     const [cloLoading, setCloLoading] = useState(false);
     const [editingCloId, setEditingCloId] = useState(null);
@@ -706,8 +712,31 @@ const handleSelectCloStudent = async (student) => {
         }
         e.target.value = '';
     };
+    
+    const tabs = ['View', 'CLOs', 'PLOs', 'Students', 'Activities', 'Reports'];
 
-    const tabs = ['View', 'CLOs', 'Students', 'Activities', 'Reports'];
+    const dropdownOptions = {
+        CLOs: [
+            'CLO List',
+            'CLO Attainment',
+            'CLO Attainment Graph'
+        ],
+        PLOs: [
+            'PLO Attainment',
+            'PLO Attainment Graph'
+        ],
+        Activities: [
+            'Class Activities'
+        ],
+        Reports: [
+            'Marks OBE',
+            'Marks (GPA)',
+            'Award List',
+            'GPA Attainment Graph',
+            'Course Consolidated Report'
+        ]
+    };
+
 
     if (!assignment) {
         return <div className="p-5 text-center text-muted">Loading course details...</div>;
@@ -750,37 +779,101 @@ const handleSelectCloStudent = async (student) => {
                         </p>
                     </div>
                 </div>
-
-                {/* Tabs */}
-                <div className="d-flex border-bottom mb-4 overflow-auto" style={{ borderBottom: '2px solid #e0d8e8' }}>
+                
+                {/* Tabs Navigation */}
+                <div
+                    className="d-flex border-bottom mb-4"
+                    style={{
+                        borderBottom: '2px solid #e0d8e8',
+                        position: 'relative',
+                        overflow: 'visible',
+                        gap: '4px'
+                    }}
+                >
                     {tabs.map((tab) => {
-                        const isDropdown = tab !== 'View';
+                        const isDropdown = Boolean(dropdownOptions[tab]);
                         const isActive = activeTab === tab;
-                        
+
+                        const tabStyle = {
+                            borderTopLeftRadius: '6px',
+                            borderTopRightRadius: '6px',
+                            borderTop: isActive ? '1px solid #dcdcdc' : 'none',
+                            borderLeft: isActive ? '1px solid #dcdcdc' : 'none',
+                            borderRight: isActive ? '1px solid #dcdcdc' : 'none',
+                            borderBottom: isActive
+                                ? '2px solid #fff'
+                                : '2px solid transparent',
+                            marginBottom: '-2px',
+                            color: isActive ? '#8a62a6' : '#6c757d',
+                            fontSize: '0.9rem',
+                            whiteSpace: 'nowrap'
+                        };
+
+                        if (!isDropdown) {
+                            return (
+                                <div
+                                    key={tab}
+                                    onClick={() => {
+                                        setActiveTab(tab);
+                                        setActivePage(tab);
+                                    }}
+                                    className={`py-2 px-3 d-flex align-items-center ${
+                                        isActive ? 'bg-light' : ''
+                                    }`}
+                                    style={{ ...tabStyle, cursor: 'pointer' }}
+                                >
+                                    {tab}
+                                </div>
+                            );
+                        }
+
                         return (
-                            <div 
+                            <Dropdown
                                 key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`py-2 px-3 cursor-pointer d-flex align-items-center gap-1 ${isActive ? 'bg-light' : ''}`}
-                                style={{ 
-                                    borderTopLeftRadius: '6px', 
-                                    borderTopRightRadius: '6px',
-                                    borderTop: isActive ? '1px solid #dcdcdc' : 'none',
-                                    borderLeft: isActive ? '1px solid #dcdcdc' : 'none',
-                                    borderRight: isActive ? '1px solid #dcdcdc' : 'none',
-                                    borderBottom: isActive ? '2px solid #fff' : '2px solid transparent',
-                                    marginBottom: '-2px',
-                                    color: isActive ? '#8a62a6' : '#6c757d',
-                                    fontSize: '0.9rem',
-                                    cursor: 'pointer'
+                                onToggle={(isOpen) => {
+                                    if (isOpen) {
+                                        setActiveTab(tab);
+                                    }
                                 }}
                             >
-                                {tab}
-                                {isDropdown && <ChevronDown size={14} className="ms-1" />}
-                            </div>
+                                <Dropdown.Toggle
+                                    variant="link"
+                                    className={`py-2 px-3 d-flex align-items-center gap-1 text-decoration-none ${
+                                        isActive ? 'bg-light' : ''
+                                    }`}
+                                    style={{
+                                        ...tabStyle,
+                                        borderTop: 'none',
+                                        borderLeft: 'none',
+                                        borderRight: 'none',
+                                        borderBottom: 'none',
+                                        boxShadow: 'none',
+                                        background: isActive ? '#f8f9fa' : 'transparent',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    {tab}
+                                </Dropdown.Toggle>
+
+                                <Dropdown.Menu>
+                                    {dropdownOptions[tab].map((option) => (
+                                        <Dropdown.Item
+                                            key={option}
+                                            active={activePage === option}
+                                            onClick={() => {
+                                                setActiveTab(tab);
+                                                setActivePage(option);
+                                            }}
+                                        >
+                                            {option}
+                                        </Dropdown.Item>
+                                    ))}
+                                </Dropdown.Menu>
+                            </Dropdown>
                         );
                     })}
                 </div>
+
 
                 {/* Tab Content */}
                 <AnimatePresence mode="wait">
@@ -1249,243 +1342,15 @@ const handleSelectCloStudent = async (student) => {
                         </motion.div>
                     )}
 
-                    {activeTab === 'CLOs' && (
-                        <motion.div key="CLOs" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-
-                            {/* Add/Edit CLO form */}
-                            <Card className="border-0 shadow-sm rounded-3 mb-4" style={{ borderLeft: `4px solid ${editingCloId ? '#d97706' : '#4c1d95'}` }}>
-                                <Card.Body className="p-4">
-                                    <div className="d-flex justify-content-between align-items-center mb-3">
-                                        <h6 className="fw-semibold text-dark mb-0">
-                                            {editingCloId ? '✏️ Edit CLO' : '➕ Add CLO'}
-                                        </h6>
-                                        {editingCloId && (
-                                            <button
-                                                type="button"
-                                                onClick={handleCancelEdit}
-                                                className="btn btn-sm btn-outline-secondary"
-                                                style={{ fontSize: '0.8rem' }}
-                                            >
-                                                Cancel
-                                            </button>
-                                        )}
-                                    </div>
-                                    <form onSubmit={editingCloId ? handleUpdateClo : handleAddClo}>
-                                        <Row className="g-3 align-items-end">
-                                            <Col md={2}>
-                                                <label className="small text-muted mb-1">CLO Code</label>
-                                                <input
-                                                    className="form-control"
-                                                    placeholder="e.g. CLO-1"
-                                                    value={cloForm.code}
-                                                    onChange={e => setCloForm(f => ({ ...f, code: e.target.value }))}
-                                                    required
-                                                />
-                                            </Col>
-                                            <Col md={4}>
-                                                <label className="small text-muted mb-1">Description</label>
-                                                <input
-                                                    className="form-control"
-                                                    placeholder="Describe what students will be able to do..."
-                                                    value={cloForm.description}
-                                                    onChange={e => setCloForm(f => ({ ...f, description: e.target.value }))}
-                                                    required
-                                                />
-                                            </Col>
-                                            <Col md={3}>
-                                                <label className="small text-muted mb-1">Map to PLO</label>
-                                                <select
-                                                    className="form-select"
-                                                    value={cloForm.plo}
-                                                    onChange={e => setCloForm(f => ({ ...f, plo: e.target.value }))}
-                                                    disabled={plosLoading || plos.length === 0}
-                                                >
-                                                    <option value="">Select PLO...</option>
-                                                    {plos.map(plo => (
-                                                        <option key={plo._id} value={plo._id}>
-                                                            {plo.code} - {plo.description}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </Col>
-                                            <Col md={3}>
-                                                <Button
-                                                    type="submit"
-                                                    size="sm"
-                                                    className="w-100 d-flex align-items-center justify-content-center gap-1 border-0"
-                                                    style={{ backgroundColor: editingCloId ? '#d97706' : '#4c1d95' }}
-                                                    disabled={cloLoading}
-                                                >
-                                                    {editingCloId ? (
-                                                        <>
-                                                            <Edit2 size={15} /> {cloLoading ? 'Updating...' : 'Update CLO'}
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Plus size={15} /> {cloLoading ? 'Adding...' : 'Add CLO'}
-                                                        </>
-                                                    )}
-                                                </Button>
-                                            </Col>
-                                        </Row>
-                                    </form>
-                                </Card.Body>
-                            </Card>
-
-                            {/* CLO list */}
-                            {courseClos.length === 0 ? (
-                                <div className="text-center py-5 border rounded-3">
-                                    <div className="d-inline-block p-3 rounded-circle mb-3" style={{ backgroundColor: '#ede9fe' }}>
-                                        <FileText size={28} color="#6d28d9" />
-                                    </div>
-                                    <h6 className="fw-bold">No CLOs defined yet</h6>
-                                    <p className="text-muted small">Add CLOs above — they will appear in the activities dropdown when creating assessments.</p>
-                                </div>
-                            ) : (
-                                <div className="border rounded-3 overflow-hidden">
-                                    <Table responsive className="mb-0 align-middle" style={{ fontSize: '0.88rem' }}>
-                                        <thead style={{ backgroundColor: '#f8f7ff' }}>
-                                            <tr>
-                                                <th className="px-4 py-2 text-muted fw-semibold" style={{ width: 40 }}>#</th>
-                                                <th className="px-3 py-2 fw-semibold" style={{ color: '#6d28d9', width: 100 }}>Code</th>
-                                                <th className="px-3 py-2 text-muted fw-semibold">Description</th>
-                                                <th className="px-3 py-2 text-muted fw-semibold" style={{ width: 150 }}>Mapped PLO</th>
-                                                <th className="px-3 py-2 text-muted fw-semibold text-center" style={{ width: 80 }}>Remove</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {courseClos.map((clo, i) => {
-                                                const mappedPlo = clo.plo ? (typeof clo.plo === 'object' ? clo.plo : plos.find(p => p._id === clo.plo)) : null;
-                                                return (
-                                                    <tr key={clo._id} style={{ backgroundColor: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                                                        <td className="px-4 py-2 text-muted">{i + 1}</td>
-                                                        <td className="px-3 py-2 fw-semibold" style={{ color: '#6d28d9' }}>{clo.code}</td>
-                                                        <td className="px-3 py-2 text-dark">{clo.description}</td>
-                                                        <td className="px-3 py-2 text-dark">
-                                                            {mappedPlo ? (
-                                                                <span style={{ backgroundColor: '#ede9fe', color: '#6d28d9', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '500' }}>
-                                                                    {mappedPlo.code}
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-muted small">—</span>
-                                                            )}
-                                                        </td>
-                                                        <td className="px-3 py-2 text-center">
-                                                            <div className="d-flex gap-2 justify-content-center">
-                                                                <button
-                                                                    className="btn btn-sm btn-outline-warning rounded-2 p-1"
-                                                                    onClick={() => handleEditClo(clo)}
-                                                                    title="Edit CLO"
-                                                                >
-                                                                    <Edit2 size={14} />
-                                                                </button>
-                                                                <button
-                                                                    className="btn btn-sm btn-outline-danger rounded-2 p-1"
-                                                                    onClick={() => handleRemoveClo(clo._id)}
-                                                                    title="Remove CLO"
-                                                                >
-                                                                    <Trash2 size={14} />
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </Table>
-                                </div>
-                            )}
-
-                            {/* Achievement chart — shown if marks exist */}
-                            {analytics?.cloStats?.length > 0 && (
-                                <div className="row mt-4">
-                                    <div className="col-lg-7 col-md-9 col-12">
-                                        <Card className="shadow-sm border rounded-3">
-                                            <Card.Body className="p-4">
-                                                <h6 className="fw-semibold mb-1">
-                                                    CLO Achievement
-                                                </h6>
-
-                                                <p className="text-muted small mb-3">
-                                                    Percentage achievement per CLO based on entered marks. Overall achievement of students for each CLO based on entered marks
-                                                </p>
-
-                                                <div style={{ height: 300 }}>
-                                                    <ResponsiveContainer width="100%" height="100%">
-                                                        <BarChart
-                                                            data={analytics.cloStats}
-                                                            barSize={36}
-                                                            margin={{
-                                                                top: 10,
-                                                                right: 20,
-                                                                left: 10,
-                                                                bottom: 10
-                                                            }}
-                                                        >
-                                                            <CartesianGrid
-                                                                strokeDasharray="3 3"
-                                                                vertical={false}
-                                                                stroke="#f0f0f0"
-                                                            />
-
-                                                            <XAxis
-                                                                dataKey="cloCode"
-                                                                tick={{
-                                                                    fontSize: 12,
-                                                                    fill: '#6b7280'
-                                                                }}
-                                                                axisLine={{
-                                                                    stroke: '#dee2e6'
-                                                                }}
-                                                                tickLine={false}
-                                                            />
-
-                                                            <YAxis
-                                                                domain={[0, 100]}
-                                                                ticks={[0, 25, 50, 75, 100]}
-                                                                tick={{
-                                                                    fontSize: 12,
-                                                                    fill: '#6b7280'
-                                                                }}
-                                                                tickFormatter={v => `${v}%`}
-                                                                axisLine={{
-                                                                    stroke: '#dee2e6'
-                                                                }}
-                                                                tickLine={false}
-                                                            />
-
-                                                            <Tooltip
-                                                                formatter={v => [
-                                                                    `${Number(v).toFixed(1)}%`,
-                                                                    'Achievement'
-                                                                ]}
-                                                            />
-
-                                                            <Bar
-                                                                dataKey="percentage"
-                                                                radius={[4, 4, 0, 0]}
-                                                            >
-                                                                {analytics.cloStats.map((_, i) => (
-                                                                    <Cell
-                                                                        key={i}
-                                                                        fill={
-                                                                            COLORS_CLO[
-                                                                                i % COLORS_CLO.length
-                                                                            ]
-                                                                        }
-                                                                    />
-                                                                ))}
-                                                            </Bar>
-                                                        </BarChart>
-                                                    </ResponsiveContainer>
-                                                </div>
-                                            </Card.Body>
-                                        </Card>
-                                    </div>
-                                </div>
-                            )}
-                        </motion.div>
+                    {/* CLO TAB */}
+                    {activeTab === 'CLOs' && activePage === 'CLO List' && (
+                        <CLOList />
                     )}
+
+                    {activeTab === 'CLOs' && activePage === 'CLO Attainment' && (
+                        <CLOAttainment />
+                    )}
+
 
                     {activeTab === 'Reports' && (
                         <motion.div

@@ -20,7 +20,9 @@ const {
     getStudentGrades,
     getCourseAwardList,
     getStudentCLOAnalytics,
-    generateDMC,
+    getCourseCLOMappings,
+    createCourseCLOMapping,
+    getAcademicTermsForFaculty,
     generateMarksTemplate,
     importMarksFromExcel
 } = require('../controllers/facultyController');
@@ -66,12 +68,31 @@ router.get(
     getStudentCLOAnalytics
 );
 
-// DMC
-router.post('/students/dmc', protect, faculty, generateDMC);
 
 // Course CLOs
 router.post('/courses/:courseId/clos', protect, faculty, createCourseCLO);
 router.put('/courses/:courseId/clos/:cloId', protect, faculty, updateCourseCLO);
 router.delete('/courses/:courseId/clos/:cloId', protect, faculty, removeCourseCLO);
+
+router.get(
+    '/courses/:courseId/clo-mappings',
+    protect,
+    faculty,
+    getCourseCLOMappings
+);
+
+router.post(
+    '/courses/:courseId/clo-mappings',
+    protect,
+    faculty,
+    createCourseCLOMapping
+);
+
+router.get(
+    '/academic-terms',
+    protect,
+    faculty,
+    getAcademicTermsForFaculty
+);
 
 module.exports = router;
