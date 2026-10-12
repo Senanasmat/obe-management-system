@@ -19,6 +19,7 @@ import MarksOBE from './MarksOBE';
 import MarksGPA from './MarksGPA';
 import AwardList from './AwardList';
 import GPAAttainmentGraph from './GPAAttainmentGraph';
+import CourseConsolidatedReport from './CourseConsolidatedReport';
 
 const containerVariants = {
     hidden: { opacity: 0, y: 10 },
@@ -815,7 +816,6 @@ const handleSelectCloStudent = async (student) => {
                     })}
                 </div>
 
-
                 {/* Tab Content */}
                 <AnimatePresence mode="wait">
                     {activeTab === 'View' && (
@@ -1309,6 +1309,10 @@ const handleSelectCloStudent = async (student) => {
 
                         {activeTab === 'Reports' && activePage === 'GPA Attainment Graph' && (
                             <GPAAttainmentGraph />
+                        )}
+
+                        {activeTab === 'Reports' && activePage === 'Course Consolidated Report' && (
+                            <CourseConsolidatedReport />
                         )}
                     {/* REPORTS TABS End */}
 
