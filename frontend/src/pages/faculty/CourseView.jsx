@@ -12,6 +12,13 @@ import 'jspdf-autotable';
 import * as XLSX from 'xlsx-js-style';
 import CLOList from './CLOList';
 import CLOAttainment from './CLOAttainment';
+import CLOAttainmentGraph from './CLOAttainmentGraph';
+import PLOAttainment from './PLOAttainment';
+import PLOAttainmentGraph from './PLOAttainmentGraph';
+import MarksOBE from './MarksOBE';
+import MarksGPA from './MarksGPA';
+import AwardList from './AwardList';
+import GPAAttainmentGraph from './GPAAttainmentGraph';
 
 const containerVariants = {
     hidden: { opacity: 0, y: 10 },
@@ -112,13 +119,19 @@ const CourseView = () => {
 
         // Fetch student grades
         api.get(`/api/faculty/courses/${courseId}/grades`, config)
-            .then(r => {
+            .then(r => {                
                 const gradesMap = {};
                 r.data.studentGrades.forEach(sg => {
                     gradesMap[sg.student._id] = {
-                        percentage: sg.percentage.toFixed(2),
-                        gpa: sg.gpa.toFixed(2),
-                        grade: sg.grade
+                        percentage: sg.percentage == null
+                            ? 'N/A'
+                            : Number(sg.percentage).toFixed(2),
+
+                        gpa: sg.gpa == null
+                            ? 'N/A'
+                            : Number(sg.gpa).toFixed(2),
+
+                        grade: sg.grade ?? 'N/A'
                     };
                 });
                 setStudentGrades(gradesMap);
@@ -360,78 +373,6 @@ const handleSelectCloStudent = async (student) => {
     }
 };
 
-
-    // const handleGenerateDMC = async () => {
-    //     if (studentCheckboxes.size === 0) {
-    //         Swal.fire({ icon: 'warning', title: 'Select Students', text: 'Please select at least one student to generate DMC', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
-    //         return;
-    //     }
-
-    //     try {
-    //         const config = { headers: { Authorization: `Bearer ${user.token}` } };
-    //         const { data } = await api.post(
-    //             '/api/faculty/students/dmc',
-    //             { studentIds: [...studentCheckboxes] },
-    //             config
-    //         );
-
-    //         if (!data.students || data.students.length === 0) {
-    //             Swal.fire({ icon: 'error', title: 'Error', text: 'No data received from server', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
-    //             return;
-    //         }
-
-    //         const doc = new jsPDF();
-    //         const now = new Date().toLocaleDateString();
-
-    //         data.students.forEach((studentData, idx) => {
-    //             if (idx > 0) doc.addPage();
-
-    //             // Header
-    //             doc.setFontSize(16);
-    //             doc.text('DETAILED MARKS CERTIFICATE', 14, 15);
-
-    //             doc.setFontSize(10);
-    //             doc.text(`Student Name: ${studentData.student.name}`, 14, 25);
-    //             doc.text(`Registration No: ${studentData.student.regNo}`, 14, 31);
-    //             doc.text(`Batch: ${studentData.student.batch}`, 14, 37);
-    //             doc.text(`Generated: ${now}`, 14, 43);
-
-    //             // Table
-    //             const tableData = studentData.courses.map(course => [
-    //                 course.code,
-    //                 course.name,
-    //                 course.creditHours,
-    //                 course.semester,
-    //                 `${course.totalObtained}/${course.totalMaxMarks}`,
-    //                 `${course.percentage}%`,
-    //                 course.grade,
-    //                 course.gpa !== null ? course.gpa.toFixed(2) : 'N/A'
-    //             ]);
-
-    //             if (tableData.length > 0 && typeof doc.autoTable === 'function') {
-    //                 doc.autoTable({
-    //                     head: [['Code', 'Course', 'Cr Hrs', 'Semester', 'Obtained/Total', '%', 'Grade', 'GPA']],
-    //                     body: tableData,
-    //                     startY: 50,
-    //                     margin: { left: 14, right: 14 }
-    //                 });
-
-    //                 const finalY = doc.lastAutoTable.finalY + 8;
-    //                 doc.setFontSize(10);
-    //                 doc.text(`Total Credit Hours: ${studentData.totalCreditHours}   Overall GPA: ${studentData.overallGPA.toFixed(2)}`, 14, finalY);
-    //             } else if (tableData.length === 0) {
-    //                 doc.setFontSize(10);
-    //                 doc.text('No courses enrolled.', 14, 50);
-    //             }
-    //         });
-
-    //         doc.save(`DMC-${Date.now()}.pdf`);
-    //         Swal.fire({ icon: 'success', title: 'Success', text: 'DMC generated successfully!', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
-    //     } catch (error) {
-    //         console.error('Error generating DMC:', error);
-    //         Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || error.message, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
-    //     }
-    // };
 
     const handleDownloadAwardList = () => {
         if (!awardList || awardList.length === 0) {
@@ -717,20 +658,20 @@ const handleSelectCloStudent = async (student) => {
 
     const dropdownOptions = {
         CLOs: [
-            'CLO List',
-            'CLO Attainment',
-            'CLO Attainment Graph'
+            'CLOs List',
+            'CLOs Attainment',
+            'CLOs Attainment Graph'
         ],
         PLOs: [
-            'PLO Attainment',
-            'PLO Attainment Graph'
+            'PLOs Attainment',
+            'PLOs Attainment Graph'
         ],
         Activities: [
             'Class Activities'
         ],
         Reports: [
             'Marks OBE',
-            'Marks (GPA)',
+            'Marks GPA',
             'Award List',
             'GPA Attainment Graph',
             'Course Consolidated Report'
@@ -963,17 +904,6 @@ const handleSelectCloStudent = async (student) => {
                                     Delete All
                                 </Button>
 
-                                {/* DMC feature commented out for now */}
-                                {/* 
-                                <Button
-                                    variant="outline-primary"
-                                    size="sm"
-                                    onClick={handleGenerateDMC}
-                                    className="rounded-2 ms-2"
-                                >
-                                    Generate DMC
-                                </Button>
-                                */}
                             </div>
 
                             {/* Students Table */}
@@ -1342,315 +1272,45 @@ const handleSelectCloStudent = async (student) => {
                         </motion.div>
                     )}
 
-                    {/* CLO TAB */}
-                    {activeTab === 'CLOs' && activePage === 'CLO List' && (
-                        <CLOList />
-                    )}
+                    {/* CLO TABS */}
+                        {activeTab === 'CLOs' && activePage === 'CLOs List' && (
+                            <CLOList />
+                        )}
 
-                    {activeTab === 'CLOs' && activePage === 'CLO Attainment' && (
-                        <CLOAttainment />
-                    )}
+                        {activeTab === 'CLOs' && activePage === 'CLOs Attainment' && (
+                            <CLOAttainment />
+                        )}
 
+                        {activeTab === 'CLOs' && activePage === 'CLOs Attainment Graph' && (
+                            <CLOAttainmentGraph />
+                        )}
 
-                    {activeTab === 'Reports' && (
-                        <motion.div
-                            key="reports"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            {/* Award List Header */}
-                            <div className="d-flex justify-content-between align-items-center mb-4">
-                                <div>
-                                    <h5 className="fw-bold text-dark mb-1">
-                                        Course Award List
-                                    </h5>
+                    {/* PLO TABS */}
+                        {activeTab === 'PLOs' && activePage === 'PLOs Attainment' && (
+                            <PLOAttainment />
+                        )}
 
-                                    <p className="text-muted small mb-0">
-                                        {awardCourse?.name || course.name}
-                                        {' '}—{' '}
-                                        {awardCourse?.code || course.code}
-                                    </p>
-                                </div>
+                        {activeTab === 'PLOs' && activePage === 'PLOs Attainment Graph' && (
+                            <PLOAttainmentGraph />
+                        )}
 
-                                <Button
-                                    variant="success"
-                                    size="sm"
-                                    onClick={handleDownloadAwardList}
-                                    disabled={awardLoading || awardList.length === 0}
-                                    className="rounded-2 px-3"
-                                >
-                                    <i className="bi bi-file-earmark-excel me-2"></i>
-                                    Download Excel
-                                </Button>
-                            </div>
+                    {/* REPORTS TABS */}
+                        {activeTab === 'Reports' && activePage === 'Marks OBE' && (
+                            <MarksOBE />
+                        )}
 
-                            {/* Loading */}
-                            {awardLoading ? (
-                                <div className="text-center py-5">
-                                    <div
-                                        className="spinner-border text-primary"
-                                        role="status"
-                                    >
-                                        <span className="visually-hidden">
-                                            Loading...
-                                        </span>
-                                    </div>
+                        {activeTab === 'Reports' && activePage === 'Marks GPA' && (
+                            <MarksGPA />
+                        )}
 
-                                    <p className="text-muted mt-3 mb-0">
-                                        Loading award list...
-                                    </p>
-                                </div>
+                        {activeTab === 'Reports' && activePage === 'Award List' && (
+                            <AwardList />
+                        )}
 
-                            ) : awardList.length === 0 ? (
-
-                                /* Empty State */
-                                <div className="text-center py-5 bg-white border rounded-3">
-                                    <div
-                                        className="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
-                                        style={{
-                                            width: 55,
-                                            height: 55,
-                                            backgroundColor: '#ede9fe'
-                                        }}
-                                    >
-                                        <FileText size={26} color="#6d28d9" />
-                                    </div>
-
-                                    <h6 className="fw-bold text-dark">
-                                        No Award List Available
-                                    </h6>
-
-                                    <p className="text-muted small mb-0">
-                                        There are currently no students or marks available
-                                        for this course.
-                                    </p>
-                                </div>
-
-                            ) : (
-
-                                /* Award List */
-                                <>
-                                    {/* Course Information */}
-                                    <div
-                                        className="border rounded-3 mb-3 p-3"
-                                        style={{ backgroundColor: '#f8f7ff' }}
-                                    >
-                                        <Row className="align-items-center g-0">
-                                            <Col md={5} className="px-3">
-                                                <div className="fw-semibold text-dark d-inline">
-                                                    Course Name:{' '}
-                                                </div>
-
-                                                <span className="fw-semibold text-dark">
-                                                    {awardCourse?.name || course.name}
-                                                </span>
-                                            </Col>
-
-                                            <Col
-                                                md={3}
-                                                className="px-3 border-start"
-                                            >
-                                                <div className="fw-semibold text-dark d-inline">
-                                                    Course Code:{' '}
-                                                </div>
-
-                                                <span
-                                                    className="fw-semibold"
-                                                    style={{ color: '#6d28d9' }}
-                                                >
-                                                    {awardCourse?.code || course.code}
-                                                </span>
-                                            </Col>
-
-                                            <Col
-                                                md={4}
-                                                className="px-3 border-start"
-                                            >
-                                                <div className="fw-semibold text-dark d-inline">
-                                                    Total Students:{' '}
-                                                </div>
-
-                                                <span className="fw-semibold text-dark">
-                                                    {awardList.length}
-                                                </span>
-                                            </Col>
-                                        </Row>
-                                    </div>
-
-                                    {/* Table */}
-                                    <div className="border rounded-3 overflow-hidden">
-                                        <div className="table-responsive">
-                                            <Table
-                                                hover
-                                                className="mb-0 align-middle"
-                                                style={{ fontSize: '0.85rem' }}
-                                            >
-                                                <thead
-                                                    style={{
-                                                        backgroundColor: '#f8f7ff'
-                                                    }}
-                                                >
-                                                    <tr>
-                                                        <th
-                                                            className="px-3 py-3 text-center fw-semibold text-muted"
-                                                            style={{ width: 65 }}
-                                                        >
-                                                            S.No
-                                                        </th>
-
-                                                        <th className="px-3 py-3 fw-semibold">
-                                                            Registration No.
-                                                        </th>
-
-                                                        <th className="px-3 py-3 fw-semibold">
-                                                            Student Name
-                                                        </th>
-
-                                                        <th className="px-3 py-3 fw-semibold">
-                                                            Batch
-                                                        </th>
-
-                                                        <th
-                                                            className="px-3 py-3 text-center fw-semibold"
-                                                        >
-                                                            Sessional
-                                                            <div className="text-muted small fw-normal">
-                                                                / 20
-                                                            </div>
-                                                        </th>
-
-                                                        <th
-                                                            className="px-3 py-3 text-center fw-semibold"
-                                                        >
-                                                            Midterm
-                                                            <div className="text-muted small fw-normal">
-                                                                / 30
-                                                            </div>
-                                                        </th>
-
-                                                        <th
-                                                            className="px-3 py-3 text-center fw-semibold"
-                                                        >
-                                                            Final
-                                                            <div className="text-muted small fw-normal">
-                                                                / 50
-                                                            </div>
-                                                        </th>
-
-                                                        <th
-                                                            className="px-3 py-3 text-center fw-semibold"
-                                                        >
-                                                            Total
-                                                            <div className="text-muted small fw-normal">
-                                                                / 100
-                                                            </div>
-                                                        </th>
-
-                                                        <th
-                                                            className="px-3 py-3 text-center fw-semibold"
-                                                        >
-                                                            Grade
-                                                        </th>
-
-                                                        <th
-                                                            className="px-3 py-3 text-center fw-semibold"
-                                                        >
-                                                            GPA
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-
-                                                <tbody>
-                                                    {awardList.map((student, index) => (
-                                                        <tr
-                                                            key={
-                                                                student.studentId || index
-                                                            }
-                                                        >
-                                                            <td className="px-3 py-3 text-center text-muted">
-                                                                {index + 1}
-                                                            </td>
-
-                                                            <td className="px-3 py-3 text-muted">
-                                                                {student.regNo}
-                                                            </td>
-
-                                                            <td className="px-3 py-3 fw-semibold text-dark">
-                                                                {student.name}
-                                                            </td>
-
-                                                            <td className="px-3 py-3">
-                                                                <span
-                                                                    className="badge bg-light text-dark border rounded-pill px-2 py-1"
-                                                                    style={{
-                                                                        fontSize: '0.75rem'
-                                                                    }}
-                                                                >
-                                                                    {student.batch}
-                                                                </span>
-                                                            </td>
-
-                                                            <td className="px-3 py-3 text-center">
-                                                                {student.sessional}
-                                                            </td>
-
-                                                            <td className="px-3 py-3 text-center">
-                                                                {student.midterm}
-                                                            </td>
-
-                                                            <td className="px-3 py-3 text-center">
-                                                                {student.final}
-                                                            </td>
-
-                                                            <td className="px-3 py-3 text-center fw-bold">
-                                                                {student.total}
-                                                            </td>
-
-                                                            <td className="px-3 py-3 text-center">
-                                                                <span
-                                                                    className={`badge ${
-                                                                        student.grade === 'F'
-                                                                            ? 'bg-danger'
-                                                                            : student.grade?.startsWith('A')
-                                                                                ? 'bg-success'
-                                                                                : student.grade?.startsWith('B')
-                                                                                    ? 'bg-primary'
-                                                                                    : 'bg-warning text-dark'
-                                                                    }`}
-                                                                    style={{
-                                                                        fontSize: '0.8rem',
-                                                                        padding: '0.4rem 0.7rem'
-                                                                    }}
-                                                                >
-                                                                    {student.grade}
-                                                                </span>
-                                                            </td>
-
-                                                            <td className="px-3 py-3 text-center fw-semibold">
-                                                                {student.gpa}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </Table>
-                                        </div>
-                                    </div>
-
-                                    {/* Total Students */}
-                                    <div className="mt-3">
-                                        <span className="text-muted small">
-                                            Total Students:{' '}
-                                            <strong className="text-dark">
-                                                {awardList.length}
-                                            </strong>
-                                        </span>
-                                    </div>
-                                </>
-                            )}
-                        </motion.div>
-                    )}
+                        {activeTab === 'Reports' && activePage === 'GPA Attainment Graph' && (
+                            <GPAAttainmentGraph />
+                        )}
+                    {/* REPORTS TABS End */}
 
 
                 </AnimatePresence>

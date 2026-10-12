@@ -158,11 +158,77 @@ const MarksEntry = () => {
         }));
     };
 
-    // =========================================================
-    // SAVE MARKS
-    // =========================================================
-
+    // SAVE MARKS    
     const handleSaveAll = async () => {
+        if (!assessment?.questions?.length) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'No Questions',
+                text: 'This assessment has no questions.'
+            });
+            return;
+        }
+
+        const studentsToSave = students
+            .map(student => {
+                const studentMarks = marks[student._id] || {};
+
+                const obtainedMarks = Object.entries(studentMarks)
+                    .filter(([qIndex, mark]) => {
+                        const index = Number(qIndex);
+
+                        return (
+                            Number.isInteger(index) &&
+                            index >= 0 &&
+                            index < assessment.questions.length &&
+                            mark !== '' &&
+                            mark !== null &&
+                            mark !== undefined
+                        );
+                    })
+                    .map(([qIndex, mark]) => ({
+                        questionIndex: Number(qIndex),
+                        marks: Number(mark)
+                    }));
+
+                return {
+                    student,
+                    obtainedMarks
+                };
+            })
+            .filter(item => item.obtainedMarks.length > 0);
+
+        if (studentsToSave.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'No Marks to Save',
+                text: 'Please enter or import marks before saving.'
+            });
+            return;
+        }
+
+        // Validate marks before sending requests
+        for (const { student, obtainedMarks } of studentsToSave) {
+            for (const entry of obtainedMarks) {
+                const maxMarks = Number(
+                    assessment.questions[entry.questionIndex].maxMarks
+                );
+
+                if (
+                    !Number.isFinite(entry.marks) ||
+                    entry.marks < 0 ||
+                    entry.marks > maxMarks
+                ) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid Marks',
+                        text: `Invalid marks for ${student.name}, Q${entry.questionIndex + 1}. Allowed range: 0 to ${maxMarks}.`
+                    });
+                    return;
+                }
+            }
+        }
+
         setSaving(true);
 
         try {
@@ -172,20 +238,9 @@ const MarksEntry = () => {
                 }
             };
 
-            await Promise.all(
-                students.map(student => {
-                    const studentMarks =
-                        marks[student._id] || {};
-
-                    const obtainedMarks =
-                        Object.entries(studentMarks).map(
-                            ([qIndex, mark]) => ({
-                                questionIndex: Number(qIndex),
-                                marks: Number(mark) || 0
-                            })
-                        );
-
-                    return api.post(
+            const results = await Promise.allSettled(
+                studentsToSave.map(({ student, obtainedMarks }) =>
+                    api.post(
                         '/api/faculty/marks',
                         {
                             studentId: student._id,
@@ -193,234 +248,160 @@ const MarksEntry = () => {
                             obtainedMarks
                         },
                         config
-                    );
-                })
+                    )
+                )
             );
 
-            setSavedAt(new Date().toLocaleTimeString());
+            const successful = results.filter(
+                result => result.status === 'fulfilled'
+            ).length;
+
+            const failed = results.length - successful;
+
+            if (failed === 0) {
+                setSavedAt(new Date().toLocaleTimeString());
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Marks Saved',
+                    text: `Successfully saved marks for ${successful} student(s).`,
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2500
+                });
+            } else {
+                setSavedAt(null);
+
+                const firstError = results.find(
+                    result => result.status === 'rejected'
+                );
+
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Some Marks Could Not Be Saved',
+                    text: `${successful} student(s) saved, ${failed} failed. ${
+                        firstError?.reason?.response?.data?.message ||
+                        'Please check your connection and try again.'
+                    }`
+                });
+            }
+        } catch (error) {
+            setSavedAt(null);
 
             Swal.fire({
-                icon: 'success',
-                title: 'Marks Saved',
-                text: `Successfully saved marks for ${students.length} student(s)`,
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 2500
-            });
-        } catch (err) {
-            Swal.fire({
                 icon: 'error',
-                title: 'Error',
+                title: 'Save Failed',
                 text:
-                    err.response?.data?.message ||
-                    'Failed to save marks',
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000
+                    error.response?.data?.message ||
+                    'Failed to save marks.'
             });
         } finally {
             setSaving(false);
         }
     };
-
     
-        // =========================================================
-        // EXCEL TEMPLATE DOWNLOAD
-        // =========================================================
-
+        // EXCEL TEMPLATE DOWNLOAD        
         const downloadTemplate = () => {
             if (!students.length || !assessment?.questions?.length) {
                 Swal.fire({
                     icon: 'warning',
                     title: 'No Data Available',
-                    text: 'There are no students or questions available for this assessment.',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000
+                    text: 'No students or assessment questions available.'
                 });
                 return;
             }
 
             try {
                 const headers = [
-                    'Student Reg No',
+                    'S.No',
                     'Student Name',
-                    ...assessment.questions.map((q, i) =>
-                        `${q.questionName || `Q${i + 1}`} (Max: ${q.maxMarks})`
-                    )
+                    'Reg No',
+                    ...assessment.questions.map(
+                        (q, index) => q.questionName || `Q${index + 1}`
+                    ),
+                    'Total'
                 ];
 
-                const data = students.map(student => [
-                    student.regNo,
-                    student.name,
-                    ...assessment.questions.map((_, qIdx) =>
-                        marks[student._id]?.[qIdx] ?? ''
-                    )
+                const rows = students.map((student, index) => {
+                    const questionMarks = assessment.questions.map(
+                        (_, qIndex) => marks[student._id]?.[qIndex] ?? ''
+                    );
+
+                    const total = questionMarks.some(value => value !== '')
+                        ? questionMarks.reduce(
+                            (sum, value) => sum + (Number(value) || 0),
+                            0
+                        )
+                        : '';
+
+                    return [
+                        index + 1,
+                        student.name,
+                        student.regNo,
+                        ...questionMarks,
+                        total
+                    ];
+                });
+
+                const workbook = XLSX.utils.book_new();
+
+                const worksheet = XLSX.utils.aoa_to_sheet([
+                    headers,
+                    ...rows
                 ]);
 
-                const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
-                ws['!cols'] = [
-                    { wch: 18 },
-                    { wch: 25 },
-                    ...assessment.questions.map(() => ({ wch: 18 }))
+                worksheet['!cols'] = [
+                    { wch: 10 },
+                    { wch: 28 },
+                    { wch: 20 },
+                    ...assessment.questions.map(() => ({ wch: 18 })),
+                    { wch: 15 }
                 ];
 
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, 'Marks');
+                XLSX.utils.book_append_sheet(
+                    workbook,
+                    worksheet,
+                    'Marks'
+                );
 
-                const infoData = [
+                const infoSheet = XLSX.utils.aoa_to_sheet([
                     ['Assessment Details'],
                     ['Title', assessment.title],
                     ['Type', assessment.type],
                     ['Total Marks', assessment.totalMarks],
                     ['Questions', assessment.questions.length],
                     ['Students', students.length]
-                ];
+                ]);
 
-                const wsInfo = XLSX.utils.aoa_to_sheet(infoData);
-                wsInfo['!cols'] = [{ wch: 20 }, { wch: 30 }];
-                XLSX.utils.book_append_sheet(wb, wsInfo, 'Assessment Info');
+                XLSX.utils.book_append_sheet(
+                    workbook,
+                    infoSheet,
+                    'Assessment Info'
+                );
 
                 XLSX.writeFile(
-                    wb,
-                    `${assessment.title}-marks-${Date.now()}.xlsx`
+                    workbook,
+                    `${assessment.title}-marks-template.xlsx`
                 );
 
                 Swal.fire({
                     icon: 'success',
-                    title: 'Downloaded',
-                    text: 'Excel template downloaded successfully.',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 2000
+                    title: 'Template Downloaded',
+                    timer: 1800,
+                    showConfirmButton: false
                 });
+
             } catch (error) {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error',
-                    text: 'Failed to download: ' + error.message,
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 2000
+                    title: 'Download Failed',
+                    text: error.message
                 });
             }
         };
 
-        const handleDownloadExcel = downloadTemplate;
 
-        const handleImportExcel = async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-
-            try {
-                const buffer = await file.arrayBuffer();
-                const workbook = XLSX.read(buffer);
-                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(worksheet, {
-                    header: 1,
-                    defval: ''
-                });
-
-                if (rows.length < 2) {
-                    throw new Error('The Excel file contains no student marks.');
-                }
-
-                const headers = rows[0].map(value =>
-                    String(value).trim().toLowerCase()
-                );
-                const regNoIdx = headers.findIndex(header =>
-                    header.includes('reg')
-                );
-
-                if (regNoIdx === -1) {
-                    throw new Error('Could not find a registration number column.');
-                }
-
-                const newMarks = { ...marks };
-                const errors = [];
-                let updatedCount = 0;
-
-                for (let i = 1; i < rows.length; i++) {
-                    const row = rows[i];
-                    const regNo = String(row[regNoIdx] ?? '').trim();
-
-                    if (!regNo) continue;
-
-                    const student = students.find(
-                        s => String(s.regNo).trim().toLowerCase() === regNo.toLowerCase()
-                    );
-
-                    if (!student) {
-                        errors.push(`Row ${i + 1}: Student ${regNo} not found.`);
-                        continue;
-                    }
-
-                    newMarks[student._id] = {
-                        ...(newMarks[student._id] || {})
-                    };
-
-                    for (let qIdx = 0; qIdx < assessment.questions.length; qIdx++) {
-                        const value = row[qIdx + 2];
-
-                        if (value === '' || value === null || value === undefined) {
-                            continue;
-                        }
-
-                        const score = Number(value);
-                        const maxMarks = Number(assessment.questions[qIdx].maxMarks);
-
-                        if (!Number.isFinite(score) || score < 0 || score > maxMarks) {
-                            errors.push(
-                                `Row ${i + 1}, Q${qIdx + 1}: Enter a number from 0 to ${maxMarks}.`
-                            );
-                            continue;
-                        }
-
-                        newMarks[student._id][qIdx] = score;
-                        updatedCount++;
-                    }
-                }
-
-                if (updatedCount > 0) {
-                    setMarks(newMarks);
-                    setSavedAt(null);
-                }
-
-                await Swal.fire({
-                    icon: errors.length ? 'warning' : updatedCount ? 'success' : 'info',
-                    title: errors.length
-                        ? 'Import Completed with Errors'
-                        : updatedCount
-                            ? 'Import Successful'
-                            : 'No Marks Imported',
-                    text: `${updatedCount} mark(s) imported. ${errors.length} error(s).`,
-                    ...(errors.length
-                        ? { html: `<p>${updatedCount} mark(s) imported.</p><p>${errors.slice(0, 10).join('<br/>')}</p>` }
-                        : {}),
-                    toast: !errors.length,
-                    position: errors.length ? 'center' : 'top-end',
-                    showConfirmButton: Boolean(errors.length),
-                    timer: errors.length ? undefined : 2500
-                });
-            } catch (error) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Import Failed',
-                    text: error.message,
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000
-                });
-            } finally {
-                e.target.value = '';
-            }
-        };
 
         if (loading) {
             return (
@@ -431,11 +412,7 @@ const MarksEntry = () => {
         }
 
         
-
-    // =========================================================
     // EXCEL IMPORT
-    // =========================================================
-
     const handleImportSubmit = async () => {
         if (!excelFile) {
             Swal.fire({
@@ -447,7 +424,6 @@ const MarksEntry = () => {
                 showConfirmButton: false,
                 timer: 3000
             });
-
             return;
         }
 
@@ -455,38 +431,30 @@ const MarksEntry = () => {
         setImportResult(null);
 
         try {
-            const arrayBuffer =
-                await excelFile.arrayBuffer();
+            // Read uploaded Excel file
+            const arrayBuffer = await excelFile.arrayBuffer();
 
-            const workbook =
-                XLSX.read(arrayBuffer, {
-                    type: 'array'
-                });
+            const workbook = XLSX.read(arrayBuffer, {
+                type: 'array'
+            });
 
-            const sheetName =
-                workbook.SheetNames[0];
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
 
-            const worksheet =
-                workbook.Sheets[sheetName];
+            const rows = XLSX.utils.sheet_to_json(worksheet, {
+                header: 1,
+                defval: ''
+            });
 
-            const rows =
-                XLSX.utils.sheet_to_json(
-                    worksheet,
-                    {
-                        header: 1,
-                        defval: ''
-                    }
-                );
-
-            if (!rows.length) {
+            if (rows.length < 2) {
                 throw new Error(
-                    'The Excel file is empty.'
+                    'The Excel file contains no student data.'
                 );
             }
 
-            // -------------------------------------------------
-            // Expected headers
-            // -------------------------------------------------
+            // ---------------------------------------------
+            // Validate Excel template headers
+            // ---------------------------------------------
 
             const expectedHeaders = [
                 'S.No',
@@ -494,33 +462,27 @@ const MarksEntry = () => {
                 'Reg No',
                 ...assessment.questions.map(
                     (q, index) =>
-                        q.questionName ||
-                        `Q${index + 1}`
+                        q.questionName || `Q${index + 1}`
                 ),
                 'Total'
             ];
 
-            const uploadedHeaders =
-                rows[0].map(value =>
-                    String(value).trim()
-                );
+            const uploadedHeaders = rows[0].map(value =>
+                String(value).trim()
+            );
 
-            // Exact header validation
             if (
-                uploadedHeaders.length !==
-                expectedHeaders.length
+                uploadedHeaders.length !== expectedHeaders.length
             ) {
                 throw new Error(
-                    'Invalid Excel template. Please use the template downloaded from this page.'
+                    'Invalid Excel template. Please download a fresh template from Bulk Import.'
                 );
             }
 
-            const headersMatch =
-                expectedHeaders.every(
-                    (header, index) =>
-                        uploadedHeaders[index] ===
-                        header
-                );
+            const headersMatch = expectedHeaders.every(
+                (header, index) =>
+                    uploadedHeaders[index] === header
+            );
 
             if (!headersMatch) {
                 throw new Error(
@@ -528,185 +490,183 @@ const MarksEntry = () => {
                 );
             }
 
-            // -------------------------------------------------
-            // Create student lookup
-            // -------------------------------------------------
+            // ---------------------------------------------
+            // Create enrolled student lookup
+            // ---------------------------------------------
 
-            const studentByRegNo =
-                new Map();
+            const studentByRegNo = new Map();
 
             students.forEach(student => {
                 studentByRegNo.set(
-                    String(student.regNo)
-                        .trim()
-                        .toLowerCase(),
+                    String(student.regNo).trim().toLowerCase(),
                     student
                 );
             });
 
-            const updatedMarks = {
-                ...marks
-            };
+            // Copy current marks without changing original state
+            const updatedMarks = { ...marks };
 
             let imported = 0;
             let skipped = 0;
+
             const errors = [];
+            const processedStudents = new Set();
 
-            // -------------------------------------------------
-            // Process every Excel row
-            // -------------------------------------------------
+            // ---------------------------------------------
+            // Process Excel rows
+            // ---------------------------------------------
 
-            rows.slice(1).forEach(
-                (row, rowIndex) => {
-                    const excelRow =
-                        rowIndex + 2;
+            rows.slice(1).forEach((row, rowIndex) => {
+                const excelRow = rowIndex + 2;
 
-                    const studentName =
-                        String(
-                            row[1] ?? ''
-                        ).trim();
+                const studentName = String(
+                    row[1] ?? ''
+                ).trim();
 
-                    const regNo =
-                        String(
-                            row[2] ?? ''
-                        ).trim();
+                const regNo = String(
+                    row[2] ?? ''
+                ).trim();
 
-                    if (!studentName && !regNo) {
-                        return;
-                    }
-
-                    if (!regNo) {
-                        errors.push(
-                            `Row ${excelRow}: Registration number is missing.`
-                        );
-                        skipped++;
-                        return;
-                    }
-
-                    const student =
-                        studentByRegNo.get(
-                            regNo.toLowerCase()
-                        );
-
-                    if (!student) {
-                        errors.push(
-                            `Row ${excelRow}: Student with Reg No "${regNo}" is not enrolled in this course.`
-                        );
-                        skipped++;
-                        return;
-                    }
-
-                    // Make sure name was not changed
-                    if (
-                        studentName.toLowerCase() !==
-                        String(student.name)
-                            .trim()
-                            .toLowerCase()
-                    ) {
-                        errors.push(
-                            `Row ${excelRow}: Student name does not match Reg No "${regNo}".`
-                        );
-                        skipped++;
-                        return;
-                    }
-
-                    if (
-                        !updatedMarks[student._id]
-                    ) {
-                        updatedMarks[
-                            student._id
-                        ] = {};
-                    }
-
-                    let rowValid = true;
-
-                    assessment.questions.forEach(
-                        (question, qIndex) => {
-                            const rawValue =
-                                row[qIndex + 3];
-
-                            if (
-                                rawValue === '' ||
-                                rawValue === null ||
-                                rawValue === undefined
-                            ) {
-                                updatedMarks[
-                                    student._id
-                                ][qIndex] = '';
-
-                                return;
-                            }
-
-                            const numericValue =
-                                Number(rawValue);
-
-                            if (
-                                Number.isNaN(
-                                    numericValue
-                                )
-                            ) {
-                                errors.push(
-                                    `Row ${excelRow}: ${question.questionName || `Q${qIndex + 1}`} must contain a number.`
-                                );
-
-                                rowValid = false;
-                                return;
-                            }
-
-                            if (
-                                numericValue < 0 ||
-                                numericValue >
-                                    question.maxMarks
-                            ) {
-                                errors.push(
-                                    `Row ${excelRow}: ${
-                                        question.questionName ||
-                                        `Q${qIndex + 1}`
-                                    } must be between 0 and ${question.maxMarks}.`
-                                );
-
-                                rowValid = false;
-                                return;
-                            }
-
-                            updatedMarks[
-                                student._id
-                            ][qIndex] =
-                                numericValue;
-                        }
-                    );
-
-                    if (rowValid) {
-                        imported++;
-                    } else {
-                        skipped++;
-                    }
+                // Ignore completely empty rows
+                if (!studentName && !regNo) {
+                    return;
                 }
-            );
 
-            // -------------------------------------------------
-            // Put imported marks into manual table
-            // -------------------------------------------------
+                // Validate registration number
+                if (!regNo) {
+                    errors.push(
+                        `Row ${excelRow}: Registration number is missing.`
+                    );
+                    skipped++;
+                    return;
+                }
 
-            setMarks(updatedMarks);
-            setSavedAt(null);
+                const normalizedRegNo = regNo.toLowerCase();
 
+                // Prevent duplicate student rows
+                if (processedStudents.has(normalizedRegNo)) {
+                    errors.push(
+                        `Row ${excelRow}: Duplicate registration number "${regNo}".`
+                    );
+                    skipped++;
+                    return;
+                }
+
+                processedStudents.add(normalizedRegNo);
+
+                // Verify student enrollment
+                const student = studentByRegNo.get(
+                    normalizedRegNo
+                );
+
+                if (!student) {
+                    errors.push(
+                        `Row ${excelRow}: Student with Reg No "${regNo}" is not enrolled in this course.`
+                    );
+                    skipped++;
+                    return;
+                }
+
+                // Verify student name
+                if (
+                    studentName.toLowerCase() !==
+                    String(student.name).trim().toLowerCase()
+                ) {
+                    errors.push(
+                        `Row ${excelRow}: Student name does not match Reg No "${regNo}".`
+                    );
+                    skipped++;
+                    return;
+                }
+
+                // -----------------------------------------
+                // Validate all question marks first
+                // -----------------------------------------
+
+                let rowValid = true;
+                const validatedMarks = {};
+
+                assessment.questions.forEach(
+                    (question, qIndex) => {
+                        const rawValue = row[qIndex + 3];
+
+                        // Keep blank cells blank
+                        if (
+                            rawValue === '' ||
+                            rawValue === null ||
+                            rawValue === undefined
+                        ) {
+                            validatedMarks[qIndex] = '';
+                            return;
+                        }
+
+                        const numericValue = Number(rawValue);
+                        const maxMarks = Number(
+                            question.maxMarks
+                        );
+
+                        // Validate numeric marks and limits
+                        if (
+                            !Number.isFinite(numericValue) ||
+                            numericValue < 0 ||
+                            numericValue > maxMarks
+                        ) {
+                            errors.push(
+                                `Row ${excelRow}: ${
+                                    question.questionName ||
+                                    `Q${qIndex + 1}`
+                                } must be a number between 0 and ${maxMarks}.`
+                            );
+
+                            rowValid = false;
+                            return;
+                        }
+
+                        validatedMarks[qIndex] = numericValue;
+                    }
+                );
+
+                // -----------------------------------------
+                // Apply only completely valid rows
+                // -----------------------------------------
+
+                if (rowValid) {
+                    updatedMarks[student._id] = {
+                        ...(updatedMarks[student._id] || {}),
+                        ...validatedMarks
+                    };
+
+                    imported++;
+                } else {
+                    skipped++;
+                }
+            });
+
+            // ---------------------------------------------
+            // Update manual marks table
+            // ---------------------------------------------
+
+            if (imported > 0) {
+                setMarks(updatedMarks);
+                setSavedAt(null);
+            }
+
+            // Display import results in existing modal
             setImportResult({
                 imported,
                 skipped,
                 errors
             });
 
+            // Reset selected file
             setExcelFile(null);
 
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
+
         } catch (error) {
-            console.error(
-                'Excel import error:',
-                error
-            );
+            console.error('Excel import error:', error);
 
             Swal.fire({
                 icon: 'error',
@@ -719,15 +679,14 @@ const MarksEntry = () => {
                 showConfirmButton: false,
                 timer: 4000
             });
+
         } finally {
             setImporting(false);
         }
     };
 
-    // =========================================================
-    // CLOSE IMPORT MODAL
-    // =========================================================
 
+    // CLOSE IMPORT MODAL
     const handleCloseImportModal = () => {
         setShowImportModal(false);
         setExcelFile(null);
@@ -738,10 +697,7 @@ const MarksEntry = () => {
         }
     };
 
-    // =========================================================
     // TOTAL
-    // =========================================================
-
     const totalFor = studentId =>
         Object.values(
             marks[studentId] || {}
@@ -927,33 +883,6 @@ const MarksEntry = () => {
                                 : 'Save All Marks'}
                         </Button>
 
-                        {/* BACK */}
-
-                        <Button
-                            size="sm"
-                            variant="outline-primary"
-                            className="px-3 d-flex align-items-center gap-1 rounded-2"
-                            onClick={handleDownloadExcel}
-                        >
-                            <Download size={14} /> Download Excel
-                        </Button>
-                        <div className="position-relative">
-                            <input
-                                type="file"
-                                accept=".xlsx,.xls"
-                                onChange={handleImportExcel}
-                                style={{ display: 'none' }}
-                                id="marksImportInput"
-                            />
-                            <Button
-                                size="sm"
-                                variant="outline-primary"
-                                className="px-3 d-flex align-items-center gap-1 rounded-2"
-                                onClick={() => document.getElementById('marksImportInput').click()}
-                            >
-                                <Upload size={14} /> Upload Excel
-                            </Button>
-                        </div>
                         <Button
                             variant="light"
                             size="sm"

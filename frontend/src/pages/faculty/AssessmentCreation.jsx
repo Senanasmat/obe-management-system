@@ -46,7 +46,34 @@ const AssessmentCreation = () => {
     const [questions, setQuestions] = useState([emptyQuestion(0)]);
     const [existingAssessments, setExistingAssessments] = useState([]);
 
+    
     const totalMarks = questions.reduce((sum, q) => sum + (Number(q.maxMarks) || 0), 0);
+    
+    // Calculate each question's OBE weight as a percentage
+    // of the assessment's total marks.    
+    useEffect(() => {
+        // Preserve previously saved OBE weights when editing.
+        if (isEditMode) return;
+
+        setQuestions(prev => prev.map(q => {
+            const maxMarks = Number(q.maxMarks) || 0;
+
+            const percentage = totalMarks > 0
+                ? (maxMarks / totalMarks) * 100
+                : 0;
+
+            const newWeight = percentage.toFixed(2);
+
+            if (String(q.obeWeight) === newWeight) {
+                return q;
+            }
+
+            return {
+                ...q,
+                obeWeight: newWeight
+            };
+        }));
+    }, [totalMarks, isEditMode]);
 
     // Auto-sync GPA Weight with Total Marks
     useEffect(() => {
@@ -116,8 +143,6 @@ const AssessmentCreation = () => {
         setQuestions(prev => prev.map((q, i) => {
             if (i !== index) return q;
             const updated = { ...q, [field]: value };
-            // Auto-sync OBE Weight with Max Marks
-            if (field === 'maxMarks') updated.obeWeight = value;
             return updated;
         }));
     };
