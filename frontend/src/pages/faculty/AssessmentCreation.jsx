@@ -22,6 +22,9 @@ const emptyQuestion = (index) => ({
     clos: [],
     notForOBE: false,
     questionText: '',
+    questionType: '',
+    choicesGuide: '',
+    correctAnswer: '',
 });
 
 const AssessmentCreation = () => {
@@ -133,6 +136,9 @@ const AssessmentCreation = () => {
                         ) || [],
                         notForOBE: q.notForOBE || false,
                         questionText: q.questionText || '',
+                        questionType: q.questionType || '',
+                        choicesGuide: q.choicesGuide || '',
+                        correctAnswer: q.correctAnswer || '',
                     })));
                 }
             })
@@ -208,6 +214,9 @@ const AssessmentCreation = () => {
             questions: questions.map(q => ({
                 questionName: q.questionName,
                 questionText: q.questionText,
+                questionType: q.questionType || '',
+                choicesGuide: q.choicesGuide || '',
+                correctAnswer: q.correctAnswer || '',
                 maxMarks: Number(q.maxMarks) || 0,
                 obeWeight: parseFloat(q.obeWeight) || 0,
                 complexity: q.complexity,
@@ -587,6 +596,51 @@ const AssessmentCreation = () => {
                                                 style={{ borderColor: '#ccc' }}
                                             />
                                         </Form.Group>
+                                        <Row className="g-3 mt-2">
+                                            <Col md={6}>
+                                                <Form.Label className="small fw-medium">
+                                                    Choices (Choices Guide)
+                                                </Form.Label>
+                                                <Form.Control
+                                                    as="textarea"
+                                                    rows={3}
+                                                    value={q.choicesGuide || ''}
+                                                    onChange={(e) =>
+                                                        handleQuestionChange(index, 'choicesGuide', e.target.value)
+                                                    }
+                                                />
+                                            </Col>
+
+                                            <Col md={6}>
+                                                <Form.Label className="small fw-medium">
+                                                    Question Type
+                                                </Form.Label>
+                                                <Form.Select
+                                                    value={q.questionType || ''}
+                                                    onChange={(e) =>
+                                                        handleQuestionChange(index, 'questionType', e.target.value)
+                                                    }
+                                                >
+                                                    <option value="">- Select -</option>
+                                                    <option value="Descriptive">Text Base / Descriptive</option>
+                                                    <option value="MCQ">MCQ</option>
+                                                    <option value="True/False">True / False</option>
+                                                    <option value="Short Answer">Short Answer</option>
+                                                </Form.Select>
+
+                                                <Form.Label className="small fw-medium mt-3">
+                                                    Correct Answer (Answer Guide)
+                                                </Form.Label>
+                                                <Form.Control
+                                                    as="textarea"
+                                                    rows={2}
+                                                    value={q.correctAnswer || ''}
+                                                    onChange={(e) =>
+                                                        handleQuestionChange(index, 'correctAnswer', e.target.value)
+                                                    }
+                                                />
+                                            </Col>
+                                        </Row>
                                     </div>
                                 </motion.div>
                             ))}

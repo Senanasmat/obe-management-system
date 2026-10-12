@@ -10,6 +10,15 @@ import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx-js-style';
+import {
+    Document,
+    Packer,
+    Paragraph,
+    TextRun,
+    AlignmentType,
+    BorderStyle
+} from 'docx';
+import { saveAs } from 'file-saver';
 import CLOList from './CLOList';
 import CLOAttainment from './CLOAttainment';
 import CLOAttainmentGraph from './CLOAttainmentGraph';
@@ -74,6 +83,289 @@ const CourseView = () => {
     const [studentCheckboxes, setStudentCheckboxes] = useState(new Set());
     const [studentGrades, setStudentGrades] = useState({});
     const [selectedCloStudent, setSelectedCloStudent] = useState(null);
+
+    const handleDownloadAssessmentWord = async (assessment) => {
+        const examTitle = {
+            Midterm: 'Mid Term / Sessional Examination',
+            Final: 'Final Term Examination',
+            Quiz: 'Quiz',
+            Assignment: 'Assignment',
+            Project: 'Project'
+        }[assessment.type] || assessment.type || 'Assessment';
+
+        const questionParagraphs = (assessment.questions || []).flatMap((q, index) => {
+            const questionText = (q.questionText || q.questionName || 'Question')
+                .replace(/^\s*(?:Q(?:uestion)?\s*)?\d+\s*[.):-]\s*/i, '')
+                .trim();
+
+            const cloCodes = (q.clos || [])
+                .map(mappedClo => {
+                    const cloId = String(mappedClo?._id || mappedClo);
+                    const matchedClo = courseClos.find(
+                        clo => String(clo._id) === cloId
+                    );
+
+                    return matchedClo?.code || mappedClo?.code || null;
+                })
+                .filter(Boolean);
+
+            const cloLabel = q.notForOBE
+                ? 'Not for OBE'
+                : cloCodes.length > 0
+                    ? cloCodes.join(', ')
+                    : 'CLO not assigned';
+
+            return [
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: `Q${index + 1}. `,
+                            bold: true
+                        }),
+                        new TextRun({
+                            text: questionText
+                        })
+                    ],
+                    spacing: { before: 240, after: 120 }
+                }),
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: `(${cloLabel}) [${String(q.maxMarks ?? 0).padStart(2, '0')}]`,
+                            italics: true
+                        })
+                    ],
+                    alignment: AlignmentType.RIGHT,
+                    spacing: { after: 220 }
+                })
+            ];
+        });
+
+        const doc = new Document({
+            sections: [{
+                properties: {},
+                children: [
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: 'UNIVERSITY OF SCIENCE & TECHNOLOGY BANNU',
+                                bold: true,
+                                size: 28
+                            })
+                        ],
+                        alignment: AlignmentType.CENTER,
+                        spacing: { after: 120 }
+                    }),
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: 'DEPARTMENT OF SOFTWARE ENGINEERING',
+                                bold: true,
+                                size: 24
+                            })
+                        ],
+                        alignment: AlignmentType.CENTER,
+                        spacing: { after: 120 }
+                    }),
+                    new Paragraph({
+                        text: `${examTitle} - ${assessment.title}`,
+                        alignment: AlignmentType.CENTER,
+                        spacing: { after: 300 }
+                    }),
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: `Subject: ${course?.code || ''} ${course?.name || ''}`,
+                                bold: true
+                            })
+                        ],
+                        spacing: { after: 120 }
+                    }),
+                    new Paragraph({
+                        text: `Maximum Marks: ${assessment.totalMarks}`,
+                        spacing: { after: 120 }
+                    }),
+                    new Paragraph({
+                        text: `Date: ${formatDate(assessment.date || assessment.createdAt)}`,
+                        spacing: { after: 240 },
+                        border: {
+                            bottom: {
+                                color: '888888',
+                                space: 8,
+                                style: BorderStyle.SINGLE,
+                                size: 6
+                            }
+                        }
+                    }),
+                    ...questionParagraphs
+                ]
+            }]
+        });
+
+        const blob = await Packer.toBlob(doc);
+
+        saveAs(
+            blob,
+            `${assessment.title || 'Assessment'}.docx`
+        );
+    };
+
+    const handleDownloadAssessmentPDF = (assessment) => {
+        const doc = new jsPDF();
+
+        const pageWidth = doc.internal.pageSize.getWidth();
+        let y = 20;
+
+        // University heading
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text(
+            'UNIVERSITY OF SCIENCE & TECHNOLOGY BANNU',
+            pageWidth / 2,
+            y,
+            { align: 'center' }
+        );
+
+        y += 8;
+
+        doc.setFontSize(12);
+        doc.text(
+            'DEPARTMENT OF SOFTWARE ENGINEERING',
+            pageWidth / 2,
+            y,
+            { align: 'center' }
+        );
+
+        // Examination title
+        y += 9;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
+
+        const examTitle = {
+            Midterm: 'Mid Term / Sessional Examination',
+            Final: 'Final Term Examination',
+            Quiz: 'Quiz',
+            Assignment: 'Assignment',
+            Project: 'Project'
+        }[assessment.type] || assessment.type || 'Assessment';
+
+        doc.text(
+            `${examTitle} - ${assessment.title}`,
+            pageWidth / 2,
+            y,
+            { align: 'center' }
+        );
+
+        // Header divider
+        y += 7;
+        doc.setLineWidth(0.4);
+        doc.line(15, y, pageWidth - 15, y);
+
+        // Course details
+        y += 10;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+
+        const subject = `${course?.code || ''} ${course?.name || ''}`.trim();
+
+        doc.text(
+            `Subject: ${subject}`,
+            15,
+            y
+        );
+
+        doc.text(
+            `Maximum Marks: ${assessment.totalMarks}`,
+            pageWidth - 15,
+            y,
+            { align: 'right' }
+        );
+
+        y += 8;
+
+        doc.text(
+            `Date: ${formatDate(assessment.date || assessment.createdAt)}`,
+            15,
+            y
+        );
+
+        // Final divider before questions
+        y += 9;
+        doc.line(15, y, pageWidth - 15, y);
+
+        y += 12;
+
+        (assessment.questions || []).forEach((q, index) => {
+            const questionText = (q.questionText || q.questionName || 'Question')
+                .replace(/^\s*(?:Q(?:uestion)?\s*)?\d+\s*[.):-]\s*/i, '')
+                .trim();
+            
+            const cloCodes = (q.clos || [])
+                .map(mappedClo => {
+                    const cloId = String(mappedClo?._id || mappedClo);
+
+                    const matchedClo = courseClos.find(
+                        clo => String(clo._id) === cloId
+                    );
+
+                    return matchedClo?.code || mappedClo?.code || null;
+                })
+                .filter(Boolean);
+
+            const cloLabel = q.notForOBE
+                ? 'Not for OBE'
+                : cloCodes.length > 0
+                    ? cloCodes.join(', ')
+                    : 'CLO not assigned';
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(11);
+
+            const heading = `Q${index + 1}.`;
+            doc.text(heading, 15, y);
+            y += 7;
+
+            doc.setFont('helvetica', 'normal');
+            const lines = doc.splitTextToSize(questionText, pageWidth - 30);
+
+            lines.forEach(line => {
+                if (y > 275) {
+                    doc.addPage();
+                    y = 20;
+                }
+
+                doc.text(line, 15, y);
+                y += 6;
+            });
+
+            y += 3;
+
+            if (y > 275) {
+                doc.addPage();
+                y = 20;
+            }
+
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(9);
+            doc.text(
+                `(${cloLabel}) [${String(q.maxMarks ?? 0).padStart(2, '0')}]`,
+                pageWidth - 15,
+                y,
+                { align: 'right' }
+            );
+
+            y += 12;
+
+            if (y > 275) {
+                doc.addPage();
+                y = 20;
+            }
+        });
+
+        doc.save(`${assessment.title || 'Assessment'}.pdf`);
+    };
 
     const formatDate = (d) => {
         if (!d) return '—';
@@ -1145,13 +1437,57 @@ const handleSelectCloStudent = async (student) => {
                                         </Dropdown.Item>
                                     </Dropdown.Menu>
                                 </Dropdown>
-                                <Dropdown>
+                                                                <Dropdown>
                                     <Dropdown.Toggle variant="outline-success" size="sm" className="rounded-2 px-3">
                                         Activity Outcome
                                     </Dropdown.Toggle>
                                     <Dropdown.Menu>
                                         <Dropdown.Item onClick={() => setActiveTab('CLOs')}>View CLO Achievement</Dropdown.Item>
                                         <Dropdown.Item onClick={() => setActiveTab('PLOs')}>View PLO Achievement</Dropdown.Item>
+                                    </Dropdown.Menu>
+                                </Dropdown>
+
+                                {/* Export Dropdown */}
+                                <Dropdown>
+                                    <Dropdown.Toggle
+                                        variant="outline-secondary"
+                                        size="sm"
+                                        className="rounded-2 px-3"
+                                    >
+                                        Export
+                                    </Dropdown.Toggle>
+
+                                    <Dropdown.Menu align="end">
+                                        <Dropdown.Item
+                                            onClick={() => {
+                                                const exportData = assessments.map((a, index) => ({
+                                                    '#': index + 1,
+                                                    'Activity Type': a.type,
+                                                    'Name': a.title,
+                                                    'Date': formatDate(a.date || a.createdAt),
+                                                    'Total Marks': a.totalMarks,
+                                                    'Outcomes Added': hasOutcomes(a) ? 'Yes' : 'No',
+                                                    'Question Count': a.questions?.length || 0,
+                                                    'GPA %': a.gpaWeight || 0
+                                                }));
+
+                                                const worksheet = XLSX.utils.json_to_sheet(exportData);
+                                                const workbook = XLSX.utils.book_new();
+
+                                                XLSX.utils.book_append_sheet(
+                                                    workbook,
+                                                    worksheet,
+                                                    'Class Activities'
+                                                );
+
+                                                XLSX.writeFile(
+                                                    workbook,
+                                                    `Class-Activities-${course.code}.xlsx`
+                                                );
+                                            }}
+                                        >
+                                            Export to Excel
+                                        </Dropdown.Item>
                                     </Dropdown.Menu>
                                 </Dropdown>
                             </div>
@@ -1215,10 +1551,46 @@ const handleSelectCloStudent = async (student) => {
                                                                         onChange={() => toggleSelect(a._id)} />
                                                                 </td>
                                                                 <td className="px-3 py-2">
-                                                                    <span style={{ color: '#6d28d9', fontWeight: 500, cursor: 'pointer' }}
-                                                                        onClick={() => navigate(`/faculty/courses/${courseId}/marks/${a._id}`)}>
-                                                                        {a.title}
-                                                                    </span>
+                                                                    <div className="d-flex align-items-center justify-content-between gap-2">
+                                                                        <span
+                                                                            style={{
+                                                                                color: '#6d28d9',
+                                                                                fontWeight: 500,
+                                                                                cursor: 'pointer'
+                                                                            }}
+                                                                            onClick={() =>
+                                                                                navigate(`/faculty/courses/${courseId}/marks/${a._id}`)
+                                                                            }
+                                                                        >
+                                                                            {a.title}
+                                                                        </span>
+
+                                                                        <div className="d-flex align-items-center gap-2 flex-shrink-0">
+                                                                            {/* PDF Icon */}
+                                                                            <span
+                                                                                title="Download PDF"
+                                                                                onClick={() => handleDownloadAssessmentPDF(a)}
+                                                                                style={{ cursor: 'pointer', color: '#dc2626' }}
+                                                                            >
+                                                                                <FileText size={22} strokeWidth={1.8} />
+                                                                                <span style={{ fontSize: '9px', fontWeight: 700 }}>
+                                                                                    PDF
+                                                                                </span>
+                                                                            </span>
+
+                                                                            {/* Word Icon */}
+                                                                            <span
+                                                                                title="Download Word"
+                                                                                onClick={() => handleDownloadAssessmentWord(a)}
+                                                                                style={{ cursor: 'pointer', color: '#2563eb' }}
+                                                                            >
+                                                                                <FileText size={22} strokeWidth={1.8} />
+                                                                                <span style={{ fontSize: '9px', fontWeight: 700 }}>
+                                                                                    DOC
+                                                                                </span>
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
                                                                 </td>
                                                                 <td className="px-3 py-2 text-muted">{formatDate(a.date || a.createdAt)}</td>
                                                                 <td className="px-3 py-2 text-center fw-semibold">{a.totalMarks}</td>
@@ -1266,6 +1638,66 @@ const handleSelectCloStudent = async (student) => {
                                         <Button size="sm" variant="danger" className="px-3 rounded-2" onClick={deleteSelected} disabled={selectedIds.size === 0}>
                                             Delete Selected
                                         </Button>
+                                    </div>
+
+                                    {/* Mapping of CLOs to Class Activities */}
+                                    <div className="mt-4">
+                                        <h6 className="fw-semibold text-dark mb-3">
+                                            Mapping of CLOs to Class Activities
+                                        </h6>
+
+                                        <div className="border rounded-3 overflow-hidden">
+                                            <Table
+                                                bordered
+                                                responsive
+                                                size="sm"
+                                                className="mb-0 align-middle"
+                                                style={{ fontSize: '0.85rem' }}
+                                            >
+                                                <thead className="table-light">
+                                                    <tr>
+                                                        <th className="px-3 py-2" style={{ width: '20%' }}>
+                                                            Code
+                                                        </th>
+                                                        <th className="px-3 py-2">
+                                                            Activities
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+
+                                                <tbody>
+                                                    {courseClos.map((clo) => {
+                                                        const mappedActivities = assessments
+                                                            .filter((assessment) =>
+                                                                assessment.questions?.some((question) =>
+                                                                    question.clos?.some((mappedClo) =>
+                                                                        String(mappedClo?._id || mappedClo) ===
+                                                                        String(clo._id)
+                                                                    )
+                                                                )
+                                                            )
+                                                            .map((assessment) => assessment.title);
+
+                                                        return (
+                                                            <tr key={clo._id}>
+                                                                <td className="px-3 py-2 fw-semibold">
+                                                                    {clo.code}
+                                                                </td>
+
+                                                                <td className="px-3 py-2">
+                                                                    {mappedActivities.length > 0
+                                                                        ? mappedActivities.join(', ')
+                                                                        : <span className="text-muted">
+                                                                            No activities mapped
+                                                                        </span>
+                                                                    }
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </Table>
+                                        </div>
                                     </div>
                                 </>
                             )}

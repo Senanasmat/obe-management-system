@@ -3,11 +3,39 @@ const mongoose = require('mongoose');
 const questionSchema = {
     questionName: { type: String, default: '' },
     questionText: { type: String, default: '' },
+
     maxMarks: { type: Number, required: true },
     obeWeight: { type: Number, default: 0 },
-    complexity: { type: String, enum: ['Low', 'Medium', 'High', ''], default: '' },
-    clos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'CLO' }],
-    notForOBE: { type: Boolean, default: false }
+
+    complexity: {
+        type: String,
+        enum: ['Low', 'Medium', 'High', ''],
+        default: ''
+    },
+
+    clos: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'CLO'
+    }],
+
+    notForOBE: { type: Boolean, default: false },
+
+    // Additional assessment question details
+    questionType: {
+        type: String,
+        enum: ['', 'Descriptive', 'MCQ', 'True/False', 'Short Answer'],
+        default: ''
+    },
+
+    choicesGuide: {
+        type: String,
+        default: ''
+    },
+
+    correctAnswer: {
+        type: String,
+        default: ''
+    }
 };
 
 // Shared schema — each model gets its own collection
