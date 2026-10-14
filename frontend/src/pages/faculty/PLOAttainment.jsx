@@ -161,8 +161,7 @@ export default function PLOAttainment() {
                     plos.forEach(plo => {
                         let obtained = 0;
                         let maximum = 0;
-                        let weightedObtained = 0;
-                        let totalWeight = 0;
+                        const cloPercentages = [];
 
                         plo.cloIds.forEach(cloId => {
                             const stat = cloById.get(cloId);
@@ -184,14 +183,15 @@ export default function PLOAttainment() {
                             obtained += got;
                             maximum += max;
 
-                            if (
+                            const cloPercentage =
+                                weightMode === 'normalized' &&
                                 Number.isFinite(actualWeight) &&
                                 Number.isFinite(weight) &&
                                 weight > 0
-                            ) {
-                                weightedObtained += actualWeight;
-                                totalWeight += weight;
-                            }
+                                    ? actualWeight / weight * 100
+                                    : got / max * 100;
+
+                            cloPercentages.push(cloPercentage);
                         });
 
                         if (maximum <= 0) {
@@ -199,25 +199,20 @@ export default function PLOAttainment() {
                             return;
                         }
 
-                        const normalized =
-                            totalWeight > 0
-                                ? weightedObtained / totalWeight * 100
-                                : obtained / maximum * 100;
+                        // The admin dashboard averages CLO attainment per PLO.
+                        // Keep the same per-CLO averaging here so a PLO is not
+                        // skewed toward CLOs with more marks available.
+                        const percentage = cloPercentages.reduce(
+                            (sum, value) => sum + value,
+                            0
+                        ) / cloPercentages.length;
 
-                        const actual = totalWeight > 0
-                            ? weightedObtained
-                            : obtained;
-
-                        const achieved = normalized >= KPI;
+                        const achieved = percentage >= KPI;
 
                         ploResults[plo.ploId] = {
                             obtainedMarks: round(obtained),
                             totalMarks: round(maximum),
-                            percentage: round(
-                                weightMode === 'normalized'
-                                    ? normalized
-                                    : actual
-                            ),
+                            percentage: round(percentage),
                             achieved
                         };
                     });

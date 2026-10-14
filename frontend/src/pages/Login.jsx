@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Form, Button, Alert, ButtonGroup, ToggleButton } from 'react-bootstrap';
+import { Form, Button, Alert, ButtonGroup, ToggleButton, Modal } from 'react-bootstrap';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 import Toast from '../components/Toast';
+import api from '../utils/api';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -15,6 +16,32 @@ const Login = () => {
     const { login, logout } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const [showForgotModal, setShowForgotModal] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState('');
+    const [forgotLoading, setForgotLoading] = useState(false);
+    const [forgotMessage, setForgotMessage] = useState('');
+    const [forgotError, setForgotError] = useState('');
+
+    const handleForgotPassword = async (e) => {
+        e.preventDefault();
+        setForgotLoading(true);
+        setForgotMessage('');
+        setForgotError('');
+
+        try {
+            const { data } = await api.post('/api/users/forgot-password', {
+                email: forgotEmail
+            });
+            setForgotMessage(data.message);
+        } catch (err) {
+            setForgotError(
+                err.response?.data?.message ||
+                'Could not send a reset link. Please try again.'
+            );
+        } finally {
+            setForgotLoading(false);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -262,7 +289,24 @@ const Login = () => {
                                 id="remember"
                                 style={{ marginBottom: 0 }}
                             />
-                            <a href="#" style={{ color: '#667eea', textDecoration: 'none', fontWeight: '600' }}>Forgot?</a>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setForgotEmail(email);
+                                    setForgotMessage('');
+                                    setForgotError('');
+                                    setShowForgotModal(true);
+                                }}
+                                style={{
+                                    color: '#667eea',
+                                    textDecoration: 'none',
+                                    fontWeight: '600',
+                                    background: 'none',
+                                    border: 0,
+                                    padding: 0,
+                                    cursor: 'pointer'
+                                }}
+                            >Forgot?</button>
                         </div>
 
                         {/* Sign In Button */}
@@ -301,6 +345,49 @@ const Login = () => {
                     </div>
                 </div>
             </div>
+            <Modal
+                show={showForgotModal}
+                onHide={() => !forgotLoading && setShowForgotModal(false)}
+                centered
+            >
+                <Form onSubmit={handleForgotPassword}>
+                    <Modal.Header closeButton={!forgotLoading}>
+                        <Modal.Title>Reset your password</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <p className="text-muted">
+                            Enter the email address registered to your account. We’ll email you a secure link to choose a new password.
+                        </p>
+                        {forgotMessage && <Alert variant="success">{forgotMessage}</Alert>}
+                        {forgotError && <Alert variant="danger">{forgotError}</Alert>}
+                        <Form.Group controlId="forgotPasswordEmail">
+                            <Form.Label>Registered email</Form.Label>
+                            <Form.Control
+                                type="email"
+                                autoComplete="email"
+                                required
+                                value={forgotEmail}
+                                onChange={(e) => setForgotEmail(e.target.value)}
+                                placeholder="name@example.com"
+                                disabled={forgotLoading}
+                            />
+                        </Form.Group>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button
+                            variant="outline-secondary"
+                            type="button"
+                            onClick={() => setShowForgotModal(false)}
+                            disabled={forgotLoading}
+                        >
+                            Close
+                        </Button>
+                        <Button type="submit" disabled={forgotLoading}>
+                            {forgotLoading ? 'Sending…' : 'Send reset link'}
+                        </Button>
+                    </Modal.Footer>
+                </Form>
+            </Modal>
         </>
     );
 };

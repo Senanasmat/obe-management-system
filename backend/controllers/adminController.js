@@ -1,4 +1,5 @@
 const { PLO, CLO, Course, Student } = require('../models/academicModels');
+const CLOMapping = require('../models/cloMappingModel');
 const CourseAssignment = require('../models/courseAssignmentModel');
 const { parse } = require('csv-parse/sync');
 const { Result, ALL_MODELS } = require('../models/assessmentModel');
@@ -301,7 +302,6 @@ const getBatchPLOAchievements = async (req, res) => {
         const studentIds = students.map(student => student._id);
 
         const plos = await PLO.find({});
-        const clos = await CLO.find({});
 
         // Get courses containing students from this batch
         const courses = await Course.find({
@@ -329,79 +329,78 @@ const getBatchPLOAchievements = async (req, res) => {
             student: { $in: studentIds }
         });
 
-        // Calculate achievement for every CLO
-        const cloAchievements = [];
-
-        for (const clo of clos) {
-            let totalObtained = 0;
-            let totalMax = 0;
-
-            const cloAssessments = assessments.filter(assessment =>
-                assessment.questions.some(
-                    question =>
-                        question.clos?.some(
-                            cloId => cloId.toString() === clo._id.toString()
-                        )
-                )
-            );
-
-            for (const assessment of cloAssessments) {
-                const cloQuestionIndices = assessment.questions
-                    .map((question, index) =>
-                        question.clos?.some(
-                            cloId => cloId.toString() === clo._id.toString()
-                        )
-                            ? index
-                            : -1
-                    )
-                    .filter(index => index !== -1);
-
-                const assessmentResults = results.filter(
-                    result =>
-                        result.assessment.toString() ===
-                        assessment._id.toString()
-                );
-
-                for (const result of assessmentResults) {
-                    for (const index of cloQuestionIndices) {
-                        const markRecord = result.obtainedMarks.find(
-                            mark => mark.questionIndex === index
-                        );
-
-                        if (markRecord) {
-                            totalObtained += markRecord.marks;
-                            totalMax += assessment.questions[index].maxMarks;
-                        }
-                    }
-                }
+        // The course/batch/term-specific mappings are the source of truth.
+        // A CLO can be mapped differently in another course or batch, so do
+        // not use the legacy CLO.plo field for dashboard attainment.
+        const mappings = await CLOMapping.find({
+            course: { $in: courseIds },
+            batch: String(batch).trim()
+        });
+        const mappingByCourseClo = new Map();
+        mappings.forEach(mapping => {
+            const key = `${mapping.course}:${mapping.clo}`;
+            if (!mappingByCourseClo.has(key)) {
+                mappingByCourseClo.set(key, new Set());
             }
+            mappingByCourseClo.get(key).add(String(mapping.plo));
+        });
 
-            cloAchievements.push({
-                cloId: clo._id,
-                code: clo.code,
-                achievement:
-                    totalMax > 0
-                        ? (totalObtained / totalMax) * 100
-                        : 0,
-                plo: clo.plo
+        const assessmentById = new Map(
+            assessments.map(assessment => [String(assessment._id), assessment])
+        );
+        const cloTotals = new Map();
+
+        results.forEach(result => {
+            const assessment = assessmentById.get(String(result.assessment));
+            if (!assessment) return;
+
+            (result.obtainedMarks || []).forEach(mark => {
+                const question = assessment.questions?.[mark.questionIndex];
+                const maxMarks = Number(question?.maxMarks);
+                const obtained = Number(mark.marks);
+                if (
+                    !question || question.notForOBE === true ||
+                    !Number.isFinite(maxMarks) || maxMarks <= 0 ||
+                    !Number.isFinite(obtained)
+                ) return;
+
+                (question.clos || []).forEach(cloId => {
+                    const key = `${assessment.course}:${cloId}`;
+                    const ploIds = mappingByCourseClo.get(key);
+                    if (!ploIds) return;
+
+                    if (!cloTotals.has(key)) {
+                        cloTotals.set(key, {
+                            obtained: 0,
+                            maximum: 0,
+                            ploIds
+                        });
+                    }
+                    const total = cloTotals.get(key);
+                    total.obtained += obtained;
+                    total.maximum += maxMarks;
+                });
             });
-        }
+        });
 
-        // Calculate PLO achievement from its related CLOs
+        const achievementByPlo = new Map();
+        cloTotals.forEach(total => {
+            if (total.maximum <= 0) return;
+            const cloAchievement = total.obtained / total.maximum * 100;
+            total.ploIds.forEach(ploId => {
+                if (!achievementByPlo.has(ploId)) {
+                    achievementByPlo.set(ploId, []);
+                }
+                achievementByPlo.get(ploId).push(cloAchievement);
+            });
+        });
+
         const ploAchievements = plos.map(plo => {
-            const relatedCLOs = cloAchievements.filter(
-                clo =>
-                    clo.plo &&
-                    clo.plo.toString() === plo._id.toString()
-            );
-
-            const achievement =
-                relatedCLOs.length > 0
-                    ? relatedCLOs.reduce(
-                        (sum, clo) => sum + clo.achievement,
-                        0
-                    ) / relatedCLOs.length
-                    : 0;
+            const cloAchievements = achievementByPlo.get(String(plo._id)) || [];
+            const achievement = cloAchievements.length
+                ? cloAchievements.reduce((sum, value) => sum + value, 0) /
+                    cloAchievements.length
+                : 0;
 
             return {
                 code: plo.code,
