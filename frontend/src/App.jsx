@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
+import LoadingSpinner from './components/LoadingSpinner';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
 import Profile from './pages/Profile';
@@ -13,6 +14,7 @@ import Faculty from './pages/admin/Faculty';
 import Courses from './pages/admin/Courses';
 import PLOs from './pages/admin/PLOs';
 import CLOs from './pages/admin/CLOs';
+import ActivityLog from './pages/admin/ActivityLog';
 import FacultyDashboard from './pages/faculty/FacultyDashboard';
 import CourseView from './pages/faculty/CourseView';
 import AssessmentCreation from './pages/faculty/AssessmentCreation';
@@ -23,7 +25,7 @@ import Reports from './pages/faculty/Reports';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <LoadingSpinner fullScreen />;
   if (!user) return <Navigate to="/login" />;
   if (allowedRoles && !allowedRoles.includes(user.role)) return <Navigate to="/" />;
   return children;
@@ -32,7 +34,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 // Component to handle root redirect
 const RootRedirect = () => {
   const { user, loading } = useAuth();
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <LoadingSpinner fullScreen />;
   if (!user) return <Navigate to="/login" />;
   return user.role === 'admin' ? <Navigate to="/admin" /> : <Navigate to="/faculty" />;
 };
@@ -88,6 +90,11 @@ function App() {
             <Route path="admin/course-assignment" element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <CourseAssignment />
+              </ProtectedRoute>
+            } />
+            <Route path="admin/activity-log" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <ActivityLog />
               </ProtectedRoute>
             } />
 

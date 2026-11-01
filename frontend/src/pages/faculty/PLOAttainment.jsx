@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
     Card, Form, Button, Spinner, Alert, Table
@@ -10,8 +10,8 @@ import autoTable from 'jspdf-autotable';
 
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import KPIEditor, { useCourseKPI } from '../../components/KPIEditor';
 
-const KPI = 50;
 const PURPLE = '#663399';
 
 const getId = value => String(value?._id || value || '');
@@ -28,6 +28,23 @@ export default function PLOAttainment() {
     const [error, setError] = useState('');
     const [results, setResults] = useState([]);
     const [showResults, setShowResults] = useState(false);
+    const { kpi: KPI } = useCourseKPI(courseId);
+
+    // Re-evaluate "achieved" whenever the KPI is edited.
+    useEffect(() => {
+        setResults(groups => groups.map(group => ({
+            ...group,
+            rows: group.rows.map(row => ({
+                ...row,
+                ploResults: Object.fromEntries(
+                    Object.entries(row.ploResults).map(([ploId, result]) => [
+                        ploId,
+                        result && { ...result, achieved: result.percentage >= KPI }
+                    ])
+                )
+            }))
+        })));
+    }, [KPI]);
 
     const calculateResults = async () => {
         setLoading(true);
@@ -317,9 +334,12 @@ export default function PLOAttainment() {
     return (
         <Card className="border rounded-3 shadow-sm">
             <Card.Body className="p-4">
-                <h4 className="fw-normal mb-4">
-                    PLOs Attainment
-                </h4>
+                <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+                    <h4 className="fw-normal mb-0">
+                        PLOs Attainment
+                    </h4>
+                    <KPIEditor courseId={courseId} color={PURPLE} />
+                </div>
 
                 <div
                     className="d-flex flex-wrap align-items-center mb-4"
@@ -543,7 +563,7 @@ export default function PLOAttainment() {
                                                             colSpan={2}
                                                             className="text-center py-2"
                                                         >
-                                                            KPI 50%
+                                                            KPI {KPI}%
                                                         </th>
                                                     ))}
                                                 </tr>

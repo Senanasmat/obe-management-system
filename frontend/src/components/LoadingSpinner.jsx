@@ -1,44 +1,36 @@
-import { Spinner, Container } from 'react-bootstrap';
+import { Spinner } from 'react-bootstrap';
 
-const LoadingSpinner = () => {
+const LoadingSpinner = ({
+    label = 'Loading',
+    fullScreen = false,
+    size = 'md',
+    className = ''
+}) => {
+    const dimension = size === 'sm' ? 24 : 42;
+
     return (
         <div
+            className={`d-flex flex-column justify-content-center align-items-center text-muted ${className}`}
+            role="status"
+            aria-live="polite"
             style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                minHeight: '100vh',
-                background: 'rgba(224, 234, 252, 0.5)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)'
+                minHeight: fullScreen ? '100vh' : size === 'sm' ? '80px' : '180px',
+                width: '100%',
+                background: fullScreen ? 'rgba(224, 234, 252, 0.35)' : undefined
             }}
         >
-            <div style={{ textAlign: 'center' }}>
-                <Spinner
-                    animation="border"
-                    role="status"
-                    style={{
-                        color: '#667eea',
-                        width: '60px',
-                        height: '60px',
-                        borderWidth: '4px',
-                        marginBottom: '20px'
-                    }}
-                >
-                    <span className="visually-hidden">Loading...</span>
-                </Spinner>
-                <div
-                    style={{
-                        marginTop: '16px',
-                        color: '#667eea',
-                        fontSize: '16px',
-                        fontWeight: '600',
-                        letterSpacing: '0.5px'
-                    }}
-                >
-                    Loading
-                </div>
-            </div>
+            <Spinner
+                animation="border"
+                style={{
+                    color: '#667eea',
+                    width: dimension,
+                    height: dimension,
+                    borderWidth: size === 'sm' ? '3px' : '4px'
+                }}
+            >
+                <span className="visually-hidden">{label}...</span>
+            </Spinner>
+            <span className="mt-2 small">{label}</span>
         </div>
     );
 };

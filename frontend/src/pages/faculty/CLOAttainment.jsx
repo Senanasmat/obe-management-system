@@ -15,9 +15,10 @@ import autoTable from 'jspdf-autotable';
 
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import KPIEditor, { useCourseKPI } from '../../components/KPIEditor';
 
 const PURPLE = '#663399';
-const KPI = 50;
 
 const getId = (value) =>
     typeof value === 'object' && value !== null
@@ -36,6 +37,7 @@ const validPercentage = (value) => {
 export default function CLOAttainment() {
     const { courseId } = useParams();
     const { user } = useAuth();
+    const { kpi: KPI } = useCourseKPI(courseId);
 
     const [course, setCourse] = useState(null);
     const [clos, setClos] = useState([]);
@@ -49,7 +51,6 @@ export default function CLOAttainment() {
     // The existing backend provides recorded-mark percentages.
     // Other calculation modes will be enabled after backend support.
     const [marksMode, setMarksMode] = useState('without');
-    const [weightMode, setWeightMode] = useState('actual');
 
     useEffect(() => {
         let cancelled = false;
@@ -133,7 +134,7 @@ export default function CLOAttainment() {
                             `/api/faculty/courses/${courseId}/students/${student._id}/clo-analytics`,
                             {
                                 ...config,
-                                params: { weightMode }
+                                params: { calculationMode: 'category' }
                             }
                         )
                     )
@@ -214,8 +215,13 @@ export default function CLOAttainment() {
 
         const byId = record.values[getId(clo)];
         const byCode = record.values[`code:${clo.code}`];
+        const result = byId !== undefined ? byId : byCode ?? null;
 
-        return byId !== undefined ? byId : byCode ?? null;
+        // Re-evaluate against the current KPI so edits apply without recalculating.
+        return result && {
+            ...result,
+            achieved: result.percentage !== null && result.percentage >= KPI
+        };
     };
 
     const getPercentage = (student, clo) => {
@@ -249,7 +255,7 @@ export default function CLOAttainment() {
                 'Registration No.',
                 'Name',
                 ...clos.flatMap((clo) => [
-                    `${clo.code} Weighted Total (%)`,
+                    `${clo.code} Final Percentage (%)`,
                     `${clo.code} Achieved`
                 ])
             ]
@@ -310,16 +316,7 @@ export default function CLOAttainment() {
         doc.save(`CLO-Attainment-${course?.code || courseId}.pdf`);
     };
 
-    if (loading) {
-        return (
-            <div className="text-center py-5">
-                <Spinner animation="border" />
-                <p className="text-muted mt-2">
-                    Loading CLO attainment...
-                </p>
-            </div>
-        );
-    }
+    if (loading) return <LoadingSpinner />;
 
     return (
         <Card
@@ -327,12 +324,15 @@ export default function CLOAttainment() {
             style={{ backgroundColor: '#fff' }}
         >
             <Card.Body className="p-4">
-                <h4
-                    className="fw-normal mb-4"
-                    style={{ color: '#29243a' }}
-                >
-                    CLOs Attainment
-                </h4>
+                <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+                    <h4
+                        className="fw-normal mb-0"
+                        style={{ color: '#29243a' }}
+                    >
+                        CLOs Attainment
+                    </h4>
+                    <KPIEditor courseId={courseId} color={PURPLE} />
+                </div>
                 
                 <div
                     className="d-flex flex-wrap align-items-center mb-4"
@@ -363,30 +363,6 @@ export default function CLOAttainment() {
                             label="With Marks"
                             checked={marksMode === 'with'}
                             onChange={() => setMarksMode('with')}
-                        />
-                    </div>
-
-                    {/* Weight options */}
-                    <div
-                        className="d-flex align-items-center"
-                        style={{ gap: '24px' }}
-                    >
-                        <Form.Check
-                            type="radio"
-                            id="clo-actual-weights"
-                            name="clo-weight-mode"
-                            label="Actual Weights"
-                            checked={weightMode === 'actual'}
-                            onChange={() => setWeightMode('actual')}
-                        />
-
-                        <Form.Check
-                            type="radio"
-                            id="clo-normalized-weights"
-                            name="clo-weight-mode"
-                            label="Normalized Weights"
-                            checked={weightMode === 'normalized'}
-                            onChange={() => setWeightMode('normalized')}
                         />
                     </div>
 

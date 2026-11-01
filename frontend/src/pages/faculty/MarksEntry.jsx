@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../utils/api';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import { useAuth } from '../../context/AuthContext';
 import {
     Container,
@@ -403,13 +404,7 @@ const MarksEntry = () => {
 
 
 
-        if (loading) {
-            return (
-                <div className="p-5 text-center text-muted">
-                    Loading marks entry...
-                </div>
-            );
-        }
+        if (loading) return <LoadingSpinner />;
 
         
     // EXCEL IMPORT
@@ -711,13 +706,7 @@ const MarksEntry = () => {
     // LOADING
     // =========================================================
 
-    if (loading) {
-        return (
-            <div className="p-5 text-center text-muted">
-                Loading marks entry...
-            </div>
-        );
-    }
+    if (loading) return <LoadingSpinner />;
 
     if (!assessment) {
         return (

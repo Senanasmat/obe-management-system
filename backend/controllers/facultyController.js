@@ -4,6 +4,7 @@ const { PLO, CLO, Course, Student } = require('../models/academicModels');
 const CLOMapping = require('../models/cloMappingModel');
 const AcademicTerm = require('../models/academicTermModel');
 const mongoose = require('mongoose');
+const logActivity = require('../utils/activityLogger');
 
 const ASSESSMENT_WEIGHTS = {
     Quiz: 10,
@@ -433,6 +434,14 @@ const createAssessment = async (req, res) => {
             questions: validatedQuestions
         });
 
+        await logActivity({
+            userId: req.user._id,
+            action: 'Created Assessment',
+            details: `Created ${type} "${title.trim()}" for course ${course.name || courseId}`,
+            targetType: 'assessment',
+            targetId: assessment._id
+        });
+
         return res.status(201).json(assessment);
 
     } catch (error) {
@@ -611,6 +620,14 @@ const enterMarks = async (req, res) => {
                 obtainedMarks: finalMarks
             });
         }
+
+        await logActivity({
+            userId: req.user._id,
+            action: 'Entered Marks',
+            details: `Entered marks for student ${studentId} on assessment ${assessmentId}`,
+            targetType: 'marks',
+            targetId: result._id
+        });
 
         return res.json(result);
 
@@ -885,6 +902,7 @@ const getStudentCLOAnalytics = async (req, res) => {
     try {
         const { courseId, studentId } = req.params;
         const mode = req.query.weightMode || 'actual';
+        const useCategoryFormula = req.query.calculationMode === 'category';
 
         if (
             !mongoose.Types.ObjectId.isValid(courseId) ||
@@ -929,6 +947,8 @@ const getStudentCLOAnalytics = async (req, res) => {
                 message: 'Student is not enrolled in this course.'
             });
         }
+
+        const kpi = Number.isFinite(Number(course.kpi)) ? Number(course.kpi) : 50;
 
         const groups = await Promise.all(
             ALL_MODELS.map(Model => Model.find({ course: courseId }))
@@ -979,6 +999,37 @@ const getStudentCLOAnalytics = async (req, res) => {
                     continue;
                 }
 
+                if (useCategoryFormula) {
+                    const categoryWeight = ASSESSMENT_WEIGHTS[assessment.type];
+                    if (!categoryWeight) continue;
+
+                    for (const clo of question.clos) {
+                        const cloId = String(clo._id || clo);
+                        if (!cloMap.has(cloId)) {
+                            cloMap.set(cloId, {
+                                cloId,
+                                obtainedMarks: 0,
+                                totalMarks: 0,
+                                categories: {}
+                            });
+                        }
+
+                        const item = cloMap.get(cloId);
+                        if (!item.categories[assessment.type]) {
+                            item.categories[assessment.type] = {
+                                obtained: 0,
+                                maximum: 0
+                            };
+                        }
+
+                        item.categories[assessment.type].obtained += obtained;
+                        item.categories[assessment.type].maximum += maxMarks;
+                        item.obtainedMarks += obtained;
+                        item.totalMarks += maxMarks;
+                    }
+                    continue;
+                }
+
                 // Use OBE weight; fall back to mark proportion.
                 const storedWeight = Number(question.obeWeight);
 
@@ -1025,6 +1076,35 @@ const getStudentCLOAnalytics = async (req, res) => {
         );
 
         const cloStats = [...cloMap.values()].map(item => {
+            if (useCategoryFormula) {
+                const categoryBreakdown = {};
+                let percentage = 0;
+
+                Object.entries(ASSESSMENT_WEIGHTS).forEach(([type, weight]) => {
+                    const category = item.categories[type];
+                    if (!category || category.maximum <= 0) return;
+
+                    const contribution = (category.obtained / category.maximum) * weight;
+                    percentage += contribution;
+                    categoryBreakdown[type] = {
+                        obtainedMarks: Number(category.obtained.toFixed(2)),
+                        totalMarks: Number(category.maximum.toFixed(2)),
+                        weight,
+                        contribution: Number(contribution.toFixed(2))
+                    };
+                });
+
+                return {
+                    cloId: item.cloId,
+                    cloCode: cloCodes.get(item.cloId) || '',
+                    obtainedMarks: Number(item.obtainedMarks.toFixed(2)),
+                    totalMarks: Number(item.totalMarks.toFixed(2)),
+                    percentage: Number(percentage.toFixed(2)),
+                    achieved: percentage >= kpi,
+                    categoryBreakdown
+                };
+            }
+
             const normalized =
                 item.totalWeight > 0
                     ? (item.weightedObtained / item.totalWeight) * 100
@@ -1037,7 +1117,7 @@ const getStudentCLOAnalytics = async (req, res) => {
 
             const achieved =
                 item.totalWeight > 0 &&
-                item.weightedObtained >= item.totalWeight * 0.5;
+                item.weightedObtained >= item.totalWeight * (kpi / 100);
 
             return {
                 cloId: item.cloId,
@@ -1055,6 +1135,7 @@ const getStudentCLOAnalytics = async (req, res) => {
         return res.json({
             studentId,
             weightMode: mode,
+            calculationMode: useCategoryFormula ? 'category' : 'obe',
             cloStats
         });
 
@@ -1436,6 +1517,14 @@ const updateAssessment = async (req, res) => {
         // 11. Save assessment
         await doc.save();
 
+        await logActivity({
+            userId: req.user._id,
+            action: 'Updated Assessment',
+            details: `Updated assessment "${doc.title}" (${doc.type})`,
+            targetType: 'assessment',
+            targetId: doc._id
+        });
+
         return res.json(doc);
 
     } catch (error) {
@@ -1500,6 +1589,14 @@ const deleteAssessment = async (req, res) => {
         // 6. Delete assessment
         await Model.findByIdAndDelete(assessmentId);
 
+        await logActivity({
+            userId: req.user._id,
+            action: 'Deleted Assessment',
+            details: `Deleted assessment "${doc.title}" (${doc.type})`,
+            targetType: 'assessment',
+            targetId: assessmentId
+        });
+
         return res.json({
             message: 'Assessment deleted successfully.'
         });
@@ -1563,6 +1660,14 @@ const createCourseCLO = async (req, res) => {
 
         await Course.findByIdAndUpdate(courseId, {
             $push: { clos: clo._id }
+        });
+
+        await logActivity({
+            userId: req.user._id,
+            action: 'Created CLO',
+            details: `Created CLO "${clo.code}" for course ${courseId}`,
+            targetType: 'CLO',
+            targetId: clo._id
         });
 
         res.status(201).json(clo);
@@ -1635,6 +1740,14 @@ const updateCourseCLO = async (req, res) => {
                 runValidators: true
             }
         );
+
+        await logActivity({
+            userId: req.user._id,
+            action: 'Updated CLO',
+            details: `Updated CLO "${updatedClo.code}" in course ${courseId}`,
+            targetType: 'CLO',
+            targetId: cloId
+        });
 
         res.json(updatedClo);
 
@@ -1732,6 +1845,14 @@ const removeCourseCLO = async (req, res) => {
         await CLOMapping.deleteMany({
             course: courseId,
             clo: cloId
+        });
+
+        await logActivity({
+            userId: req.user._id,
+            action: 'Removed CLO',
+            details: `Removed CLO ${cloId} from course ${courseId}`,
+            targetType: 'CLO',
+            targetId: cloId
         });
 
         return res.json({
@@ -2402,7 +2523,77 @@ const getAcademicTermsForFaculty = async (req, res) => {
 };
 
 
+// GET / UPDATE COURSE KPI (attainment threshold %)
+const getCourseKPI = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(courseId)) {
+            return res.status(400).json({ message: 'Invalid course ID.' });
+        }
+
+        const assignment = await CourseAssignment.findOne({
+            faculty: req.user._id,
+            course: courseId
+        });
+
+        if (!assignment) {
+            return res.status(403).json({ message: 'This course is not assigned to you.' });
+        }
+
+        const course = await Course.findById(courseId).select('kpi');
+
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found.' });
+        }
+
+        res.json({ kpi: course.kpi ?? 50 });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const updateCourseKPI = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        const kpi = Number(req.body.kpi);
+
+        if (!mongoose.Types.ObjectId.isValid(courseId)) {
+            return res.status(400).json({ message: 'Invalid course ID.' });
+        }
+
+        if (!Number.isFinite(kpi) || kpi < 0 || kpi > 100) {
+            return res.status(400).json({ message: 'KPI must be a number between 0 and 100.' });
+        }
+
+        const assignment = await CourseAssignment.findOne({
+            faculty: req.user._id,
+            course: courseId
+        });
+
+        if (!assignment) {
+            return res.status(403).json({ message: 'This course is not assigned to you.' });
+        }
+
+        const course = await Course.findByIdAndUpdate(
+            courseId,
+            { kpi },
+            { new: true, runValidators: true }
+        ).select('kpi');
+
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found.' });
+        }
+
+        res.json({ kpi: course.kpi });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
+    getCourseKPI,
+    updateCourseKPI,
     getAssignedCourses,
     getPLOsForFaculty,
     createAssessment,

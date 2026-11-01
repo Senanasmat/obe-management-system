@@ -3,8 +3,9 @@ import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { Container, Card, Form, Button, Table, Badge, Modal, Row, Col } from 'react-bootstrap';
 import { toast, showError, showConfirm } from '../../utils/notifications';
-import { PlusCircle, Edit, Trash2, FileText, Hash, Link2, Layers } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, FileText, Hash, Link2, Layers, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import BulkImportModal from '../../components/BulkImportModal';
 
 const containerVariants = {
     hidden: { opacity: 0, y: 10 },
@@ -25,6 +26,7 @@ const CLOs = () => {
     const [formData, setFormData] = useState({ code: '', description: '', plo: '' });
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
 
     useEffect(() => {
         fetchCLOs();
@@ -94,7 +96,7 @@ const CLOs = () => {
                 toast.fire({ icon: 'success', title: 'CLO removed successfully!' });
                 fetchCLOs();
             } catch (error) {
-                showError('Error', 'Error deleting CLO');
+                showError('Cannot delete CLO', error.response?.data?.message || 'Error deleting CLO');
             }
         }
     };
@@ -111,11 +113,22 @@ const CLOs = () => {
                         <h2 className="mb-0 text-dark fw-bold display-6 fs-3">Course Learning Outcomes</h2>
                         <p className="text-muted small mb-0">Map specific course objectives to program-level outcomes</p>
                     </div>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                        <Button style={{ backgroundColor: '#4c1d95', border: 'none' }} onClick={() => handleOpenModal()} className="d-flex align-items-center gap-2 shadow-sm px-4 py-2 border-0 text-white">
-                            <PlusCircle size={18} /> Add New CLO
-                        </Button>
-                    </motion.div>
+                    <div className="d-flex gap-2">
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            <Button
+                                variant="light"
+                                onClick={() => setShowImportModal(true)}
+                                className="d-flex align-items-center gap-2 border px-4 py-2 fw-semibold text-muted"
+                            >
+                                <Upload size={17} /> Bulk Import
+                            </Button>
+                        </motion.div>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            <Button style={{ backgroundColor: '#4c1d95', border: 'none' }} onClick={() => handleOpenModal()} className="d-flex align-items-center gap-2 shadow-sm px-4 py-2 border-0 text-white">
+                                <PlusCircle size={18} /> Add New CLO
+                            </Button>
+                        </motion.div>
+                    </div>
                 </div>
 
                 <Card className="shadow-sm border-0 mb-4 overflow-hidden">
@@ -255,6 +268,26 @@ const CLOs = () => {
                         </Modal.Footer>
                     </Form>
                 </Modal>
+
+                <BulkImportModal
+                    show={showImportModal}
+                    onHide={() => setShowImportModal(false)}
+                    title="Bulk Import CLOs"
+                    entityLabel="CLOs"
+                    endpoint="/api/admin/clos/bulk-import"
+                    columns={[
+                        { name: 'code', required: true },
+                        { name: 'description', required: true },
+                        { name: 'plo', required: false }
+                    ]}
+                    sampleRows={[
+                        'CLO-1,"Explain the fundamental concepts of the course.",PLO-1',
+                        'CLO-2,"Apply the concepts to solve problems.",PLO-2'
+                    ]}
+                    templateName="CLOs List.csv"
+                    note="The plo column takes an existing PLO code (e.g. PLO-1)."
+                    onImported={fetchCLOs}
+                />
             </Container>
         </motion.div>
     );

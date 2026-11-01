@@ -24,7 +24,9 @@ const {
     createCourseCLOMapping,
     getAcademicTermsForFaculty,
     generateMarksTemplate,
-    importMarksFromExcel
+    importMarksFromExcel,
+    getCourseKPI,
+    updateCourseKPI
 } = require('../controllers/facultyController');
 
 // Courses and PLOs
@@ -68,6 +70,10 @@ router.get(
     getStudentCLOAnalytics
 );
 
+
+// Course KPI
+router.get('/courses/:courseId/kpi', protect, faculty, getCourseKPI);
+router.put('/courses/:courseId/kpi', protect, faculty, updateCourseKPI);
 
 // Course CLOs
 router.post('/courses/:courseId/clos', protect, faculty, createCourseCLO);

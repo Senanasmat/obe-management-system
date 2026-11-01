@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import { Container, Row, Col, Card, Form, Button, Table, Badge } from 'react-bootstrap';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { motion } from 'framer-motion';
@@ -339,11 +340,7 @@ const FacultyReports = () => {
 
                 {/* Report Content */}
                 {loading ? (
-                    <div className="text-center py-5">
-                        <div className="spinner-border text-primary" role="status">
-                            <span className="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
+                    <LoadingSpinner />
                 ) : reportData ? (
                     <>
                         {/* Summary Cards */}

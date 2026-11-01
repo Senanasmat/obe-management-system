@@ -4,11 +4,81 @@ const CourseAssignment = require('../models/courseAssignmentModel');
 const { parse } = require('csv-parse/sync');
 const { Result, ALL_MODELS } = require('../models/assessmentModel');
 const User = require('../models/userModel');
+const Activity = require('../models/activityModel');
+const logActivity = require('../utils/activityLogger');
+
+// --- Referential integrity helpers ---
+
+// Returns a human-readable list of the child records that still reference
+// a parent document, or an empty array when the parent can be deleted.
+// `checks` is a list of [label, Promise<boolean|number>] pairs.
+const findDependents = async (checks) => {
+    const outcomes = await Promise.all(checks.map(([, check]) => check));
+    return checks
+        .filter((_, i) => Boolean(outcomes[i]))
+        .map(([label]) => label);
+};
+
+const blockedDeleteMessage = (entity, dependents) =>
+    `This ${entity} cannot be deleted because it is still linked to: ` +
+    `${dependents.join(', ')}. Remove those records first.`;
+
+const assessmentsExist = (filter) =>
+    Promise.all(ALL_MODELS.map(M => M.exists(filter)))
+        .then(found => found.some(Boolean));
+
+// --- CSV bulk import helpers ---
+
+// Parses an uploaded CSV into rows whose keys are lower-cased and trimmed so
+// column names are matched case-insensitively.
+const parseCsvUpload = (req, res, requiredColumns, expectedLabel) => {
+    if (!req.file) {
+        res.status(400).json({ message: 'No CSV file uploaded.' });
+        return null;
+    }
+
+    const records = parse(req.file.buffer, {
+        columns: header => header.map(h => String(h).replace(/^﻿/, '').trim().toLowerCase()),
+        skip_empty_lines: true,
+        trim: true
+    });
+
+    if (!records.length) {
+        res.status(400).json({ message: 'CSV file is empty or invalid.' });
+        return null;
+    }
+
+    const headers = Object.keys(records[0]);
+    for (const col of requiredColumns) {
+        if (!headers.includes(col)) {
+            res.status(400).json({
+                message: `Missing required column: "${col}". Expected columns: ${expectedLabel}`
+            });
+            return null;
+        }
+    }
+
+    return records;
+};
+
+const importSummary = (label, inserted, skipped, errors) => ({
+    message: `Import complete. ${inserted} ${label}(s) added, ${skipped} skipped.`,
+    inserted,
+    skipped,
+    errors
+});
 
 // --- PLO Operations ---
 const createPLO = async (req, res) => {
     try {
         const plo = await PLO.create(req.body);
+        await logActivity({
+            userId: req.user._id,
+            action: 'Created PLO',
+            details: `Created PLO "${plo.code}" — ${plo.title}`,
+            targetType: 'PLO',
+            targetId: plo._id
+        });
         res.status(201).json(plo);
     } catch (error) {
         res.status(400).json({ message: error.message });
@@ -26,7 +96,24 @@ const getPLOs = async (req, res) => {
 
 const deletePLO = async (req, res) => {
     try {
-        await PLO.findByIdAndDelete(req.params.id);
+        const id = req.params.id;
+        const dependents = await findDependents([
+            ['CLOs', CLO.exists({ plo: id })],
+            ['CLO-PLO mappings', CLOMapping.exists({ plo: id })]
+        ]);
+        if (dependents.length) {
+            return res.status(409).json({ message: blockedDeleteMessage('PLO', dependents) });
+        }
+
+        const deletedPlo = await PLO.findById(id).select('code title');
+        await PLO.findByIdAndDelete(id);
+        await logActivity({
+            userId: req.user._id,
+            action: 'Deleted PLO',
+            details: `Deleted PLO "${deletedPlo?.code || id}"`,
+            targetType: 'PLO',
+            targetId: id
+        });
         res.json({ message: 'PLO removed' });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -54,7 +141,17 @@ const getCLOs = async (req, res) => {
 
 const deleteCLO = async (req, res) => {
     try {
-        await CLO.findByIdAndDelete(req.params.id);
+        const id = req.params.id;
+        const dependents = await findDependents([
+            ['courses', Course.exists({ clos: id })],
+            ['CLO-PLO mappings', CLOMapping.exists({ clo: id })],
+            ['assessment questions', assessmentsExist({ 'questions.clos': id })]
+        ]);
+        if (dependents.length) {
+            return res.status(409).json({ message: blockedDeleteMessage('CLO', dependents) });
+        }
+
+        await CLO.findByIdAndDelete(id);
         res.json({ message: 'CLO removed' });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -65,6 +162,13 @@ const deleteCLO = async (req, res) => {
 const createCourse = async (req, res) => {
     try {
         const course = await Course.create(req.body);
+        await logActivity({
+            userId: req.user._id,
+            action: 'Created Course',
+            details: `Created course "${course.name}" (${course.code})`,
+            targetType: 'course',
+            targetId: course._id
+        });
         res.status(201).json(course);
     } catch (error) {
         res.status(400).json({ message: error.message });
@@ -117,6 +221,13 @@ const assignFaculty = async (req, res) => {
 const createStudent = async (req, res) => {
     try {
         const student = await Student.create(req.body);
+        await logActivity({
+            userId: req.user._id,
+            action: 'Added Student',
+            details: `Added student "${student.name}" — RegNo: ${student.regNo}, Batch: ${student.batch}`,
+            targetType: 'student',
+            targetId: student._id
+        });
         res.status(201).json(student);
     } catch (error) {
         res.status(400).json({ message: error.message });
@@ -440,18 +551,160 @@ const updateCLO = async (req, res) => {
 
 const updateCourse = async (req, res) => {
     try {
-        const course = await Course.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const course = await Course.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
         res.json(course);
     } catch (error) { res.status(400).json({ message: error.message }); }
 };
 
 const deleteCourse = async (req, res) => {
     try {
-        await CourseAssignment.deleteMany({
-            course: req.params.id
+        const id = req.params.id;
+        const course = await Course.findById(id);
+        if (!course) return res.status(404).json({ message: 'Course not found' });
+
+        const dependents = await findDependents([
+            ['course assignments', CourseAssignment.exists({ course: id })],
+            ['assessments', assessmentsExist({ course: id })],
+            ['CLO-PLO mappings', CLOMapping.exists({ course: id })],
+            ['enrolled students', (course.students || []).length > 0],
+            ['CLOs', (course.clos || []).length > 0]
+        ]);
+        if (dependents.length) {
+            return res.status(409).json({ message: blockedDeleteMessage('course', dependents) });
+        }
+
+        await course.deleteOne();
+        await logActivity({
+            userId: req.user._id,
+            action: 'Deleted Course',
+            details: `Deleted course "${course.name}" (${course.code})`,
+            targetType: 'course',
+            targetId: id
         });
-        await Course.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Course and assignments removed' });
+        res.json({ message: 'Course removed' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const bulkImportCourses = async (req, res) => {
+    try {
+        const records = parseCsvUpload(req, res, ['name', 'code', 'credithours'], 'name, code, creditHours, kpi (optional)');
+        if (!records) return;
+
+        let inserted = 0;
+        let skipped = 0;
+        const errors = [];
+
+        for (const [i, row] of records.entries()) {
+            const name = row.name;
+            const code = row.code;
+            const creditHours = Number(row.credithours);
+            const kpi = row.kpi === undefined || row.kpi === '' ? undefined : Number(row.kpi);
+
+            if (!name || !code || !Number.isFinite(creditHours) || creditHours <= 0) {
+                errors.push(`Row ${i + 2}: missing or invalid name/code/creditHours`);
+                skipped++;
+                continue;
+            }
+            if (kpi !== undefined && (!Number.isFinite(kpi) || kpi < 0 || kpi > 100)) {
+                errors.push(`Row ${i + 2}: KPI must be between 0 and 100`);
+                skipped++;
+                continue;
+            }
+            if (await Course.exists({ code })) {
+                errors.push(`Row ${i + 2}: course code "${code}" already exists`);
+                skipped++;
+                continue;
+            }
+
+            await Course.create({ name, code, creditHours, ...(kpi !== undefined && { kpi }) });
+            inserted++;
+        }
+
+        res.status(201).json(importSummary('course', inserted, skipped, errors));
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const bulkImportPLOs = async (req, res) => {
+    try {
+        const records = parseCsvUpload(req, res, ['code', 'title', 'description'], 'code, title, description');
+        if (!records) return;
+
+        let inserted = 0;
+        let skipped = 0;
+        const errors = [];
+
+        for (const [i, row] of records.entries()) {
+            const { code, title, description } = row;
+
+            if (!code || !title || !description) {
+                errors.push(`Row ${i + 2}: missing code/title/description`);
+                skipped++;
+                continue;
+            }
+            if (await PLO.exists({ code })) {
+                errors.push(`Row ${i + 2}: PLO "${code}" already exists`);
+                skipped++;
+                continue;
+            }
+
+            await PLO.create({ code, title, description });
+            inserted++;
+        }
+
+        res.status(201).json(importSummary('PLO', inserted, skipped, errors));
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const bulkImportCLOs = async (req, res) => {
+    try {
+        const records = parseCsvUpload(req, res, ['code', 'description'], 'code, description, plo (optional PLO code)');
+        if (!records) return;
+
+        const ploByCode = new Map(
+            (await PLO.find({})).map(p => [p.code.toLowerCase(), p._id])
+        );
+
+        let inserted = 0;
+        let skipped = 0;
+        const errors = [];
+
+        for (const [i, row] of records.entries()) {
+            const { code, description } = row;
+            const ploCode = row.plo;
+
+            if (!code || !description) {
+                errors.push(`Row ${i + 2}: missing code/description`);
+                skipped++;
+                continue;
+            }
+
+            let plo;
+            if (ploCode) {
+                plo = ploByCode.get(ploCode.toLowerCase());
+                if (!plo) {
+                    errors.push(`Row ${i + 2}: PLO "${ploCode}" not found`);
+                    skipped++;
+                    continue;
+                }
+            }
+
+            if (await CLO.exists({ code, description })) {
+                errors.push(`Row ${i + 2}: CLO "${code}" with the same description already exists`);
+                skipped++;
+                continue;
+            }
+
+            await CLO.create({ code, description, ...(plo && { plo }) });
+            inserted++;
+        }
+
+        res.status(201).json(importSummary('CLO', inserted, skipped, errors));
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -466,7 +719,24 @@ const updateStudent = async (req, res) => {
 
 const deleteStudent = async (req, res) => {
     try {
-        await Student.findByIdAndDelete(req.params.id);
+        const id = req.params.id;
+        const dependents = await findDependents([
+            ['course enrollments', Course.exists({ students: id })],
+            ['assessment results', Result.exists({ student: id })]
+        ]);
+        if (dependents.length) {
+            return res.status(409).json({ message: blockedDeleteMessage('student', dependents) });
+        }
+
+        const deletedStudent = await Student.findById(id).select('name regNo');
+        await Student.findByIdAndDelete(id);
+        await logActivity({
+            userId: req.user._id,
+            action: 'Deleted Student',
+            details: `Deleted student "${deletedStudent?.name || id}" (${deletedStudent?.regNo || ''})`,
+            targetType: 'student',
+            targetId: id
+        });
         res.json({ message: 'Student removed' });
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -501,6 +771,14 @@ const createFacultyMember = async (req, res) => {
             designation
         });
 
+        await logActivity({
+            userId: req.user._id,
+            action: 'Created Faculty',
+            details: `Registered faculty member "${name}" (${email}) — ${designation || 'N/A'}, ${department || 'N/A'}`,
+            targetType: 'faculty',
+            targetId: user._id
+        });
+
         res.status(201).json(user);
 
     } catch (err) {
@@ -530,6 +808,14 @@ const updateFacultyMember = async (req, res) => {
 
         await user.save();
 
+        await logActivity({
+            userId: req.user._id,
+            action: 'Updated Faculty',
+            details: `Updated faculty member "${user.name}" (${user.email || 'no email'})`,
+            targetType: 'faculty',
+            targetId: user._id
+        });
+
         res.json(user);
 
     } catch (err) {
@@ -539,17 +825,95 @@ const updateFacultyMember = async (req, res) => {
 
 const deleteFacultyMember = async (req, res) => {
     try {
-        await User.findByIdAndDelete(req.params.id);
+        const id = req.params.id;
+        const dependents = await findDependents([
+            ['course assignments', CourseAssignment.exists({ faculty: id })],
+            ['courses', Course.exists({ faculty: id })]
+        ]);
+        if (dependents.length) {
+            return res.status(409).json({ message: blockedDeleteMessage('faculty member', dependents) });
+        }
+
+        const deletedUser = await User.findById(id).select('name email');
+        await User.findByIdAndDelete(id);
+
+        await logActivity({
+            userId: req.user._id,
+            action: 'Deleted Faculty',
+            details: `Deleted faculty member "${deletedUser?.name || id}" (${deletedUser?.email || ''})`,
+            targetType: 'faculty',
+            targetId: id
+        });
+
         res.json({ message: 'Faculty member removed' });
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
+const bulkImportFaculty = async (req, res) => {
+    try {
+        const records = parseCsvUpload(
+            req, res,
+            ['name', 'email', 'password'],
+            'name, email, password, department (optional), designation (optional)'
+        );
+        if (!records) return;
+
+        let inserted = 0;
+        let skipped = 0;
+        const errors = [];
+
+        for (const [i, row] of records.entries()) {
+            const { name, password, department, designation } = row;
+            const email = row.email?.toLowerCase();
+
+            if (!name || !email || !password) {
+                errors.push(`Row ${i + 2}: missing name/email/password`);
+                skipped++;
+                continue;
+            }
+            if (await User.exists({ email })) {
+                errors.push(`Row ${i + 2}: user "${email}" already exists`);
+                skipped++;
+                continue;
+            }
+
+            await User.create({
+                name,
+                email,
+                password,
+                role: 'faculty',
+                department: department || undefined,
+                designation: designation || undefined
+            });
+            inserted++;
+        }
+
+        res.status(201).json(importSummary('faculty member', inserted, skipped, errors));
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const getActivityLogs = async (req, res) => {
+    try {
+        const limit = Math.min(Number(req.query.limit) || 100, 500);
+        const activities = await Activity.find({})
+            .populate('user', 'name email department designation')
+            .sort({ createdAt: -1 })
+            .limit(limit);
+        res.json(activities);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
-    createPLO, getPLOs, updatePLO, deletePLO,
-    createCLO, getCLOs, updateCLO, deleteCLO,
-    createCourse, getCourses, updateCourse, deleteCourse, assignFaculty, enrollStudents,
+    createPLO, getPLOs, updatePLO, deletePLO, bulkImportPLOs,
+    createCLO, getCLOs, updateCLO, deleteCLO, bulkImportCLOs,
+    createCourse, getCourses, updateCourse, deleteCourse, assignFaculty, enrollStudents, bulkImportCourses,
     createStudent, getStudents, updateStudent, deleteStudent, bulkImportStudents,
-    getFaculty, createFacultyMember, updateFacultyMember, deleteFacultyMember,
+    getFaculty, createFacultyMember, updateFacultyMember, deleteFacultyMember, bulkImportFaculty,
     getBatchPLOAchievements,
-    getDashboardStats
+    getDashboardStats,
+    getActivityLogs
 };

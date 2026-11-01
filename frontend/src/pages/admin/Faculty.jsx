@@ -3,8 +3,9 @@ import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { Container, Card, Form, Button, Table, Modal, Row, Col } from 'react-bootstrap';
 import { toast, showError, showConfirm } from '../../utils/notifications';
-import { UserPlus, User, Edit, Trash2, Shield, Lock, Mail } from 'lucide-react';
+import { UserPlus, User, Edit, Trash2, Shield, Lock, Mail, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import BulkImportModal from '../../components/BulkImportModal';
 
 const containerVariants = {
     hidden: { opacity: 0, y: 10 },
@@ -19,7 +20,7 @@ const itemVariants = {
 const DEPARTMENTS = [
     'Software Engineering',
     'Electrical Engineering',
-
+    'Shared',
 ];
 
 const DESIGNATIONS = [
@@ -44,6 +45,7 @@ const Faculty = () => {
     });
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
 
     useEffect(() => {
         fetchFaculty();
@@ -115,7 +117,7 @@ const Faculty = () => {
                 toast.fire({ icon: 'success', title: 'Faculty member removed successfully!' });
                 fetchFaculty();
             } catch (error) {
-                showError('Error', 'Error deleting faculty member');
+                showError('Cannot delete faculty member', error.response?.data?.message || 'Error deleting faculty member');
             }
         }
     };
@@ -131,11 +133,22 @@ const Faculty = () => {
                     <div>
                         <h2 className="mb-0 text-dark fw-bold display-6 fs-3">Faculty Management</h2>
                     </div>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                        <Button style={{ backgroundColor: '#4c1d95', border: 'none' }} onClick={() => handleOpenModal()} className="d-flex align-items-center gap-2 shadow-sm px-4 py-2 border-0">
-                            <UserPlus size={18} /> Register Faculty
-                        </Button>
-                    </motion.div>
+                    <div className="d-flex gap-2">
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            <Button
+                                variant="light"
+                                onClick={() => setShowImportModal(true)}
+                                className="d-flex align-items-center gap-2 border px-4 py-2 fw-semibold text-muted"
+                            >
+                                <Upload size={17} /> Bulk Import
+                            </Button>
+                        </motion.div>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            <Button style={{ backgroundColor: '#4c1d95', border: 'none' }} onClick={() => handleOpenModal()} className="d-flex align-items-center gap-2 shadow-sm px-4 py-2 border-0">
+                                <UserPlus size={18} /> Register Faculty
+                            </Button>
+                        </motion.div>
+                    </div>
                 </div>
 
                 <Card className="shadow-sm border-0 mb-4 overflow-hidden">
@@ -305,6 +318,28 @@ const Faculty = () => {
                         </Modal.Footer>
                     </Form>
                 </Modal>
+
+                <BulkImportModal
+                    show={showImportModal}
+                    onHide={() => setShowImportModal(false)}
+                    title="Bulk Import Faculty"
+                    entityLabel="Faculty"
+                    endpoint="/api/admin/staff/bulk-import"
+                    columns={[
+                        { name: 'name', required: true },
+                        { name: 'email', required: true },
+                        { name: 'password', required: true },
+                        { name: 'department', required: false },
+                        { name: 'designation', required: false }
+                    ]}
+                    sampleRows={[
+                        `Dr. Ayesha Malik,ayesha.malik@example.edu,ChangeMe123,${DEPARTMENTS[0]},${DESIGNATIONS[0]}`,
+                        `Usman Tariq,usman.tariq@example.edu,ChangeMe123,${DEPARTMENTS[1]},${DESIGNATIONS[2]}`
+                    ]}
+                    templateName="Faculty List.csv"
+                    note="Existing emails are skipped. Faculty should change their password after first login."
+                    onImported={fetchFaculty}
+                />
             </Container>
 
             <style>{`

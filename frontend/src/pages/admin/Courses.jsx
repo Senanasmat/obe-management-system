@@ -3,8 +3,10 @@ import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { Container, Card, Form, Button, Row, Col, Modal, Badge, Table } from 'react-bootstrap';
 import { toast, showError, showConfirm } from '../../utils/notifications';
-import { BookPlus, Book, User, Users, Search, Check, Plus } from 'lucide-react';
+import { BookPlus, Book, User, Users, Search, Check, Plus, Upload, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import BulkImportModal from '../../components/BulkImportModal';
+import FacultySelect from '../../components/FacultySelect';
 
 const containerVariants = {
     hidden: { opacity: 0, y: 10 },
@@ -29,7 +31,8 @@ const Courses = () => {
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [currentId, setCurrentId] = useState(null);
-    const [formData, setFormData] = useState({ name: '', code: '', creditHours: '' });
+    const [formData, setFormData] = useState({ name: '', code: '', creditHours: '', kpi: 50 });
+    const [showImportModal, setShowImportModal] = useState(false);
 
     // Course assignment modal
     const [showAssignModal, setShowAssignModal] = useState(false);
@@ -84,11 +87,11 @@ const Courses = () => {
         if (course) {
             setIsEditing(true);
             setCurrentId(course._id);
-            setFormData({ name: course.name, code: course.code, creditHours: course.creditHours });
+            setFormData({ name: course.name, code: course.code, creditHours: course.creditHours, kpi: course.kpi ?? 50 });
         } else {
             setIsEditing(false);
             setCurrentId(null);
-            setFormData({ name: '', code: '', creditHours: '' });
+            setFormData({ name: '', code: '', creditHours: '', kpi: 50 });
         }
         setShowModal(true);
     };
@@ -122,8 +125,8 @@ const Courses = () => {
                 await api.delete(`/api/admin/courses/${id}`, config);
                 toast.fire({ icon: 'success', title: 'Course deleted!' });
                 fetchData();
-            } catch {
-                showError('Error', 'Could not delete course.');
+            } catch (err) {
+                showError('Cannot delete course', err.response?.data?.message || 'Could not delete course.');
             }
         }
     };
@@ -199,6 +202,10 @@ const Courses = () => {
 
     const handleAssignmentSubmit = async (e) => {
         e.preventDefault();
+        if (Array.isArray(assignmentFormData.facultyId) && assignmentFormData.facultyId.length === 0) {
+            showError('Select faculty', 'Choose at least one faculty member to share this course.');
+            return;
+        }
         setAssignmentLoading(true);
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
@@ -234,8 +241,8 @@ const Courses = () => {
                 await api.delete(`/api/assignments/${id}`, config);
                 toast.fire({ icon: 'success', title: 'Assignment deleted!' });
                 fetchData();
-            } catch {
-                showError('Error', 'Could not delete assignment.');
+            } catch (err) {
+                showError('Error', err.response?.data?.message || 'Could not delete assignment.');
             }
         }
     };
@@ -361,20 +368,34 @@ const Courses = () => {
                         <h4 className="fw-bold text-dark mb-0">Course Management</h4>
                         <p className="text-muted small mb-0">{courses.length} course{courses.length !== 1 ? 's' : ''} registered</p>
                     </div>
-                    <Button
-                        className="d-flex align-items-center gap-2 border-0 px-4"
-                        style={{ backgroundColor: '#4c1d95' }}
-                        onClick={() => handleOpenModal()}
-                    >
-                        <BookPlus size={16} /> Add New Course
-                    </Button>
+                    <div className="d-flex gap-2">
+                        <Button
+                            variant="light"
+                            onClick={() => setShowImportModal(true)}
+                            className="d-flex align-items-center gap-2 border px-4 fw-semibold text-muted"
+                        >
+                            <Upload size={16} /> Bulk Import
+                        </Button>
+                        <Button
+                            className="d-flex align-items-center gap-2 border-0 px-4"
+                            style={{ backgroundColor: '#4c1d95' }}
+                            onClick={() => handleOpenModal()}
+                        >
+                            <BookPlus size={16} /> Add New Course
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Course grid */}
                 <Row className="g-4">
                     <AnimatePresence>
                         {courses.length > 0 ? courses.map((course) => {
-                            const assignment = assignments.find(a => a.course?._id === course._id);
+                            const facultyNames = [...new Set(
+                                assignments
+                                    .filter(a => a.course?._id === course._id)
+                                    .map(a => a.faculty?.name)
+                                    .filter(Boolean)
+                            )];
                             const enrolledCount = course.students?.length || 0;
                             const initials = course.name
                             .split(' ')
@@ -424,12 +445,26 @@ const Courses = () => {
                                                     <div className="d-flex align-items-center gap-2 px-3 py-2 rounded-3"
                                                         style={{ backgroundColor: '#f5f3ff' }}>
                                                         <div className="rounded-2 p-1" style={{ backgroundColor: '#ede9fe' }}>
-                                                            <User size={13} color="#6d28d9" />
+                                                            {facultyNames.length > 1
+                                                                ? <Users size={13} color="#6d28d9" />
+                                                                : <User size={13} color="#6d28d9" />}
                                                         </div>
                                                         <span className="text-muted" style={{ fontSize: '0.82rem' }}>
-                                                            {assignment?.faculty?.name
-                                                                ? <><span className="fw-medium text-dark">{assignment.faculty.name}</span></>
+                                                            {facultyNames.length
+                                                                ? <span className="fw-medium text-dark">{facultyNames.join(', ')}</span>
                                                                 : <span className="fst-italic">Not assigned</span>}
+                                                        </span>
+                                                        {facultyNames.length > 1 && (
+                                                            <Badge bg="light" className="text-secondary border ms-auto">Shared</Badge>
+                                                        )}
+                                                    </div>
+                                                    <div className="d-flex align-items-center gap-2 px-3 py-2 rounded-3"
+                                                        style={{ backgroundColor: '#f5f3ff' }}>
+                                                        <div className="rounded-2 p-1" style={{ backgroundColor: '#ede9fe' }}>
+                                                            <Target size={13} color="#6d28d9" />
+                                                        </div>
+                                                        <span className="text-muted" style={{ fontSize: '0.82rem' }}>
+                                                            KPI <span className="fw-medium text-dark">{course.kpi ?? 50}%</span>
                                                         </span>
                                                     </div>
                                                 </div>
@@ -711,6 +746,26 @@ const Courses = () => {
                                     fontSize: '0.95rem'
                                 }}
                             />
+                            <Form.Group>
+                                <Form.Label className="small text-muted mb-1">KPI — attainment threshold (%)</Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="any"
+                                    placeholder="KPI (%)"
+                                    value={formData.kpi}
+                                    onChange={e => setFormData({ ...formData, kpi: e.target.value })}
+                                    required
+                                    className="py-2 shadow-sm border-2"
+                                    style={{
+                                        backgroundColor: '#f8fafc',
+                                        borderColor: '#cbd5e1',
+                                        borderRadius: '10px',
+                                        fontSize: '0.95rem'
+                                    }}
+                                />
+                            </Form.Group>
                         </Modal.Body>
                         <Modal.Footer>
                             <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
@@ -720,6 +775,28 @@ const Courses = () => {
                         </Modal.Footer>
                     </Form>
                 </Modal>
+
+                <BulkImportModal
+                    show={showImportModal}
+                    onHide={() => setShowImportModal(false)}
+                    title="Bulk Import Courses"
+                    entityLabel="Courses"
+                    endpoint="/api/admin/courses/bulk-import"
+                    columns={[
+                        { name: 'name', required: true },
+                        { name: 'code', required: true },
+                        { name: 'creditHours', required: true },
+                        { name: 'kpi', required: false }
+                    ]}
+                    sampleRows={[
+                        'Programming Fundamentals,CS-101,4,50',
+                        'Data Structures,CS-201,3,50',
+                        'Database Systems,CS-301,3,'
+                    ]}
+                    templateName="Courses List.csv"
+                    note="KPI defaults to 50% when left blank."
+                    onImported={fetchData}
+                />
 
                 {/* ── Create Academic Term Modal ── */}
                 <Modal
@@ -825,25 +902,12 @@ const Courses = () => {
                         <Modal.Body className="d-flex flex-column gap-3">
                             <Form.Group>
                                 <Form.Label>Faculty</Form.Label>
-                                <Form.Select
+                                <FacultySelect
+                                    faculty={faculty}
                                     value={assignmentFormData.facultyId}
-                                    onChange={e => setAssignmentFormData({ ...assignmentFormData, facultyId: e.target.value })}
-                                    required
-                                    className="py-2 shadow-sm border-2"
-                                    style={{
-                                        backgroundColor: '#f8fafc',
-                                        borderColor: '#cbd5e1',
-                                        borderRadius: '10px',
-                                        fontSize: '0.95rem'
-                                    }}
-                                >
-                                    <option value="">Select Faculty</option>
-                                    {faculty.map(f => (
-                                        <option key={f._id} value={f._id}>
-                                            {f.name}
-                                        </option>
-                                    ))}
-                                </Form.Select>
+                                    onChange={facultyId => setAssignmentFormData({ ...assignmentFormData, facultyId })}
+                                    allowShared={!isEditingAssignment}
+                                />
                             </Form.Group>
 
                             <Form.Group>

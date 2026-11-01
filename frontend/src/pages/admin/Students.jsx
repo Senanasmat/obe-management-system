@@ -92,7 +92,7 @@ const Students = () => {
                 toast.fire({ icon: 'success', title: 'Student deleted successfully!' });
                 fetchStudents();
             } catch (error) {
-                showError('Error', 'Error deleting student');
+                showError('Cannot delete student', error.response?.data?.message || 'Error deleting student');
             }
         }
     };

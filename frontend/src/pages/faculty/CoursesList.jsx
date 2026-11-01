@@ -6,6 +6,7 @@ import { Container, Card, Row, Col } from 'react-bootstrap';
 import { BookOpen, Users, FileText, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Dropdown } from 'react-bootstrap';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const getInitials = (name) => {
     if (!name) return '??';
@@ -99,8 +100,9 @@ const CoursesList = () => {
             </div>
 
             {/* Courses Grid */}
+            {loading && <LoadingSpinner />}
             <Row xs={1} md={2} lg={3} className="g-4">
-                {filtered.map(a => (
+                {!loading && filtered.map(a => (
                     <Col key={a._id}>
                         <motion.div whileHover={{ y: -6, transition: { duration: 0.2 } }} className="h-100">
                             <Card

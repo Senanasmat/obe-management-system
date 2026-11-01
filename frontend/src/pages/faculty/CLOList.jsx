@@ -8,10 +8,10 @@ import {
     Col,
     Form,
     Row,
-    Spinner,
     Table
 } from 'react-bootstrap';
 import api from '../../utils/api';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const API = '/api/faculty';
 
@@ -233,14 +233,7 @@ function CLOList() {
             `${term.season || ''} ${term.year || ''}`.trim();
     };
 
-    if (loading) {
-        return (
-            <div className="d-flex justify-content-center p-5">
-                <Spinner animation="border" role="status" />
-                <span className="ms-2">Loading CLOs...</span>
-            </div>
-        );
-    }
+    if (loading) return <LoadingSpinner />;
 
     return (
         <div className="container-fluid py-3">

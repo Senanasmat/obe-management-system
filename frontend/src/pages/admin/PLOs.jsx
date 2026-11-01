@@ -3,8 +3,9 @@ import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { Container, Card, Form, Button, Table, Modal } from 'react-bootstrap';
 import { toast, showError, showConfirm } from '../../utils/notifications';
-import { PlusCircle, Edit, Trash2, FileText, Hash, Target } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, FileText, Hash, Target, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import BulkImportModal from '../../components/BulkImportModal';
 
 const containerVariants = {
     hidden: { opacity: 0, y: 10 },
@@ -24,6 +25,7 @@ const PLOs = () => {
     const [formData, setFormData] = useState({ code: '', title: '', description: '' });
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
 
     useEffect(() => {
         fetchPLOs();
@@ -82,7 +84,7 @@ const PLOs = () => {
                 toast.fire({ icon: 'success', title: 'PLO removed successfully!' });
                 fetchPLOs();
             } catch (error) {
-                showError('Error', 'Error deleting PLO');
+                showError('Cannot delete PLO', error.response?.data?.message || 'Error deleting PLO');
             }
         }
     };
@@ -98,11 +100,22 @@ const PLOs = () => {
                     <div>
                         <h2 className="mb-0 text-dark fw-bold display-6 fs-3">Program Learning Outcomes</h2>
                     </div>
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                        <Button style={{ backgroundColor: '#4c1d95', border: 'none' }} onClick={() => handleOpenModal()} className="d-flex align-items-center gap-2 shadow-sm px-4 py-2 border-0">
-                            <PlusCircle size={18} /> Add New PLO
-                        </Button>
-                    </motion.div>
+                    <div className="d-flex gap-2">
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            <Button
+                                variant="light"
+                                onClick={() => setShowImportModal(true)}
+                                className="d-flex align-items-center gap-2 border px-4 py-2 fw-semibold text-muted"
+                            >
+                                <Upload size={17} /> Bulk Import
+                            </Button>
+                        </motion.div>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            <Button style={{ backgroundColor: '#4c1d95', border: 'none' }} onClick={() => handleOpenModal()} className="d-flex align-items-center gap-2 shadow-sm px-4 py-2 border-0">
+                                <PlusCircle size={18} /> Add New PLO
+                            </Button>
+                        </motion.div>
+                    </div>
                 </div>
 
                 <Card className="shadow-sm border-0 mb-4 overflow-hidden">
@@ -233,6 +246,26 @@ const PLOs = () => {
                         </Modal.Footer>
                     </Form>
                 </Modal>
+
+                <BulkImportModal
+                    show={showImportModal}
+                    onHide={() => setShowImportModal(false)}
+                    title="Bulk Import PLOs"
+                    entityLabel="PLOs"
+                    endpoint="/api/admin/plos/bulk-import"
+                    columns={[
+                        { name: 'code', required: true },
+                        { name: 'title', required: true },
+                        { name: 'description', required: true }
+                    ]}
+                    sampleRows={[
+                        'PLO-1,Engineering Knowledge,"An ability to apply knowledge of mathematics, science and engineering fundamentals."',
+                        'PLO-2,Problem Analysis,"An ability to identify, formulate and analyze complex engineering problems."'
+                    ]}
+                    templateName="PLOs List.csv"
+                    note='Wrap descriptions containing commas in double quotes.'
+                    onImported={fetchPLOs}
+                />
             </Container>
         </motion.div>
     );

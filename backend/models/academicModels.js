@@ -22,6 +22,7 @@ const courseSchema = mongoose.Schema({
     name: { type: String, required: true },
     code: { type: String, required: true, unique: true },
     creditHours: { type: Number, required: true },
+    kpi: { type: Number, default: 50, min: 0, max: 100 }, // Attainment threshold (%)
     faculty: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Assigned Faculty
     clos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'CLO' }], // Mapped CLOs for this course
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' }] // Enrolled Students

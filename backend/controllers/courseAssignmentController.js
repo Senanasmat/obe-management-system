@@ -1,35 +1,43 @@
 const CourseAssignment = require('../models/courseAssignmentModel');
 
 // CREATE ASSIGNMENT
+// `faculty` may be a single id or an array of ids. An array creates one
+// assignment per faculty member, so the course is shared between them.
 const createAssignment = async (req, res) => {
     try {
         const { faculty, course, academicTerm } = req.body;
+        const facultyIds = [...new Set((Array.isArray(faculty) ? faculty : [faculty]).filter(Boolean).map(String))];
 
-        const exists = await CourseAssignment.findOne({
-            faculty,
-            course,
-            academicTerm
-        });
-
-        if (exists) {
+        if (!facultyIds.length || !course || !academicTerm) {
             return res.status(400).json({
-                message: 'This course is already assigned to this faculty for this academic term'
+                message: 'Faculty, course and academic term are required'
             });
         }
 
-        const assignment = await CourseAssignment.create({
-            faculty,
+        const existing = await CourseAssignment.find({
+            faculty: { $in: facultyIds },
             course,
             academicTerm
-        });
+        }).populate('faculty', 'name');
 
-        const populated = await assignment.populate([
+        if (existing.length) {
+            const names = existing.map(a => a.faculty?.name).filter(Boolean).join(', ');
+            return res.status(400).json({
+                message: `This course is already assigned for this academic term to: ${names || 'the selected faculty'}`
+            });
+        }
+
+        const assignments = await CourseAssignment.insertMany(
+            facultyIds.map(id => ({ faculty: id, course, academicTerm }))
+        );
+
+        const populated = await CourseAssignment.populate(assignments, [
             { path: 'faculty', select: 'name email' },
             { path: 'course', select: 'name code' },
             { path: 'academicTerm', select: 'name season year' }
         ]);
 
-        res.status(201).json(populated);
+        res.status(201).json(Array.isArray(faculty) ? populated : populated[0]);
 
     } catch (error) {
         res.status(400).json({

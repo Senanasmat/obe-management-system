@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Container, Button, Breadcrumb, Table, Dropdown } from 'react-bootstrap';
 import { PlusCircle, FileText, ClipboardList, XCircle, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const ClassActivities = () => {
     const { courseId } = useParams();
@@ -56,7 +57,7 @@ const ClassActivities = () => {
         setSelectedIds(new Set());
     };
 
-    if (loading) return <div className="p-5 text-center text-muted">Loading activities...</div>;
+    if (loading) return <LoadingSpinner />;
 
     const course = assignment?.course;
 

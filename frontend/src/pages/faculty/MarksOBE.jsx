@@ -6,6 +6,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx-js-style';
 import api from '../../utils/api';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import { useAuth } from '../../context/AuthContext';
 
 const getId = v => String(v?._id || v || '');
@@ -268,14 +269,7 @@ export default function MarksOBE() {
         doc.save(`Marks-OBE-${course?.code || courseId}.pdf`);
     };
 
-    if (loading) {
-        return (
-            <div className="text-center p-5">
-                <Spinner animation="border" />
-                <p className="mt-2">Loading Marks OBE...</p>
-            </div>
-        );
-    }
+    if (loading) return <LoadingSpinner />;
 
     if (error) return <Alert variant="danger">{error}</Alert>;
 

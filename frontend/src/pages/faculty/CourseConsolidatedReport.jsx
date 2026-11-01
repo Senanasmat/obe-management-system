@@ -3,7 +3,9 @@ import { useParams } from 'react-router-dom';
 import { Card, Button, Spinner, Alert, Table } from 'react-bootstrap';
 
 import api from '../../utils/api';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import { useAuth } from '../../context/AuthContext';
+import KPIEditor, { useCourseKPI } from '../../components/KPIEditor';
 
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -23,7 +25,6 @@ import {
 } from 'recharts';
 
 
-const KPI = 50;
 const PURPLE = '#663399';
 const CLO_COLORS = [
     '#4CAF50',
@@ -41,6 +42,7 @@ const round = value => Number(Number(value).toFixed(2));
 export default function CourseConsolidatedReport() {
     const { courseId } = useParams();
     const { user } = useAuth();
+    const { kpi: KPI } = useCourseKPI(courseId);
 
     const reportRef = useRef(null);
     const [pdfLoading, setPdfLoading] = useState(false);
@@ -322,20 +324,11 @@ export default function CourseConsolidatedReport() {
         if (assignment && course && user?.token) {
             loadPLOAttainment();
         }
-        // Runs when the selected course assignment changes.
+        // Runs when the selected course assignment or the KPI changes.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [assignment, course, courseId, user?.token]);
+    }, [assignment, course, courseId, user?.token, KPI]);
 
-    if (loading) {
-        return (
-            <div className="text-center py-5">
-                <Spinner animation="border" size="sm" />
-                <p className="small text-muted mt-2">
-                    Loading consolidated report...
-                </p>
-            </div>
-        );
-    }
+    if (loading) return <LoadingSpinner />;
 
     if (error) {
         return <Alert variant="danger">{error}</Alert>;
@@ -831,7 +824,8 @@ export default function CourseConsolidatedReport() {
                         Course Section Consolidated Report
                     </h2>
 
-                    <div className="d-flex gap-2" data-html2canvas-ignore="true">
+                    <div className="d-flex align-items-center gap-2" data-html2canvas-ignore="true">
+                        <KPIEditor courseId={courseId} color={PURPLE} />
                         <Button
                             size="sm"
                             variant="outline-success"
@@ -881,10 +875,7 @@ export default function CourseConsolidatedReport() {
                 </h5>
 
                 {ploLoading && (
-                    <div className="text-center py-4">
-                        <Spinner animation="border" size="sm" />
-                        <span className="ms-2">Calculating PLO attainment...</span>
-                    </div>
+                    <LoadingSpinner size="sm" />
                 )}
 
                 {ploError && (
@@ -1210,12 +1201,7 @@ export default function CourseConsolidatedReport() {
                 </h5>
 
                 {ploLoading ? (
-                    <div className="text-center py-3">
-                        <Spinner animation="border" size="sm" />
-                        <span className="ms-2">
-                            Loading CLO attainment...
-                        </span>
-                    </div>
+                    <LoadingSpinner size="sm" />
                 ) : cloColumns.length === 0 ? (
                     <Alert variant="info">
                         No CLOs are assigned to this course.

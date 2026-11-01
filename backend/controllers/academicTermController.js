@@ -1,5 +1,6 @@
 const AcademicTerm = require('../models/academicTermModel');
 const CourseAssignment = require('../models/courseAssignmentModel');
+const CLOMapping = require('../models/cloMappingModel');
 
 // CREATE ACADEMIC TERM
 const createAcademicTerm = async (req, res) => {
@@ -129,6 +130,17 @@ const deleteAcademicTerm = async (req, res) => {
             return res.status(400).json({
                 message:
                     'This academic term cannot be deleted because it is being used in a course assignment.'
+            });
+        }
+
+        const mappingExists = await CLOMapping.exists({
+            academicTerm: req.params.id
+        });
+
+        if (mappingExists) {
+            return res.status(400).json({
+                message:
+                    'This academic term cannot be deleted because it is being used in CLO-PLO mappings.'
             });
         }
 

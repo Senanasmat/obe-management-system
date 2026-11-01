@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Container, Card, Row, Col, Button, Spinner, Badge, Dropdown, Table, Breadcrumb, Modal, Form } from 'react-bootstrap';
 import { PlusCircle, FileText, ClipboardList, ChevronDown, XCircle, CheckCircle, Plus, Pencil, Trash2, Edit2, Users, Search, Check } from 'lucide-react';
@@ -973,7 +974,7 @@ const handleSelectCloStudent = async (student) => {
 
 
     if (!assignment) {
-        return <div className="p-5 text-center text-muted">Loading course details...</div>;
+        return <LoadingSpinner />;
     }
 
     const course = assignment.course;
@@ -1336,12 +1337,7 @@ const handleSelectCloStudent = async (student) => {
                                         {selectedCloStudent && (
                                             <div className="mt-4">
                                                 {selectedCloStudent.loading ? (
-                                                    <div className="text-center py-4">
-                                                        <Spinner animation="border" size="sm" />
-                                                        <div className="text-muted small mt-2">
-                                                            Loading CLO achievement...
-                                                        </div>
-                                                    </div>
+                                                    <LoadingSpinner size="sm" />
                                                 ) : selectedCloStudent.cloStats?.length > 0 ? (
                                                     <div className="col-lg-7 col-md-9 col-12">
                                                         <div
@@ -1764,9 +1760,7 @@ const handleSelectCloStudent = async (student) => {
 
                     <Modal.Body style={{ maxHeight: '65vh', overflowY: 'auto' }}>
                         {allStudents.length === 0 && (
-                            <div className="alert alert-info mb-3">
-                                Loading batches... If this persists, contact your administrator.
-                            </div>
+                            <LoadingSpinner size="sm" />
                         )}
                         <Form.Group className="mb-3">
                             <Form.Label className="fw-semibold">Select Batch</Form.Label>

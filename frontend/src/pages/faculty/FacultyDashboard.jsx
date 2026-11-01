@@ -7,6 +7,7 @@ import { Container, Row, Col, Card } from 'react-bootstrap';
 import { motion } from 'framer-motion';
 import { Dropdown } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const containerVariants = {
     hidden: { opacity: 0, y: 10 },
@@ -24,28 +25,6 @@ const getInitials = (name) => {
     if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
     return name.slice(0, 2).toUpperCase();
 };
-
-const SkeletonCard = () => (
-    <Col>
-        <Card className="h-100 shadow-sm border-0 rounded-4 text-center p-4">
-            <div className="d-flex justify-content-center mb-3">
-                <div className="rounded-circle" style={{ width: 68, height: 68, backgroundColor: '#e5e7eb' }} />
-            </div>
-            <div className="mx-auto mb-2 rounded-2" style={{ height: 16, width: '70%', backgroundColor: '#e5e7eb' }} />
-            <div className="mx-auto mb-2 rounded-2" style={{ height: 12, width: '50%', backgroundColor: '#f3f4f6' }} />
-            <div className="mx-auto mb-4 rounded-2" style={{ height: 12, width: '40%', backgroundColor: '#f3f4f6' }} />
-            <div className="d-flex justify-content-between mb-3">
-                <div className="rounded-2" style={{ height: 30, width: '44%', backgroundColor: '#e5e7eb' }} />
-                <div className="rounded-2" style={{ height: 30, width: '44%', backgroundColor: '#e5e7eb' }} />
-            </div>
-            <div className="border-top pt-3 d-flex justify-content-around">
-                <div className="rounded-2" style={{ height: 12, width: '28%', backgroundColor: '#f3f4f6' }} />
-                <div className="rounded-2" style={{ height: 12, width: '28%', backgroundColor: '#f3f4f6' }} />
-                <div className="rounded-2" style={{ height: 12, width: '28%', backgroundColor: '#f3f4f6' }} />
-            </div>
-        </Card>
-    </Col>
-);
 
 const CACHE_KEY = 'faculty_dashboard_assignments_v2';
 
@@ -171,7 +150,7 @@ const FacultyDashboard = () => {
                 {/* Courses List */}
                 <Row xs={1} md={2} lg={3} className="g-2">
                     {loading ? (
-                        [0, 1, 2].map(i => <SkeletonCard key={i} />)
+                        <Col xs={12}><LoadingSpinner /></Col>
                     ) : filtered.map((a) => (
                         <Col key={a._id}>
                             <motion.div

@@ -18,9 +18,9 @@ import autoTable from 'jspdf-autotable';
 
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import KPIEditor, { useCourseKPI } from '../../components/KPIEditor';
 
 const PURPLE = '#663399';
-const KPI = 50;
 
 const getId = value =>
     String(value?._id || value || '');
@@ -28,13 +28,35 @@ const getId = value =>
 export default function CLOAttainmentGraph() {
     const { courseId } = useParams();
     const { user } = useAuth();
+    const { kpi: KPI } = useCourseKPI(courseId);
 
     const [weightMode, setWeightMode] = useState('actual');
     const [graphMode, setGraphMode] = useState('attainment');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [graphData, setGraphData] = useState([]);
+    const [rawGraphData, setRawGraphData] = useState([]);
     const [hasResults, setHasResults] = useState(false);
+
+    // Attainment is derived at render time so a KPI change applies immediately.
+    const graphData = rawGraphData.map(item => {
+        const attained = item.scores.filter(score => score >= KPI).length;
+        return {
+            clo: item.clo,
+            totalStudents: item.totalStudents,
+            attained,
+            attainmentPercentage:
+                item.totalStudents > 0
+                    ? Number((attained / item.totalStudents * 100).toFixed(2))
+                    : 0,
+            averageScore:
+                item.scores.length > 0
+                    ? Number((
+                        item.scores.reduce((sum, score) => sum + score, 0) /
+                        item.scores.length
+                    ).toFixed(2))
+                    : 0
+        };
+    });
 
     const showGraph = async () => {
         setLoading(true);
@@ -71,9 +93,7 @@ export default function CLOAttainmentGraph() {
                     {
                         clo: clo.code,
                         totalStudents: students.length,
-                        attained: 0,
-                        scoredStudents: 0,
-                        totalNormalizedScore: 0
+                        scores: []
                     }
                 ])
             );
@@ -121,34 +141,12 @@ export default function CLOAttainmentGraph() {
                             return;
                         }
 
-                        item.scoredStudents += 1;
-                        item.totalNormalizedScore += normalizedScore;
-
-                        if (stat.achieved === true) {
-                            item.attained += 1;
-                        }
+                        item.scores.push(normalizedScore);
                     });
                 });
             }
 
-            const data = [...statsByCLO.values()].map(item => ({
-                ...item,
-                attainmentPercentage:
-                    item.totalStudents > 0
-                        ? Number((
-                            item.attained / item.totalStudents * 100
-                        ).toFixed(2))
-                        : 0,
-                averageScore:
-                    item.scoredStudents > 0
-                        ? Number((
-                            item.totalNormalizedScore /
-                            item.scoredStudents
-                        ).toFixed(2))
-                        : 0
-            }));
-
-            setGraphData(data);
+            setRawGraphData([...statsByCLO.values()]);
             setHasResults(true);
 
         } catch (err) {
@@ -222,9 +220,12 @@ export default function CLOAttainmentGraph() {
     return (
         <Card className="border rounded-3 shadow-sm">
             <Card.Body className="p-4">
-                <h4 className="fw-normal mb-4">
-                    CLOs Attainment Graph
-                </h4>
+                <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+                    <h4 className="fw-normal mb-0">
+                        CLOs Attainment Graph
+                    </h4>
+                    <KPIEditor courseId={courseId} color={PURPLE} />
+                </div>
 
                 <div
                     className="d-flex flex-wrap align-items-center mb-4"
