@@ -12,6 +12,7 @@ const CourseAssignment = () => {
     const [assignments, setAssignments] = useState([]);
     const [faculty, setFaculty] = useState([]);
     const [courses, setCourses] = useState([]);
+    const [academicTerms, setAcademicTerms] = useState([]);
 
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -20,7 +21,7 @@ const CourseAssignment = () => {
     const [formData, setFormData] = useState({
         facultyId: '',
         courseId: '',
-        semester: ''
+        academicTerm: ''
     });
 
     useEffect(() => {
@@ -33,15 +34,17 @@ const CourseAssignment = () => {
                 headers: { Authorization: `Bearer ${user.token}` }
             };
 
-            const [facRes, courseRes, assignRes] = await Promise.all([
+            const [facRes, courseRes, assignRes, termRes] = await Promise.all([
                 api.get('/api/admin/staff', config),
                 api.get('/api/admin/courses', config),
-                api.get('/api/assignments', config)
+                api.get('/api/assignments', config),
+                api.get('/api/academic-terms', config)
             ]);
 
             setFaculty(facRes.data);
             setCourses(courseRes.data);
             setAssignments(assignRes.data);
+            setAcademicTerms(termRes.data);
 
         } catch (error) {
             console.error(error);
@@ -68,13 +71,13 @@ const CourseAssignment = () => {
                 await api.put(`/api/assignments/${currentId}`, {
                     faculty: formData.facultyId,
                     course: formData.courseId,
-                    semester: formData.semester
+                    academicTerm: formData.academicTerm
                 }, config);
             } else {
                 await api.post('/api/assignments', {
                     faculty: formData.facultyId,
                     course: formData.courseId,
-                    semester: formData.semester
+                    academicTerm: formData.academicTerm
                 }, config);
             }
 
@@ -84,7 +87,7 @@ const CourseAssignment = () => {
             setIsEditing(false);
             setCurrentId(null);
 
-            setFormData({ facultyId: '', courseId: '', semester: '' });
+            setFormData({ facultyId: '', courseId: '', academicTerm: '' });
 
             fetchData();
 
@@ -122,7 +125,7 @@ const CourseAssignment = () => {
         setFormData({
             facultyId: assignment.faculty?._id,
             courseId: assignment.course?._id,
-            semester: assignment.semester
+            academicTerm: assignment.academicTerm?._id
         });
 
         setShowModal(true);
@@ -138,7 +141,7 @@ const CourseAssignment = () => {
                 <Button onClick={() => {
                     setShowModal(true);
                     setIsEditing(false);
-                    setFormData({ facultyId: '', courseId: '', semester: '' });
+                    setFormData({ facultyId: '', courseId: '', academicTerm: '' });
                 }}>
                     <Plus size={18} /> Assign Course
                 </Button>
@@ -153,7 +156,7 @@ const CourseAssignment = () => {
                             <tr>
                                 <th className="px-4 py-3 text-muted small">Course</th>
                                 <th className="px-4 py-3 text-muted small">Faculty</th>
-                                <th className="px-4 py-3 text-muted small">Semester</th>
+                                <th className="px-4 py-3 text-muted small">Academic Term</th>
                                 <th className="px-4 py-3 text-muted small text-end">Actions</th>
                             </tr>
                         </thead>
@@ -177,7 +180,7 @@ const CourseAssignment = () => {
 
                                         <td className="px-4 py-3">
                                             <span className="badge bg-light text-dark border px-3 py-2">
-                                                {a.semester}
+                                                {a.academicTerm?.name || `${a.academicTerm?.season} ${a.academicTerm?.year}`}
                                             </span>
                                         </td>
 
@@ -279,14 +282,12 @@ const CourseAssignment = () => {
                         </Form.Group>
 
                         <Form.Group>
-                            <Form.Label>Semester</Form.Label>
-                            <Form.Control
-                                type="text"
-                                name="semester"
-                                value={formData.semester}
+                            <Form.Label>Academic Term</Form.Label>
+                            <Form.Select
+                                name="academicTerm"
+                                value={formData.academicTerm}
                                 onChange={handleChange}
                                 required
-                                placeholder="e.g. Fall 2026"
                                 className="py-2 shadow-sm border-2"
                                 style={{
                                     backgroundColor: '#f8fafc',
@@ -294,7 +295,14 @@ const CourseAssignment = () => {
                                     borderRadius: '10px',
                                     fontSize: '0.95rem'
                                 }}
-                            />
+                            >
+                                <option value="">Select Academic Term</option>
+                                {academicTerms.map(term => (
+                                    <option key={term._id} value={term._id}>
+                                        {term.name || `${term.season} ${term.year}`}
+                                    </option>
+                                ))}
+                            </Form.Select>
                         </Form.Group>
 
                     </Modal.Body>
