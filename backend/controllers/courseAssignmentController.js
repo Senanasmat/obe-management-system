@@ -27,6 +27,19 @@ const createAssignment = async (req, res) => {
             });
         }
 
+        // Prevent assigning same course to different faculty in same academic term
+        const otherAssignment = await CourseAssignment.findOne({
+            course,
+            academicTerm,
+            faculty: { $nin: facultyIds }
+        }).populate('faculty', 'name');
+
+        if (otherAssignment) {
+            return res.status(400).json({
+                message: `This course is already assigned to ${otherAssignment.faculty?.name} for this academic term. A course cannot be assigned to multiple faculty in the same academic term.`
+            });
+        }
+
         const assignments = await CourseAssignment.insertMany(
             facultyIds.map(id => ({ faculty: id, course, academicTerm }))
         );
@@ -107,6 +120,20 @@ const updateAssignment = async (req, res) => {
         if (exists) {
             return res.status(400).json({
                 message: 'This course is already assigned to this faculty for this academic term'
+            });
+        }
+
+        // Prevent assigning same course to different faculty in same academic term
+        const otherAssignment = await CourseAssignment.findOne({
+            course,
+            academicTerm,
+            faculty: { $ne: faculty },
+            _id: { $ne: req.params.id }
+        }).populate('faculty', 'name');
+
+        if (otherAssignment) {
+            return res.status(400).json({
+                message: `This course is already assigned to ${otherAssignment.faculty?.name} for this academic term. A course cannot be assigned to multiple faculty in the same academic term.`
             });
         }
 
