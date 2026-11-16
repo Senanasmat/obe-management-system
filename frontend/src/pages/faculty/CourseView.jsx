@@ -84,6 +84,7 @@ const CourseView = () => {
     const [studentCheckboxes, setStudentCheckboxes] = useState(new Set());
     const [studentGrades, setStudentGrades] = useState({});
     const [selectedCloStudent, setSelectedCloStudent] = useState(null);
+    const [prefetchedTabs, setPrefetchedTabs] = useState(new Set());
 
     const handleDownloadAssessmentWord = async (assessment) => {
         const examTitle = {
@@ -398,6 +399,13 @@ const CourseView = () => {
     };
 
     useEffect(() => {
+        // Auto-set the first page option when tab changes
+        if (dropdownOptions[activeTab] && !activePage) {
+            setActivePage(dropdownOptions[activeTab][0]);
+        }
+    }, [activeTab, activePage]);
+
+    useEffect(() => {
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
 
         // Use /assignments/my which fully populates course.clos and course.students
@@ -469,6 +477,36 @@ const CourseView = () => {
             })
             .finally(() => setPlosLoading(false));
     }, [courseId, user.token]);
+
+    const prefetchTabData = (tabName) => {
+        if (prefetchedTabs.has(tabName)) return;
+
+        const config = { headers: { Authorization: `Bearer ${user.token}` } };
+
+        if (tabName === 'CLOs') {
+            Promise.all([
+                api.get('/api/assignments/my', config),
+                api.get(`/api/faculty/analytics/${courseId}`, config),
+                api.get(`/api/faculty/courses/${courseId}/clo-mappings`, config),
+                api.get(`${'/api/faculty'}/plos`, config),
+                api.get(`${'/api/faculty'}/academic-terms`, config)
+            ]).catch(err => console.error('Prefetch CLO data error:', err));
+        } else if (tabName === 'PLOs') {
+            Promise.all([
+                api.get(`/api/faculty/analytics/${courseId}`, config),
+                api.get(`/api/faculty/courses/${courseId}/clo-mappings`, config),
+                api.get(`${'/api/faculty'}/plos`, config)
+            ]).catch(err => console.error('Prefetch PLO data error:', err));
+        } else if (tabName === 'Reports') {
+            Promise.all([
+                api.get(`/api/faculty/courses/${courseId}/grades`, config),
+                api.get(`/api/faculty/courses/${courseId}/award-list`, config),
+                api.get(`/api/faculty/courses/${courseId}/assessments`, config)
+            ]).catch(err => console.error('Prefetch Reports data error:', err));
+        }
+
+        setPrefetchedTabs(prev => new Set([...prev, tabName]));
+    };
 
     const openEnrollModal = () => {
         setEnrollSearch('');
@@ -1068,7 +1106,12 @@ const handleSelectCloStudent = async (student) => {
                                 onToggle={(isOpen) => {
                                     if (isOpen) {
                                         setActiveTab(tab);
+                                        prefetchTabData(tab);
                                     }
+                                }}
+                                onSelect={(option) => {
+                                    setActiveTab(tab);
+                                    setActivePage(option);
                                 }}
                             >
                                 <Dropdown.Toggle
@@ -1076,6 +1119,7 @@ const handleSelectCloStudent = async (student) => {
                                     className={`py-2 px-3 d-flex align-items-center gap-1 text-decoration-none ${
                                         isActive ? 'bg-light' : ''
                                     }`}
+                                    onMouseEnter={() => prefetchTabData(tab)}
                                     style={{
                                         ...tabStyle,
                                         borderTop: 'none',
@@ -1090,15 +1134,13 @@ const handleSelectCloStudent = async (student) => {
                                     {tab}
                                 </Dropdown.Toggle>
 
-                                <Dropdown.Menu>
+                                <Dropdown.Menu onMouseEnter={() => prefetchTabData(tab)}>
                                     {dropdownOptions[tab].map((option) => (
                                         <Dropdown.Item
                                             key={option}
+                                            eventKey={option}
                                             active={activePage === option}
-                                            onClick={() => {
-                                                setActiveTab(tab);
-                                                setActivePage(option);
-                                            }}
+                                            onMouseEnter={() => prefetchTabData(tab)}
                                         >
                                             {option}
                                         </Dropdown.Item>
@@ -1107,6 +1149,20 @@ const handleSelectCloStudent = async (student) => {
                             </Dropdown>
                         );
                     })}
+                </div>
+
+                {/* Hidden Pre-render Components to Load Data in Background */}
+                <div style={{ display: 'none' }}>
+                    <CLOList />
+                    <CLOAttainment />
+                    <CLOAttainmentGraph />
+                    <PLOAttainment />
+                    <PLOAttainmentGraph />
+                    <MarksOBE />
+                    <MarksGPA />
+                    <AwardList />
+                    <GPAAttainmentGraph />
+                    <CourseConsolidatedReport />
                 </div>
 
                 {/* Tab Content */}
@@ -1723,25 +1779,15 @@ const handleSelectCloStudent = async (student) => {
                         )}
 
                     {/* REPORTS TABS */}
-                        {activeTab === 'Reports' && activePage === 'Marks OBE' && (
-                            <MarksOBE />
-                        )}
-
-                        {activeTab === 'Reports' && activePage === 'Marks GPA' && (
-                            <MarksGPA />
-                        )}
-
-                        {activeTab === 'Reports' && activePage === 'Award List' && (
-                            <AwardList />
-                        )}
-
-                        {activeTab === 'Reports' && activePage === 'GPA Attainment Graph' && (
-                            <GPAAttainmentGraph />
-                        )}
-
-                        {activeTab === 'Reports' && activePage === 'Course Consolidated Report' && (
-                            <CourseConsolidatedReport />
-                        )}
+                    {activeTab === 'Reports' && (
+                        <motion.div key={`report-${activePage}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                            {activePage === 'Marks OBE' && <MarksOBE />}
+                            {activePage === 'Marks GPA' && <MarksGPA />}
+                            {activePage === 'Award List' && <AwardList />}
+                            {activePage === 'GPA Attainment Graph' && <GPAAttainmentGraph />}
+                            {activePage === 'Course Consolidated Report' && <CourseConsolidatedReport />}
+                        </motion.div>
+                    )}
                     {/* REPORTS TABS End */}
 
 

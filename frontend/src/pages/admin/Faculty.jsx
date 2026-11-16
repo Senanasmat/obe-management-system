@@ -3,8 +3,9 @@ import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { Container, Card, Form, Button, Table, Modal, Row, Col } from 'react-bootstrap';
 import { toast, showError, showConfirm } from '../../utils/notifications';
-import { UserPlus, User, Edit, Trash2, Shield, Lock, Mail, Upload } from 'lucide-react';
+import { UserPlus, User, Edit, Trash2, Shield, Lock, Mail, Upload, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import BulkImportModal from '../../components/BulkImportModal';
 
 const containerVariants = {
@@ -32,6 +33,7 @@ const DESIGNATIONS = [
 ];
 
 const Faculty = () => {
+    const navigate = useNavigate();
     const [faculty, setFaculty] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -130,8 +132,18 @@ const Faculty = () => {
         >
             <Container fluid className="py-4 px-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h2 className="mb-0 text-dark fw-bold display-6 fs-3">Faculty Management</h2>
+                    <div className="d-flex align-items-center gap-3">
+                        <Button
+                            variant="light"
+                            onClick={() => navigate('/admin')}
+                            className="d-flex align-items-center gap-2 border-0 px-3 py-2"
+                            title="Go back to dashboard"
+                        >
+                            <ArrowLeft size={20} />
+                        </Button>
+                        <div>
+                            <h2 className="mb-0 text-dark fw-bold display-6 fs-3">Faculty Management</h2>
+                        </div>
                     </div>
                     <div className="d-flex gap-2">
                         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -205,13 +217,13 @@ const Faculty = () => {
                     </Table>
                 </Card>
 
-                <Modal show={showModal} onHide={() => setShowModal(false)} centered size="md">
-                    <Modal.Header closeButton className="border-0 pb-0">
-                        <Modal.Title className="fw-bold fs-4">{isEditing ? 'Edit Faculty Details' : 'Register New Faculty'}</Modal.Title>
+                <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg" dialogClassName="modal-dialog-scrollable">
+                    <Modal.Header closeButton className="border-0 pb-0 pt-4 px-4">
+                        <Modal.Title className="fw-bold fs-5">{isEditing ? 'Edit Faculty Details' : 'Register New Faculty'}</Modal.Title>
                     </Modal.Header>
                     <Form onSubmit={handleSubmit}>
                         <Modal.Body className="p-4">
-                            <Row className="g-4">
+                            <Row className="g-3">
                                 <Col md={12}>
                                     <Form.Group>
                                         <Form.Label className="small fw-bold text-muted">Full Name</Form.Label>
@@ -222,36 +234,38 @@ const Faculty = () => {
                                                 required
                                                 value={formData.name}
                                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                                className="ps-5 py-2 border rounded-3 shadow-sm"
+                                                className="ps-5 py-2 border rounded-2"
                                                 style={{
                                                     borderColor: '#d1d5db',
-                                                    backgroundColor: '#ffffff'
+                                                    backgroundColor: '#ffffff',
+                                                    fontSize: '0.95rem'
                                                 }}
                                             />
-                                            <User className="position-absolute text-muted" size={18} style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
+                                            <User className="position-absolute text-muted" size={18} style={{ left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                                         </div>
                                     </Form.Group>
                                 </Col>
                                 <Col md={12}>
-                                <Form.Group>
-                                    <Form.Label className="small fw-bold text-muted">Email</Form.Label>
-                                    <div className="position-relative">
-                                        <Form.Control
-                                            type="email"
-                                            required
-                                            value={formData.email}
-                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                            className="ps-5 py-2 border rounded-3 shadow-sm"
-                                            style={{
-                                                borderColor: '#d1d5db',
-                                                backgroundColor: '#ffffff'
-                                            }}
-                                        />
-                                        <Mail className="position-absolute text-muted" size={18}
-                                            style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }}
-                                        />
-                                    </div>
-                                </Form.Group>
+                                    <Form.Group>
+                                        <Form.Label className="small fw-bold text-muted">Email</Form.Label>
+                                        <div className="position-relative">
+                                            <Form.Control
+                                                type="email"
+                                                required
+                                                value={formData.email}
+                                                onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                                className="ps-5 py-2 border rounded-2"
+                                                style={{
+                                                    borderColor: '#d1d5db',
+                                                    backgroundColor: '#ffffff',
+                                                    fontSize: '0.95rem'
+                                                }}
+                                            />
+                                            <Mail className="position-absolute text-muted" size={18}
+                                                style={{ left: '12px', top: '50%', transform: 'translateY(-50%)' }}
+                                            />
+                                        </div>
+                                    </Form.Group>
                                 </Col>
                                 <Col md={12}>
                                     {!isEditing && (
@@ -263,36 +277,38 @@ const Faculty = () => {
                                                     required
                                                     value={formData.password}
                                                     onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                                    className="ps-5 py-2 border rounded-3 shadow-sm"
+                                                    className="ps-5 py-2 border rounded-2"
                                                     style={{
                                                         borderColor: '#d1d5db',
-                                                        backgroundColor: '#ffffff'
+                                                        backgroundColor: '#ffffff',
+                                                        fontSize: '0.95rem'
                                                     }}
                                                 />
                                                 <Lock className="position-absolute text-muted" size={18}
-                                                    style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }}
+                                                    style={{ left: '12px', top: '50%', transform: 'translateY(-50%)' }}
                                                 />
                                             </div>
                                         </Form.Group>
                                     )}
                                 </Col>
-                                <Col md={12}>
+                                <Col md={6}>
                                     <Form.Group>
                                         <Form.Label className="small fw-bold text-muted">Department</Form.Label>
                                         <Form.Select
                                             value={formData.department}
                                             onChange={e => setFormData({ ...formData, department: e.target.value })}
-                                            className="py-2 border rounded-3 shadow-sm"
+                                            className="py-2 border rounded-2"
                                             style={{
                                                 borderColor: '#d1d5db',
-                                                backgroundColor: '#ffffff'
+                                                backgroundColor: '#ffffff',
+                                                fontSize: '0.95rem'
                                             }}
                                         >
                                             {DEPARTMENTS.map(dept => <option key={dept} value={dept}>{dept}</option>)}
                                         </Form.Select>
                                     </Form.Group>
                                 </Col>
-                                <Col md={12}>
+                                <Col md={6}>
                                     <Form.Group>
                                         <Form.Label className="small fw-bold text-muted">Designation</Form.Label>
                                         <Form.Select
@@ -310,9 +326,11 @@ const Faculty = () => {
                                 </Col>
                             </Row>
                         </Modal.Body>
-                        <Modal.Footer className="border-0 p-4 pt-0">
-                            <Button variant="light" onClick={() => setShowModal(false)} className="px-4 border-0">Cancel</Button>
-                            <Button style={{ backgroundColor: '#4c1d95', border: 'none' }} type="submit" className="px-5 shadow-sm border-0 py-2 fw-semibold" disabled={loading}>
+                        <Modal.Footer className="border-top p-4 gap-2">
+                            <Button variant="light" onClick={() => setShowModal(false)} className="px-4 border" style={{ color: '#6c757d' }}>
+                                Cancel
+                            </Button>
+                            <Button style={{ backgroundColor: '#4c1d95', border: 'none' }} type="submit" className="px-5 py-2 fw-semibold" disabled={loading}>
                                 {loading ? 'Processing...' : (isEditing ? 'Save Changes' : 'Register')}
                             </Button>
                         </Modal.Footer>

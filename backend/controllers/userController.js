@@ -132,19 +132,23 @@ const authUser = async (req, res) => {
 
         const user = await User.findOne({ email });
 
-        if (user && (await user.matchPassword(password))) {
-            res.json({
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                department: user.department,
-                designation: user.designation,
-                token: generateToken(user._id),
-            });
-        } else {
-            res.status(401).json({ message: 'Invalid email or password' });
+        if (!user) {
+            return res.status(401).json({ message: 'User account not found' });
         }
+
+        if (!(await user.matchPassword(password))) {
+            return res.status(401).json({ message: 'Invalid password' });
+        }
+
+        res.json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            department: user.department,
+            designation: user.designation,
+            token: generateToken(user._id),
+        });
     } catch (error) {
         console.error('Login Error:', error);
         res.status(500).json({ message: 'Server Error during login', error: error.message });

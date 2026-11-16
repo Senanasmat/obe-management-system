@@ -3,8 +3,9 @@ import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { Container, Card, Form, Button, Table, Modal, Badge, Row, Col } from 'react-bootstrap';
 import { toast, showError, showConfirm, showAlert } from '../../utils/notifications';
-import { UserPlus, User, Hash, GraduationCap, Edit, Trash2, Search, Upload, Download, FileSpreadsheet, CheckCircle } from 'lucide-react';
+import { UserPlus, User, Hash, GraduationCap, Edit, Trash2, Search, Upload, Download, FileSpreadsheet, CheckCircle, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const containerVariants = {
     hidden: { opacity: 0, y: 10 },
@@ -17,6 +18,7 @@ const itemVariants = {
 };
 
 const Students = () => {
+    const navigate = useNavigate();
     const [students, setStudents] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
@@ -164,9 +166,19 @@ const Students = () => {
         <motion.div initial="hidden" animate="visible" variants={containerVariants}>
             <Container fluid className="py-4 px-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h2 className="mb-0 text-dark fw-bold display-6 fs-3">Student Management</h2>
-                        <p className="text-muted small mb-0">Manage and track student registrations</p>
+                    <div className="d-flex align-items-center gap-3">
+                        <Button
+                            variant="light"
+                            onClick={() => navigate('/admin')}
+                            className="d-flex align-items-center gap-2 border-0 px-3 py-2"
+                            title="Go back to dashboard"
+                        >
+                            <ArrowLeft size={20} />
+                        </Button>
+                        <div>
+                            <h2 className="mb-0 text-dark fw-bold display-6 fs-3">Student Management</h2>
+                            <p className="text-muted small mb-0">Manage and track student registrations</p>
+                        </div>
                     </div>
                     <div className="d-flex gap-2">
                         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -305,9 +317,9 @@ const Students = () => {
                 </Card>
 
                 {/* Add / Edit Modal */}
-                <Modal show={showModal} onHide={() => setShowModal(false)} centered size="md">
-                    <Modal.Header closeButton className="border-0 pb-0">
-                        <Modal.Title className="fw-bold">{isEditing ? 'Edit Student Details' : 'Register New Student'}</Modal.Title>
+                <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg" dialogClassName="modal-dialog-scrollable">
+                    <Modal.Header closeButton className="border-0 pb-0 pt-4 px-4">
+                        <Modal.Title className="fw-bold fs-5">{isEditing ? 'Edit Student Details' : 'Register New Student'}</Modal.Title>
                     </Modal.Header>
                     <Form onSubmit={handleSubmit}>
                         <Modal.Body className="p-4">
@@ -390,9 +402,11 @@ const Students = () => {
                                 </div>
                             </Form.Group>
                         </Modal.Body>
-                        <Modal.Footer className="border-0 p-4 pt-0">
-                            <Button variant="light" onClick={() => setShowModal(false)} className="px-4 border-0">Cancel</Button>
-                            <Button type="submit" className="px-5 shadow-sm border-0 py-2 fw-semibold" style={{ backgroundColor: '#4c1d95' }} disabled={loading}>
+                        <Modal.Footer className="border-top p-4 gap-2">
+                            <Button variant="light" onClick={() => setShowModal(false)} className="px-4 border" style={{ color: '#6c757d' }}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" className="px-5 py-2 fw-semibold" style={{ backgroundColor: '#4c1d95', border: 'none', color: 'white' }} disabled={loading}>
                                 {loading ? 'Processing...' : (isEditing ? 'Save Changes' : 'Confirm Registration')}
                             </Button>
                         </Modal.Footer>
