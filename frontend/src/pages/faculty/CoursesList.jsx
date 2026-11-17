@@ -151,12 +151,11 @@ const CoursesList = () => {
                                 </p>
 
                                 {/* Buttons */}
-                                <div className="d-flex justify-content-between mb-3 gap-2" onClick={(e) => e.stopPropagation()}>
+                                <div className="d-flex justify-content-between mb-3" onClick={(e) => e.stopPropagation()}>
                                     <Button
                                         size="sm"
                                         onClick={() => navigate(`/faculty/courses/${a.course._id}?tab=Activities`)}
-                                        style={{ backgroundColor: FACULTY_THEME.colors.primary, border: 'none', borderRadius: '6px', fontSize: '0.85rem' }}
-                                        className="flex-grow-1"
+                                        style={{ backgroundColor: FACULTY_THEME.colors.primary, border: 'none', borderRadius: '6px' }}
                                     >
                                         Activities
                                     </Button>
@@ -164,8 +163,7 @@ const CoursesList = () => {
                                     <Button
                                         size="sm"
                                         onClick={() => navigate(`/faculty/courses/${a.course._id}?tab=Reports`)}
-                                        style={{ backgroundColor: FACULTY_THEME.colors.accent, border: 'none', borderRadius: '6px', fontSize: '0.85rem' }}
-                                        className="flex-grow-1"
+                                        style={{ backgroundColor: FACULTY_THEME.colors.accent, border: 'none', borderRadius: '6px' }}
                                     >
                                         Reports
                                     </Button>
