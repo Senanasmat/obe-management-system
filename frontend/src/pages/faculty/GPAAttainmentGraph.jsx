@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, Button, Table, Alert, Spinner } from 'react-bootstrap';
 import { useRef } from 'react';
@@ -32,6 +32,12 @@ export default function GPAAttainmentGraph() {
     const [loading, setLoading] = useState(false);
     const [visible, setVisible] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (user?.token && courseId) {
+            setTimeout(() => generateGraph(), 300);
+        }
+    }, [courseId, user?.token]);
 
     const generateGraph = async () => {
         setLoading(true);

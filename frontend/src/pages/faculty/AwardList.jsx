@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, Form, Button, Table, Alert, Spinner } from 'react-bootstrap';
 import jsPDF from 'jspdf';
@@ -94,6 +94,12 @@ export default function AwardList() {
     const [error, setError] = useState('');
     const [course, setCourse] = useState({});
     const [records, setRecords] = useState([]);
+
+    useEffect(() => {
+        if (user?.token && courseId) {
+            setTimeout(() => generateReport(), 300);
+        }
+    }, [courseId, user?.token]);
 
     const toggle = key =>
         setOptions(previous => ({
