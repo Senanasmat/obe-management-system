@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import {
     Card, Form, Button, Table, Alert, Spinner
@@ -52,6 +52,12 @@ export default function MarksGPA() {
     const [assignment, setAssignment] = useState(null);
     const [activities, setActivities] = useState([]);
     const [rows, setRows] = useState([]);
+
+    useEffect(() => {
+        if (user?.token && courseId) {
+            setTimeout(() => loadReport(), 300);
+        }
+    }, [courseId, user?.token]);
 
     const loadReport = async () => {
         setLoading(true);

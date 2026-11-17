@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, Form, Button, Spinner, Alert, Table } from 'react-bootstrap';
 import {
@@ -36,6 +36,12 @@ export default function CLOAttainmentGraph() {
     const [error, setError] = useState('');
     const [rawGraphData, setRawGraphData] = useState([]);
     const [hasResults, setHasResults] = useState(false);
+
+    useEffect(() => {
+        if (user?.token && courseId) {
+            setTimeout(() => showGraph(), 300);
+        }
+    }, [courseId, user?.token]);
 
     // Attainment is derived at render time so a KPI change applies immediately.
     const graphData = rawGraphData.map(item => {

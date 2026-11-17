@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, Form, Button, Spinner, Alert, Table } from 'react-bootstrap';
 import {
@@ -23,6 +23,12 @@ export default function PLOAttainmentGraph() {
     const [error, setError] = useState('');
     const [groups, setGroups] = useState([]);
     const [visible, setVisible] = useState(false);
+
+    useEffect(() => {
+        if (user?.token && courseId) {
+            setTimeout(() => showGraph(), 300);
+        }
+    }, [courseId, user?.token]);
 
     const showGraph = async () => {
         setLoading(true);

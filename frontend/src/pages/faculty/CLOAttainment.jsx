@@ -88,6 +88,11 @@ export default function CLOAttainment() {
                 setCourse(assignment.course);
                 setClos(assignment.course.clos || []);
                 setStudents(assignment.course.students || []);
+
+                // Auto-trigger calculation after loading course
+                setTimeout(() => {
+                    if (!cancelled) autoCalculateResults(assignment.course.students || []);
+                }, 500);
             } catch (err) {
                 if (!cancelled) {
                     setError(
@@ -207,7 +212,100 @@ export default function CLOAttainment() {
         }
     };
 
-    
+    const autoCalculateResults = async (studentsToUse = students) => {
+        if (studentsToUse.length === 0) return;
+
+        setError('');
+        try {
+            const config = {
+                headers: {
+                    Authorization: `Bearer ${user.token}`
+                }
+            };
+
+            const results = {};
+            const batchSize = 5;
+
+            for (let start = 0; start < studentsToUse.length; start += batchSize) {
+                const group = studentsToUse.slice(start, start + batchSize);
+
+                const responses = await Promise.allSettled(
+                    group.map((student) =>
+                        api.get(
+                            `/api/faculty/courses/${courseId}/students/${student._id}/clo-analytics`,
+                            {
+                                ...config,
+                                params: { calculationMode: 'category' }
+                            }
+                        )
+                    )
+                );
+
+                responses.forEach((response, index) => {
+                    const student = group[index];
+
+                    if (response.status !== 'fulfilled') {
+                        results[student._id] = {
+                            error: true,
+                            values: {}
+                        };
+                        return;
+                    }
+
+                    const values = {};
+
+                    (response.value.data.cloStats || []).forEach((stat) => {
+                        const percentage = validPercentage(stat.percentage);
+
+                        const cloId = getId(
+                            stat.cloId || stat.clo?._id || stat.clo
+                        );
+
+                        const cloResult = {
+                            percentage,
+                            obtainedMarks: Number(stat.obtainedMarks ?? 0),
+                            totalMarks: Number(stat.totalMarks ?? 0),
+                            achieved: Boolean(stat.achieved),
+                            totalWeight: Number(stat.totalWeight ?? 0)
+                        };
+
+                        if (cloId) {
+                            values[cloId] = cloResult;
+                        }
+
+                        if (stat.cloCode) {
+                            values[`code:${stat.cloCode}`] = cloResult;
+                        }
+                    });
+
+                    results[student._id] = {
+                        error: false,
+                        values
+                    };
+                });
+            }
+
+            setStudentResults(results);
+            setShowResults(true);
+
+            const failedCount = Object.values(results).filter(
+                (result) => result.error
+            ).length;
+
+            if (failedCount > 0) {
+                setError(
+                    `Unable to load CLO results for ${failedCount} student(s). Their values are shown as unavailable.`
+                );
+            }
+        } catch (err) {
+            setError(
+                err.response?.data?.message ||
+                'Unable to calculate CLO attainment.'
+            );
+        }
+    };
+
+
     const getCLOResult = (student, clo) => {
         const record = studentResults[student._id];
 

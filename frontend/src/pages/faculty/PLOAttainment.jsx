@@ -30,6 +30,13 @@ export default function PLOAttainment() {
     const [showResults, setShowResults] = useState(false);
     const { kpi: KPI } = useCourseKPI(courseId);
 
+    // Auto-trigger calculation on mount
+    useEffect(() => {
+        if (user?.token && courseId) {
+            setTimeout(() => calculateResults(), 500);
+        }
+    }, [courseId, user?.token]);
+
     // Re-evaluate "achieved" whenever the KPI is edited.
     useEffect(() => {
         setResults(groups => groups.map(group => ({
