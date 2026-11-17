@@ -3,9 +3,8 @@ import { Link } from 'react-router-dom';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { BookOpen, Users, BarChart2, Award, FileText, Clock } from 'lucide-react';
-import { Container, Row, Col, Card } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button } from 'react-bootstrap';
 import { motion } from 'framer-motion';
-import { Dropdown } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { FACULTY_THEME } from '../../themes/facultyTheme';
@@ -214,33 +213,24 @@ const FacultyDashboard = () => {
                                     </p>
 
                                     {/* Buttons */}
-                                    <div className="d-flex justify-content-between mb-3">
-                                        <Dropdown onClick={(e) => e.stopPropagation()}>
-                                            <Dropdown.Toggle
-                                                size="sm"
-                                                style={{ backgroundColor: FACULTY_THEME.colors.primary, border: 'none', borderRadius: '6px' }}
-                                            >
-                                                Options
-                                            </Dropdown.Toggle>
-                                            <Dropdown.Menu>
-                                                <Dropdown.Item onClick={() => navigate(`/faculty/courses/${a.course._id}?tab=Activities`)}>
-                                                    Class Activities
-                                                </Dropdown.Item>
-                                            </Dropdown.Menu>
-                                        </Dropdown>
+                                    <div className="d-flex justify-content-between mb-3 gap-2" onClick={(e) => e.stopPropagation()}>
+                                        <Button
+                                            size="sm"
+                                            onClick={() => navigate(`/faculty/courses/${a.course._id}?tab=Activities`)}
+                                            style={{ backgroundColor: FACULTY_THEME.colors.primary, border: 'none', borderRadius: '6px', fontSize: '0.85rem' }}
+                                            className="flex-grow-1"
+                                        >
+                                            Activities
+                                        </Button>
 
-                                        <Dropdown onClick={(e) => e.stopPropagation()}>
-                                            <Dropdown.Toggle
-                                                size="sm"
-                                                style={{ backgroundColor: FACULTY_THEME.colors.accent, border: 'none', borderRadius: '6px' }}
-                                            >
-                                                Reports
-                                            </Dropdown.Toggle>
-                                            <Dropdown.Menu align="end">
-                                                <Dropdown.Item>OBE Report</Dropdown.Item>
-                                                <Dropdown.Item>Student Report</Dropdown.Item>
-                                            </Dropdown.Menu>
-                                        </Dropdown>
+                                        <Button
+                                            size="sm"
+                                            onClick={() => navigate(`/faculty/courses/${a.course._id}?tab=Reports`)}
+                                            style={{ backgroundColor: FACULTY_THEME.colors.accent, border: 'none', borderRadius: '6px', fontSize: '0.85rem' }}
+                                            className="flex-grow-1"
+                                        >
+                                            Reports
+                                        </Button>
                                     </div>
 
                                     {/* Stats */}
