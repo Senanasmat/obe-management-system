@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../utils/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useAuth } from '../../context/AuthContext';
+import { FACULTY_THEME } from '../../themes/facultyTheme';
 import {
     Container,
     Table,
@@ -796,7 +797,7 @@ const MarksEntry = () => {
                         <h5
                             className="fw-bold mb-0"
                             style={{
-                                color: '#4c1d95'
+                                color: 'FACULTY_THEME.colors.primary'
                             }}
                         >
                             {assessment.title}
@@ -858,7 +859,7 @@ const MarksEntry = () => {
                             className="px-4 py-2 border-0 fw-semibold d-flex align-items-center gap-2"
                             style={{
                                 backgroundColor:
-                                    '#4c1d95'
+                                    'FACULTY_THEME.colors.primary'
                             }}
                             onClick={
                                 handleSaveAll
@@ -909,7 +910,7 @@ const MarksEntry = () => {
                                 <div
                                     className="fw-semibold small"
                                     style={{
-                                        color: '#6d28d9'
+                                        color: 'FACULTY_THEME.colors.primary'
                                     }}
                                 >
                                     {q.questionName ||
@@ -967,7 +968,7 @@ const MarksEntry = () => {
                                     <th
                                         className="px-3 py-2 fw-semibold"
                                         style={{
-                                            color: '#6d28d9',
+                                            color: 'FACULTY_THEME.colors.primary',
                                             minWidth: 160
                                         }}
                                     >
@@ -1105,7 +1106,7 @@ const MarksEntry = () => {
                                                     style={{
                                                         backgroundColor:
                                                             '#f5f3ff',
-                                                        color: '#6d28d9',
+                                                        color: 'FACULTY_THEME.colors.primary',
                                                         fontSize:
                                                             '0.85rem'
                                                     }}
@@ -1141,7 +1142,7 @@ const MarksEntry = () => {
                             className="px-4 py-2 border-0 fw-semibold d-flex align-items-center gap-2"
                             style={{
                                 backgroundColor:
-                                    '#4c1d95'
+                                    'FACULTY_THEME.colors.primary'
                             }}
                             onClick={
                                 handleSaveAll
@@ -1177,7 +1178,7 @@ const MarksEntry = () => {
                             <FileSpreadsheet
                                 size={22}
                                 style={{
-                                    color: '#6d28d9'
+                                    color: 'FACULTY_THEME.colors.primary'
                                 }}
                             />
 
@@ -1232,7 +1233,7 @@ const MarksEntry = () => {
                                                 className="d-flex align-items-center gap-2 border-0"
                                                 style={{
                                                     backgroundColor:
-                                                        '#4c1d95'
+                                                        'FACULTY_THEME.colors.primary'
                                                 }}
                                             >
                                                 <Download

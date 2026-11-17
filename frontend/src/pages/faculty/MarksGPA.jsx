@@ -14,6 +14,7 @@ import * as XLSX from 'xlsx-js-style';
 
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import { FACULTY_THEME } from '../../themes/facultyTheme';
 
 const getId = value => String(value?._id || value || '');
 const num = value => Number(value || 0);
@@ -466,7 +467,7 @@ export default function MarksGPA() {
                         <div className="mb-3" style={{ fontSize: 18 }}>
                             <div>
                                 <strong>Course : </strong>
-                                <span style={{ color: '#663399' }}>
+                                <span style={{ color: 'FACULTY_THEME.colors.primary' }}>
                                     {course?.code} - {course?.name}
                                 </span>
                             </div>
@@ -492,7 +493,7 @@ export default function MarksGPA() {
                                         <XAxis dataKey="name" hide />
                                         <YAxis domain={[0, 100]} />
                                         <Tooltip />
-                                        <Bar dataKey="total" fill="#663399" />
+                                        <Bar dataKey="total" fill="FACULTY_THEME.colors.primary" />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -605,7 +606,7 @@ export default function MarksGPA() {
                                     {rows.map(row => (
                                         <tr key={getId(row.student)}>
                                             <td>{row.index}.</td>
-                                            <td style={{ color: '#663399' }}>
+                                            <td style={{ color: 'FACULTY_THEME.colors.primary' }}>
                                                 {row.student.regNo}
                                             </td>
                                             <td>{row.student.name}</td>

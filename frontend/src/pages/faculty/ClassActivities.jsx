@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import { FACULTY_THEME } from '../../themes/facultyTheme';
 import { Container, Button, Breadcrumb, Table, Dropdown } from 'react-bootstrap';
 import { PlusCircle, FileText, ClipboardList, XCircle, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -86,7 +87,7 @@ const ClassActivities = () => {
                             {user.name?.slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                            <h6 className="fw-bold mb-0" style={{ color: '#6d28d9' }}>{course.code} - {course.name}</h6>
+                            <h6 className="fw-bold mb-0" style={{ color: 'FACULTY_THEME.colors.primary' }}>{course.code} - {course.name}</h6>
                             <p className="mb-0 text-muted" style={{ fontSize: '0.85rem' }}>
                                 {course.code} - {assignment.semester} &nbsp;·&nbsp; {user.name}
                             </p>
@@ -121,11 +122,11 @@ const ClassActivities = () => {
                 {assessments.length === 0 ? (
                     <div className="text-center py-5 bg-white rounded-3 border">
                         <div className="d-inline-block p-3 rounded-circle mb-3" style={{ backgroundColor: '#ede9fe' }}>
-                            <ClipboardList size={30} color="#6d28d9" />
+                            <ClipboardList size={30} color="FACULTY_THEME.colors.primary" />
                         </div>
                         <h6 className="fw-bold">No Activities Yet</h6>
                         <p className="text-muted small mb-3">Create your first activity to start tracking OBE outcomes.</p>
-                        <Button size="sm" className="px-4 border-0 rounded-2" style={{ backgroundColor: '#4c1d95' }}
+                        <Button size="sm" className="px-4 border-0 rounded-2" style={{ backgroundColor: 'FACULTY_THEME.colors.primary' }}
                             onClick={() => navigate(`/faculty/courses/${courseId}/create-assessment`)}>
                             Create Activity
                         </Button>
@@ -146,9 +147,9 @@ const ClassActivities = () => {
                                                 checked={selectedIds.size === assessments.length && assessments.length > 0}
                                                 onChange={toggleAll} />
                                         </th>
-                                        <th className="px-3 py-2 fw-semibold" style={{ color: '#6d28d9' }}>Name</th>
+                                        <th className="px-3 py-2 fw-semibold" style={{ color: 'FACULTY_THEME.colors.primary' }}>Name</th>
                                         <th className="px-3 py-2 text-muted fw-semibold">Date</th>
-                                        <th className="px-3 py-2 text-muted fw-semibold text-center" style={{ color: '#6d28d9' }}>Total<br />Marks</th>
+                                        <th className="px-3 py-2 text-muted fw-semibold text-center" style={{ color: 'FACULTY_THEME.colors.primary' }}>Total<br />Marks</th>
                                         <th className="px-3 py-2 text-muted fw-semibold text-center">Outcomes<br />Added?</th>
                                         <th className="px-3 py-2 text-muted fw-semibold text-center">Question<br />Count</th>
                                         <th className="px-3 py-2 text-muted fw-semibold text-center">GPA %</th>
@@ -175,7 +176,7 @@ const ClassActivities = () => {
                                                             onChange={() => toggleSelect(a._id)} />
                                                     </td>
                                                     <td className="px-3 py-2">
-                                                        <span style={{ color: '#6d28d9', fontWeight: 500, cursor: 'pointer' }}
+                                                        <span style={{ color: 'FACULTY_THEME.colors.primary', fontWeight: 500, cursor: 'pointer' }}
                                                             onClick={() => navigate(`/faculty/courses/${courseId}/marks/${a._id}`)}>
                                                             {a.title}
                                                         </span>

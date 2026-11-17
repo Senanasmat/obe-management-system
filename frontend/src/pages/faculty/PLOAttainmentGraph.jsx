@@ -10,8 +10,10 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import { FACULTY_THEME } from '../../themes/facultyTheme';
 
 const getId = value => String(value?._id || value || '');
+const PURPLE = FACULTY_THEME.colors.primary;
 
 export default function PLOAttainmentGraph() {
     const { courseId } = useParams();
@@ -310,8 +312,8 @@ export default function PLOAttainmentGraph() {
                         onClick={showGraph}
                         disabled={loading}
                         style={{
-                            backgroundColor: '#663399',
-                            borderColor: '#663399',
+                            backgroundColor: 'FACULTY_THEME.colors.primary',
+                            borderColor: 'FACULTY_THEME.colors.primary',
                             padding: '10px 20px'
                         }}
                     >
@@ -452,7 +454,7 @@ export default function PLOAttainmentGraph() {
                                                         ? 'attainment'
                                                         : 'average'
                                                 }
-                                                fill="#663399"
+                                                fill="FACULTY_THEME.colors.primary"
                                                 maxBarSize={120}
                                             />
                                         </BarChart>
@@ -509,7 +511,7 @@ export default function PLOAttainmentGraph() {
                                                     <td
                                                         className="py-3"
                                                         style={{
-                                                            color: '#663399'
+                                                            color: 'FACULTY_THEME.colors.primary'
                                                         }}
                                                     >
                                                         {item.plo}

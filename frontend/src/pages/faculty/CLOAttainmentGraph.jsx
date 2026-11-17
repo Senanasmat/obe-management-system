@@ -19,8 +19,9 @@ import autoTable from 'jspdf-autotable';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import KPIEditor, { useCourseKPI } from '../../components/KPIEditor';
+import { FACULTY_THEME } from '../../themes/facultyTheme';
 
-const PURPLE = '#663399';
+const PURPLE = FACULTY_THEME.colors.primary;
 
 const getId = value =>
     String(value?._id || value || '');

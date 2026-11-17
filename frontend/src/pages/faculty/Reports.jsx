@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { FACULTY_THEME } from '../../themes/facultyTheme';
 import api from '../../utils/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { Container, Row, Col, Card, Form, Button, Table, Badge } from 'react-bootstrap';
@@ -21,7 +22,7 @@ const REPORT_TYPES = [
     { value: 'student', label: 'Student Performance Report' }
 ];
 
-const COLORS = ['#4c1d95', '#7c3aed', '#198754', '#d97706', '#dc2626', '#0dcaf0'];
+const COLORS = ['FACULTY_THEME.colors.primary', 'FACULTY_THEME.colors.secondary', '#198754', '#d97706', '#dc2626', '#0dcaf0'];
 
 const FacultyReports = () => {
     const { user } = useAuth();
@@ -318,7 +319,7 @@ const FacultyReports = () => {
                                 <div className="d-flex gap-2">
                                     <Button
                                         size="sm"
-                                        style={{ backgroundColor: '#4c1d95', border: 'none' }}
+                                        style={{ backgroundColor: 'FACULTY_THEME.colors.primary', border: 'none' }}
                                         onClick={exportToPDF}
                                         className="flex-grow-1"
                                     >
@@ -351,7 +352,7 @@ const FacultyReports = () => {
                                         <Card className="shadow-sm border-0 h-100">
                                             <Card.Body className="p-3 text-center">
                                                 <h6 className="text-muted mb-2" style={{ fontSize: '0.85rem' }}>Total Assessments</h6>
-                                                <h3 className="fw-bold text-dark mb-0" style={{ color: '#4c1d95' }}>
+                                                <h3 className="fw-bold text-dark mb-0" style={{ color: 'FACULTY_THEME.colors.primary' }}>
                                                     {reportData.totalAssessments}
                                                 </h3>
                                             </Card.Body>
@@ -361,7 +362,7 @@ const FacultyReports = () => {
                                         <Card className="shadow-sm border-0 h-100">
                                             <Card.Body className="p-3 text-center">
                                                 <h6 className="text-muted mb-2" style={{ fontSize: '0.85rem' }}>Total Marks</h6>
-                                                <h3 className="fw-bold text-dark mb-0" style={{ color: '#7c3aed' }}>
+                                                <h3 className="fw-bold text-dark mb-0" style={{ color: 'FACULTY_THEME.colors.secondary' }}>
                                                     {reportData.totalMarks}
                                                 </h3>
                                             </Card.Body>
@@ -374,7 +375,7 @@ const FacultyReports = () => {
                                     <Card className="shadow-sm border-0 h-100">
                                         <Card.Body className="p-3 text-center">
                                             <h6 className="text-muted mb-2" style={{ fontSize: '0.85rem' }}>Total CLOs</h6>
-                                            <h3 className="fw-bold text-dark mb-0" style={{ color: '#4c1d95' }}>
+                                            <h3 className="fw-bold text-dark mb-0" style={{ color: 'FACULTY_THEME.colors.primary' }}>
                                                 {reportData.clos.length}
                                             </h3>
                                         </Card.Body>
@@ -387,7 +388,7 @@ const FacultyReports = () => {
                                         <Card className="shadow-sm border-0 h-100">
                                             <Card.Body className="p-3 text-center">
                                                 <h6 className="text-muted mb-2" style={{ fontSize: '0.85rem' }}>Total Students</h6>
-                                                <h3 className="fw-bold text-dark mb-0" style={{ color: '#4c1d95' }}>
+                                                <h3 className="fw-bold text-dark mb-0" style={{ color: 'FACULTY_THEME.colors.primary' }}>
                                                     {reportData.students.length}
                                                 </h3>
                                             </Card.Body>
@@ -397,7 +398,7 @@ const FacultyReports = () => {
                                         <Card className="shadow-sm border-0 h-100">
                                             <Card.Body className="p-3 text-center">
                                                 <h6 className="text-muted mb-2" style={{ fontSize: '0.85rem' }}>Avg Percentage</h6>
-                                                <h3 className="fw-bold text-dark mb-0" style={{ color: '#7c3aed' }}>
+                                                <h3 className="fw-bold text-dark mb-0" style={{ color: 'FACULTY_THEME.colors.secondary' }}>
                                                     {reportData.avgPerformance}%
                                                 </h3>
                                             </Card.Body>
@@ -432,7 +433,7 @@ const FacultyReports = () => {
                                                             <XAxis dataKey="type" />
                                                             <YAxis />
                                                             <Tooltip />
-                                                            <Bar dataKey="count" fill="#4c1d95" />
+                                                            <Bar dataKey="count" fill="FACULTY_THEME.colors.primary" />
                                                         </BarChart>
                                                     </ResponsiveContainer>
                                                 </div>

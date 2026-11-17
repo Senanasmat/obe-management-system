@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx-js-style';
 
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import { FACULTY_THEME } from '../../themes/facultyTheme';
 
 const fmt = value =>
     value == null || value === ''

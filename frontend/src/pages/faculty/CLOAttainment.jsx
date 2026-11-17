@@ -17,8 +17,9 @@ import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import KPIEditor, { useCourseKPI } from '../../components/KPIEditor';
+import { FACULTY_THEME } from '../../themes/facultyTheme';
 
-const PURPLE = '#663399';
+const PURPLE = FACULTY_THEME.colors.primary;
 
 const getId = (value) =>
     typeof value === 'object' && value !== null

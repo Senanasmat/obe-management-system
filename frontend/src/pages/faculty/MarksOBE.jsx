@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx-js-style';
 import api from '../../utils/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useAuth } from '../../context/AuthContext';
+import { FACULTY_THEME } from '../../themes/facultyTheme';
 
 const getId = v => String(v?._id || v || '');
 const number = v => Number(v || 0);
@@ -321,7 +322,7 @@ export default function MarksOBE() {
                                             key={group.cloId}
                                             colSpan={group.count}
                                             className="text-center"
-                                            style={{ color: '#663399' }}
+                                            style={{ color: 'FACULTY_THEME.colors.primary' }}
                                         >
                                             {group.code}
                                         </th>
@@ -337,7 +338,7 @@ export default function MarksOBE() {
                                             key={c.key}
                                             className="text-center align-bottom"
                                             style={{
-                                                color: '#663399',
+                                                color: 'FACULTY_THEME.colors.primary',
                                                 minWidth: 100,
                                                 height: 155
                                             }}
@@ -393,7 +394,7 @@ export default function MarksOBE() {
                                     <tr key={getId(student)}>
                                         <td
                                             style={{
-                                                color: '#663399',
+                                                color: 'FACULTY_THEME.colors.primary',
                                                 minWidth: 170
                                             }}
                                         >

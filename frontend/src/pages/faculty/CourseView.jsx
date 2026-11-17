@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import { FACULTY_THEME } from '../../themes/facultyTheme';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Container, Card, Row, Col, Button, Spinner, Badge, Dropdown, Table, Breadcrumb, Modal, Form } from 'react-bootstrap';
@@ -1176,7 +1177,7 @@ const handleSelectCloStudent = async (student) => {
                                             <td className="fw-semibold text-muted" style={{ width: '20%', backgroundColor: '#f4f5f7' }}>Course Name</td>
                                             <td style={{ width: '30%' }}>{course.name}</td>
                                             <td className="fw-semibold text-muted" style={{ width: '20%', backgroundColor: '#f4f5f7' }}>Course Code</td>
-                                            <td style={{ width: '30%', color: '#6d28d9', fontWeight: 500 }}>{course.code}</td>
+                                            <td style={{ width: '30%', color: 'FACULTY_THEME.colors.primary', fontWeight: 500 }}>{course.code}</td>
                                         </tr>
                                         <tr className="border-bottom">
                                             <td className="fw-semibold text-muted" style={{ backgroundColor: '#f4f5f7' }}>Semester</td>
@@ -1186,7 +1187,7 @@ const handleSelectCloStudent = async (student) => {
                                         </tr>
                                         <tr className="border-bottom">
                                             <td className="fw-semibold text-muted" style={{ backgroundColor: '#f4f5f7' }}>Teacher</td>
-                                            <td style={{ color: '#6d28d9', fontWeight: 500 }}>{faculty?.name || '—'}</td>
+                                            <td style={{ color: 'FACULTY_THEME.colors.primary', fontWeight: 500 }}>{faculty?.name || '—'}</td>
                                             <td className="fw-semibold text-muted" style={{ backgroundColor: '#f4f5f7' }}>Department</td>
                                             <td>{faculty?.department || '—'}</td>
                                         </tr>
@@ -1547,11 +1548,11 @@ const handleSelectCloStudent = async (student) => {
                             {assessments.length === 0 ? (
                                 <div className="text-center py-5 bg-white rounded-3 border">
                                     <div className="d-inline-block p-3 rounded-circle mb-3" style={{ backgroundColor: '#ede9fe' }}>
-                                        <ClipboardList size={30} color="#6d28d9" />
+                                        <ClipboardList size={30} color="FACULTY_THEME.colors.primary" />
                                     </div>
                                     <h6 className="fw-bold">No Activities Yet</h6>
                                     <p className="text-muted small mb-3">Create your first activity to start tracking OBE outcomes.</p>
-                                    <Button size="sm" className="px-4 border-0 rounded-2" style={{ backgroundColor: '#4c1d95' }}
+                                    <Button size="sm" className="px-4 border-0 rounded-2" style={{ backgroundColor: 'FACULTY_THEME.colors.primary' }}
                                         onClick={() => navigate(`/faculty/courses/${courseId}/create-assessment`)}>
                                         Create Activity
                                     </Button>
@@ -1572,9 +1573,9 @@ const handleSelectCloStudent = async (student) => {
                                                             checked={selectedIds.size === assessments.length && assessments.length > 0}
                                                             onChange={toggleAll} />
                                                     </th>
-                                                    <th className="px-3 py-2 fw-semibold" style={{ color: '#6d28d9' }}>Name</th>
+                                                    <th className="px-3 py-2 fw-semibold" style={{ color: 'FACULTY_THEME.colors.primary' }}>Name</th>
                                                     <th className="px-3 py-2 text-muted fw-semibold">Date</th>
-                                                    <th className="px-3 py-2 text-muted fw-semibold text-center" style={{ color: '#6d28d9' }}>Total<br/>Marks</th>
+                                                    <th className="px-3 py-2 text-muted fw-semibold text-center" style={{ color: 'FACULTY_THEME.colors.primary' }}>Total<br/>Marks</th>
                                                     <th className="px-3 py-2 text-muted fw-semibold text-center">Outcomes<br/>Added?</th>
                                                     <th className="px-3 py-2 text-muted fw-semibold text-center">Question<br/>Count</th>
                                                     <th className="px-3 py-2 text-muted fw-semibold text-center">GPA %</th>
@@ -1606,7 +1607,7 @@ const handleSelectCloStudent = async (student) => {
                                                                     <div className="d-flex align-items-center justify-content-between gap-2">
                                                                         <span
                                                                             style={{
-                                                                                color: '#6d28d9',
+                                                                                color: 'FACULTY_THEME.colors.primary',
                                                                                 fontWeight: 500,
                                                                                 cursor: 'pointer'
                                                                             }}
@@ -1861,7 +1862,7 @@ const handleSelectCloStudent = async (student) => {
                                                     style={{
                                                         cursor: 'pointer',
                                                         backgroundColor: checked ? '#f5f3ff' : '#fff',
-                                                        borderColor: checked ? '#6d28d9' : '#dee2e6',
+                                                        borderColor: checked ? 'FACULTY_THEME.colors.primary' : '#dee2e6',
                                                         transition: 'all 0.15s'
                                                     }}
                                                 >
@@ -1869,8 +1870,8 @@ const handleSelectCloStudent = async (student) => {
                                                         className="d-flex align-items-center justify-content-center rounded-2 flex-shrink-0"
                                                         style={{
                                                             width: 20, height: 20,
-                                                            backgroundColor: checked ? '#6d28d9' : '#fff',
-                                                            border: `2px solid ${checked ? '#6d28d9' : '#aaa'}`
+                                                            backgroundColor: checked ? 'FACULTY_THEME.colors.primary' : '#fff',
+                                                            border: `2px solid ${checked ? 'FACULTY_THEME.colors.primary' : '#aaa'}`
                                                         }}
                                                     >
                                                         {checked && <Check size={12} color="white" strokeWidth={3} />}
@@ -1886,7 +1887,7 @@ const handleSelectCloStudent = async (student) => {
                                                         <div className="text-muted" style={{ fontSize: '0.78rem' }}>{s.regNo}</div>
                                                     </div>
                                                     {checked && (
-                                                        <Badge bg="primary" className="rounded-pill px-2" style={{ backgroundColor: '#6d28d9', fontSize: '0.7rem' }}>
+                                                        <Badge bg="primary" className="rounded-pill px-2" style={{ backgroundColor: 'FACULTY_THEME.colors.primary', fontSize: '0.7rem' }}>
                                                             Selected
                                                         </Badge>
                                                     )}
@@ -1902,7 +1903,7 @@ const handleSelectCloStudent = async (student) => {
                     <Modal.Footer>
                         <Button variant="secondary" onClick={() => setShowBatchModal(false)}>Cancel</Button>
                         <Button
-                            style={{ backgroundColor: '#4c1d95', border: 'none' }}
+                            style={{ backgroundColor: 'FACULTY_THEME.colors.primary', border: 'none' }}
                             onClick={handleCopyFromBatch}
                             disabled={batchStudentIds.size === 0}
                         >
@@ -1990,7 +1991,7 @@ const handleSelectCloStudent = async (student) => {
                                                 style={{
                                                     cursor: 'pointer',
                                                     backgroundColor: checked ? '#f5f3ff' : '#fff',
-                                                    borderColor: checked ? '#6d28d9' : '#dee2e6',
+                                                    borderColor: checked ? 'FACULTY_THEME.colors.primary' : '#dee2e6',
                                                     transition: 'all 0.15s'
                                                 }}
                                             >
@@ -1999,8 +2000,8 @@ const handleSelectCloStudent = async (student) => {
                                                     className="d-flex align-items-center justify-content-center rounded-2 flex-shrink-0"
                                                     style={{
                                                         width: 20, height: 20,
-                                                        backgroundColor: checked ? '#6d28d9' : '#fff',
-                                                        border: `2px solid ${checked ? '#6d28d9' : '#aaa'}`
+                                                        backgroundColor: checked ? 'FACULTY_THEME.colors.primary' : '#fff',
+                                                        border: `2px solid ${checked ? 'FACULTY_THEME.colors.primary' : '#aaa'}`
                                                     }}
                                                 >
                                                     {checked && <Check size={12} color="white" strokeWidth={3} />}
@@ -2020,7 +2021,7 @@ const handleSelectCloStudent = async (student) => {
                                                 </div>
 
                                                 {checked && (
-                                                    <Badge bg="primary" className="rounded-pill px-2" style={{ backgroundColor: '#6d28d9', fontSize: '0.7rem' }}>
+                                                    <Badge bg="primary" className="rounded-pill px-2" style={{ backgroundColor: 'FACULTY_THEME.colors.primary', fontSize: '0.7rem' }}>
                                                         Enrolled
                                                     </Badge>
                                                 )}
@@ -2034,7 +2035,7 @@ const handleSelectCloStudent = async (student) => {
                     <Modal.Footer>
                         <Button variant="secondary" onClick={() => setShowEnrollModal(false)}>Cancel</Button>
                         <Button
-                            style={{ backgroundColor: '#4c1d95', border: 'none' }}
+                            style={{ backgroundColor: 'FACULTY_THEME.colors.primary', border: 'none' }}
                             onClick={handleEnrollStudents}
                             disabled={enrollLoading}
                         >

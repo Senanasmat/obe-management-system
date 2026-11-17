@@ -10,6 +10,7 @@ import KPIEditor, { useCourseKPI } from '../../components/KPIEditor';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { FACULTY_THEME } from '../../themes/facultyTheme';
 
 import {
     ResponsiveContainer,
@@ -25,7 +26,7 @@ import {
 } from 'recharts';
 
 
-const PURPLE = '#663399';
+const PURPLE = FACULTY_THEME.colors.primary;
 const CLO_COLORS = [
     '#4CAF50',
     '#2196F3',

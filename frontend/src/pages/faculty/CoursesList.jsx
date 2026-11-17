@@ -7,6 +7,7 @@ import { BookOpen, Users, FileText, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Dropdown } from 'react-bootstrap';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { FACULTY_THEME } from '../../themes/facultyTheme';
 
 const getInitials = (name) => {
     if (!name) return '??';
@@ -118,7 +119,7 @@ const CoursesList = () => {
                                 <div className="d-flex justify-content-center mb-3">
                                     <div
                                         className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
-                                        style={{ width: 68, height: 68, backgroundColor: '#637a62', fontSize: '1.3rem', letterSpacing: 1 }}
+                                        style={{ width: 68, height: 68, backgroundColor: FACULTY_THEME.colors.primary, fontSize: '1.3rem', letterSpacing: 1 }}
                                     >
                                         {getInitials(user.name)}
                                     </div>
@@ -128,7 +129,7 @@ const CoursesList = () => {
                                 <h6
                                     className="fw-bold mb-1"
                                     style={{
-                                        color: '#6d28d9',
+                                        color: FACULTY_THEME.colors.primary,
                                         cursor: 'pointer',
                                     }}
                                     onClick={() => navigate(`/faculty/courses/${a.course._id}`)}>
@@ -136,7 +137,7 @@ const CoursesList = () => {
                                 </h6>
 
                                 {/* Code + Semester */}
-                                <p className="mb-1" style={{ color: '#7c3aed', fontSize: '0.82rem' }}>
+                                <p className="mb-1" style={{ color: FACULTY_THEME.colors.secondary, fontSize: '0.82rem' }}>
                                     {a.course.code} - {a.academicTerm?.name}
                                 </p>
 
@@ -155,7 +156,7 @@ const CoursesList = () => {
                                     <Dropdown onClick={(e) => e.stopPropagation()}>
                                         <Dropdown.Toggle
                                             size="sm"
-                                            style={{ backgroundColor: '#4c1d95', border: 'none', borderRadius: '6px' }}
+                                            style={{ backgroundColor: FACULTY_THEME.colors.primary, border: 'none', borderRadius: '6px' }}
                                         >
                                             Options
                                         </Dropdown.Toggle>
@@ -169,7 +170,7 @@ const CoursesList = () => {
                                     <Dropdown onClick={(e) => e.stopPropagation()}>
                                         <Dropdown.Toggle
                                             size="sm"
-                                            style={{ backgroundColor: '#d97706', border: 'none', borderRadius: '6px' }}
+                                            style={{ backgroundColor: FACULTY_THEME.colors.accent, border: 'none', borderRadius: '6px' }}
                                         >
                                             Reports
                                         </Dropdown.Toggle>
@@ -181,7 +182,7 @@ const CoursesList = () => {
                                 </div>
 
                                 {/* Stats */}
-                                <div className="d-flex justify-content-around border-top pt-3" style={{ color: '#d97706' }}>
+                                <div className="d-flex justify-content-around border-top pt-3" style={{ color: FACULTY_THEME.colors.accent }}>
                                     <div className="d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
                                         <Users size={15} />
                                         <span>{a.course.students?.length || 0} Students</span>

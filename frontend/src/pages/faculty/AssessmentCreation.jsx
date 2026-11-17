@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import { FACULTY_THEME } from '../../themes/facultyTheme';
 import { Container, Form, Row, Col, Button, Breadcrumb } from 'react-bootstrap';
 import { Calendar, X, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -370,8 +371,8 @@ const AssessmentCreation = () => {
                             onClick={() => setIncludeForGPA(v => !v)}
                             className="d-flex align-items-center justify-content-center rounded-2 cursor-pointer"
                             style={{
-                                width: 22, height: 22, backgroundColor: includeForGPA ? '#6d28d9' : '#fff',
-                                border: `2px solid ${includeForGPA ? '#6d28d9' : '#aaa'}`,
+                                width: 22, height: 22, backgroundColor: includeForGPA ? 'FACULTY_THEME.colors.primary' : '#fff',
+                                border: `2px solid ${includeForGPA ? 'FACULTY_THEME.colors.primary' : '#aaa'}`,
                                 cursor: 'pointer', flexShrink: 0
                             }}
                         >
@@ -552,8 +553,8 @@ const AssessmentCreation = () => {
                                                         className="d-flex align-items-center justify-content-center rounded-2"
                                                         style={{
                                                             width: 20, height: 20, flexShrink: 0, cursor: 'pointer',
-                                                            backgroundColor: q.notForOBE ? '#6d28d9' : '#fff',
-                                                            border: `2px solid ${q.notForOBE ? '#6d28d9' : '#aaa'}`
+                                                            backgroundColor: q.notForOBE ? 'FACULTY_THEME.colors.primary' : '#fff',
+                                                            border: `2px solid ${q.notForOBE ? 'FACULTY_THEME.colors.primary' : '#aaa'}`
                                                         }}
                                                     >
                                                         {q.notForOBE && (
@@ -575,7 +576,7 @@ const AssessmentCreation = () => {
 
                                         {/* Row 3: Question guideline textarea */}
                                         <Form.Group className="mb-3">
-                                            <Form.Label className="small mb-1" style={{ color: '#6d28d9', fontWeight: 500 }}>
+                                            <Form.Label className="small mb-1" style={{ color: 'FACULTY_THEME.colors.primary', fontWeight: 500 }}>
                                                 Question<span className="text-muted fw-normal">(Guideline for Question)</span>
                                             </Form.Label>
                                             <Form.Control
@@ -672,7 +673,7 @@ const AssessmentCreation = () => {
                             type="submit"
                             size="sm"
                             className="px-5 py-2 border-0 fw-semibold"
-                            style={{ backgroundColor: '#4c1d95' }}
+                            style={{ backgroundColor: 'FACULTY_THEME.colors.primary' }}
                             disabled={loading}
                         >
                             {loading ? 'Saving...' : isEditMode ? 'Update Assessment' : 'Save Assessment'}

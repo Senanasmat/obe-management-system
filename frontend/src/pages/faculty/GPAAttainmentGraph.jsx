@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import { FACULTY_THEME } from '../../themes/facultyTheme';
 
 const GRADES = [
     'A', 'A-', 'B+', 'B', 'B-',
