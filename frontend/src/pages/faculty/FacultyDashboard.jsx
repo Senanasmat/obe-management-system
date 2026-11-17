@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { Dropdown } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { FACULTY_THEME } from '../../themes/facultyTheme';
 
 const containerVariants = {
     hidden: { opacity: 0, y: 10 },
@@ -110,14 +111,14 @@ const FacultyDashboard = () => {
                 {/* Header */}
                 <motion.div variants={cardVariants} className="mb-3">
                     <div className="d-flex align-items-center gap-2">
-                        <div className="rounded-2 p-2" style={{ backgroundColor: '#ede9fe', color: '#6d28d9' }}>
+                        <div className="rounded-2 p-2" style={{ backgroundColor: '#dbeafe', color: FACULTY_THEME.colors.primary }}>
                             <Award size={24} />
                         </div>
                         <div>
-                            <h2 className="mb-0 fw-bold text-dark" style={{ fontSize: 'clamp(1.2rem, 4vw, 1.5rem)' }}>
+                            <h2 className="mb-0 fw-bold" style={{ fontSize: 'clamp(1.2rem, 4vw, 1.5rem)', color: FACULTY_THEME.colors.primary }}>
                                 Welcome back, {user.name}!
                             </h2>
-                            <p className="text-muted mb-0 small" style={{ fontSize: '0.8rem' }}>
+                            <p className="mb-0 small" style={{ fontSize: '0.8rem', color: FACULTY_THEME.colors.muted }}>
                                 Overview of your teaching portfolio.
                             </p>
                         </div>
@@ -182,7 +183,7 @@ const FacultyDashboard = () => {
                                     <div className="d-flex justify-content-center mb-3" title={a.course.name}>
                                         <div
                                             className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
-                                            style={{ width: 68, height: 68, backgroundColor: '#637a62', fontSize: '1.3rem', letterSpacing: 1 }}
+                                            style={{ width: 68, height: 68, backgroundColor: FACULTY_THEME.colors.primary, fontSize: '1.3rem', letterSpacing: 1 }}
                                         >
                                             {getInitials(a.course.name) || getInitials(a.course.code) || '??'}
                                         </div>
@@ -192,13 +193,13 @@ const FacultyDashboard = () => {
                                     <h6
                                         className="fw-bold mb-1"
                                         style={{
-                                            color: '#6d28d9'
+                                            color: FACULTY_THEME.colors.primary
                                         }}>
                                         {a.course.code} - {a.course.name}
                                     </h6>
 
                                     {/* Code + Semester */}
-                                    <p className="mb-1" style={{ color: '#7c3aed', fontSize: '0.82rem' }}>
+                                    <p className="mb-1" style={{ color: FACULTY_THEME.colors.secondary, fontSize: '0.82rem' }}>
                                         {a.course.code} - {a.academicTerm?.name}
                                     </p>
 
@@ -217,7 +218,7 @@ const FacultyDashboard = () => {
                                         <Dropdown onClick={(e) => e.stopPropagation()}>
                                             <Dropdown.Toggle
                                                 size="sm"
-                                                style={{ backgroundColor: '#4c1d95', border: 'none', borderRadius: '6px' }}
+                                                style={{ backgroundColor: FACULTY_THEME.colors.primary, border: 'none', borderRadius: '6px' }}
                                             >
                                                 Options
                                             </Dropdown.Toggle>
@@ -231,7 +232,7 @@ const FacultyDashboard = () => {
                                         <Dropdown onClick={(e) => e.stopPropagation()}>
                                             <Dropdown.Toggle
                                                 size="sm"
-                                                style={{ backgroundColor: '#d97706', border: 'none', borderRadius: '6px' }}
+                                                style={{ backgroundColor: FACULTY_THEME.colors.accent, border: 'none', borderRadius: '6px' }}
                                             >
                                                 Reports
                                             </Dropdown.Toggle>
@@ -243,7 +244,7 @@ const FacultyDashboard = () => {
                                     </div>
 
                                     {/* Stats */}
-                                    <div className="d-flex justify-content-around border-top pt-3" style={{ color: '#d97706' }}>
+                                    <div className="d-flex justify-content-around border-top pt-3" style={{ color: FACULTY_THEME.colors.accent }}>
                                         <div className="d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
                                             <Users size={15} />
                                             <span>{a.course.studentsCount ?? 0} Students</span>
