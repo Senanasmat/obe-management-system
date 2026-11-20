@@ -20,6 +20,37 @@ const FacultySettings = () => {
     // Password form
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [passwordStrength, setPasswordStrength] = useState(0);
+
+    // Password strength checker
+    const checkPasswordStrength = (password) => {
+        let strength = 0;
+
+        if (password.length >= 8) strength += 1;
+        if (password.length >= 12) strength += 1;
+        if (/[a-z]/.test(password)) strength += 1;
+        if (/[A-Z]/.test(password)) strength += 1;
+        if (/\d/.test(password)) strength += 1;
+        if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) strength += 1;
+
+        return Math.min(strength, 5); // Max 5 levels
+    };
+
+    const getPasswordStrengthLabel = (strength) => {
+        const labels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
+        return labels[strength] || 'Very Weak';
+    };
+
+    const getPasswordStrengthColor = (strength) => {
+        const colors = ['#dc3545', '#fd7e14', '#ffc107', '#17a2b8', '#28a745', '#20c997'];
+        return colors[strength] || '#dc3545';
+    };
+
+    const handlePasswordChange = (e) => {
+        const pwd = e.target.value;
+        setNewPassword(pwd);
+        setPasswordStrength(checkPasswordStrength(pwd));
+    };
 
     useEffect(() => {
         if (user) {
@@ -95,6 +126,17 @@ const FacultySettings = () => {
                 icon: 'warning',
                 title: 'Validation Error',
                 text: 'Passwords do not match',
+                confirmButtonColor: FACULTY_THEME.colors.primary
+            });
+            return;
+        }
+
+        const strength = checkPasswordStrength(newPassword);
+        if (strength < 3) {
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Weak Password',
+                text: `Password strength is ${getPasswordStrengthLabel(strength)}. Please use a mix of uppercase, lowercase, numbers, and special characters.`,
                 confirmButtonColor: FACULTY_THEME.colors.primary
             });
             return;
@@ -340,22 +382,48 @@ const FacultySettings = () => {
                             {/* Form Section */}
                             <Form onSubmit={handleUpdatePassword} style={{ padding: '1.5rem' }}>
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="fw-semibold text-dark" style={{ fontSize: '0.95rem', marginBottom: '0.6rem' }}>New Password</Form.Label>
+                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                        <Form.Label className="fw-semibold text-dark" style={{ fontSize: '0.95rem', marginBottom: 0 }}>New Password</Form.Label>
+                                        {newPassword && (
+                                            <small style={{ fontSize: '0.8rem', fontWeight: '600', color: getPasswordStrengthColor(passwordStrength) }}>
+                                                {getPasswordStrengthLabel(passwordStrength)}
+                                            </small>
+                                        )}
+                                    </div>
                                     <Form.Control
                                         type="password"
                                         placeholder="At least 8 characters"
                                         value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        onChange={handlePasswordChange}
                                         style={{
-                                            borderColor: '#e9ecef',
+                                            borderColor: newPassword ? getPasswordStrengthColor(passwordStrength) : '#e9ecef',
                                             borderRadius: '0.6rem',
                                             padding: '0.75rem 1rem',
                                             fontSize: '0.95rem',
                                             transition: 'all 0.2s ease'
                                         }}
-                                        onFocus={(e) => e.target.style.borderColor = FACULTY_THEME.colors.primary}
-                                        onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+                                        onFocus={(e) => e.target.style.borderColor = newPassword ? getPasswordStrengthColor(passwordStrength) : FACULTY_THEME.colors.primary}
+                                        onBlur={(e) => e.target.style.borderColor = newPassword ? getPasswordStrengthColor(passwordStrength) : '#e9ecef'}
                                     />
+                                    {newPassword && (
+                                        <div style={{ marginTop: '0.5rem', display: 'flex', gap: '2px' }}>
+                                            {[...Array(5)].map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    style={{
+                                                        height: '4px',
+                                                        flex: 1,
+                                                        backgroundColor: i < passwordStrength ? getPasswordStrengthColor(passwordStrength) : '#e9ecef',
+                                                        borderRadius: '2px',
+                                                        transition: 'all 0.2s ease'
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                    <small className="text-muted d-block mt-2" style={{ fontSize: '0.8rem' }}>
+                                        Password should contain: uppercase, lowercase, numbers, special characters
+                                    </small>
                                 </Form.Group>
 
                                 <Form.Group className="mb-3">
