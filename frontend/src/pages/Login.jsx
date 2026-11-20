@@ -97,16 +97,17 @@ const Login = () => {
     };
 
     return (
-        <div style={{
-                minHeight: '100vh',
-                background: 'rgba(224, 234, 252, 0.5)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '20px'
-            }}>
+        <>
+            <div style={{
+                    minHeight: '100vh',
+                    background: 'rgba(224, 234, 252, 0.5)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '20px'
+                }}>
                 <div style={{
                     display: 'flex',
                     justifyContent: 'center',
@@ -361,6 +362,7 @@ const Login = () => {
                     </div>
                 </div>
             </div>
+
             <Modal
                 show={showForgotModal}
                 onHide={() => !forgotLoading && setShowForgotModal(false)}
@@ -402,7 +404,7 @@ const Login = () => {
                     </Modal.Footer>
                 </Form>
             </Modal>
-        </div>
+        </>
     );
 };
 
