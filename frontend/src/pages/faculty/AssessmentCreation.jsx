@@ -4,7 +4,7 @@ import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { FACULTY_THEME } from '../../themes/facultyTheme';
 import { Container, Form, Row, Col, Button, Breadcrumb } from 'react-bootstrap';
-import { Calendar, X, Plus } from 'lucide-react';
+import { Calendar, X, Plus, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -245,7 +245,17 @@ const AssessmentCreation = () => {
             <Container fluid className="py-4 px-4 bg-white min-vh-100">
 
                 {/* Page title + breadcrumb */}
-                <h4 className="fw-normal text-dark mb-1">Course Section</h4>
+                <div className="d-flex align-items-center gap-2 mb-1">
+                    <Button
+                        variant="link"
+                        className="p-0 text-decoration-none"
+                        onClick={() => navigate(`/faculty/courses/${courseId}?tab=Activities`)}
+                        style={{ color: FACULTY_THEME.colors.primary }}
+                    >
+                        <ArrowLeft size={20} />
+                    </Button>
+                    <h4 className="fw-normal text-dark mb-0">Course Section</h4>
+                </div>
                 <Breadcrumb className="small mb-4" style={{ fontSize: '0.85rem' }}>
                     <Breadcrumb.Item linkAs={Link} linkProps={{ to: '/faculty' }} className="text-decoration-none text-muted">Home</Breadcrumb.Item>
                     <Breadcrumb.Item linkAs={Link} linkProps={{ to: '/faculty/courses' }} className="text-decoration-none text-muted">Course Sections</Breadcrumb.Item>
