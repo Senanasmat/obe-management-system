@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Form, Button, Card, Row, Col } from 'react-bootstrap';
-import { User, Lock, LogOut, ArrowLeft } from 'lucide-react';
+import { User, Lock, LogOut, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { FACULTY_THEME } from '../../themes/facultyTheme';
 import api from '../../utils/api';
@@ -21,6 +21,8 @@ const FacultySettings = () => {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [passwordStrength, setPasswordStrength] = useState(0);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // Password strength checker
     const checkPasswordStrength = (password) => {
@@ -390,21 +392,46 @@ const FacultySettings = () => {
                                             </small>
                                         )}
                                     </div>
-                                    <Form.Control
-                                        type="password"
-                                        placeholder="At least 8 characters"
-                                        value={newPassword}
-                                        onChange={handlePasswordChange}
-                                        style={{
-                                            borderColor: newPassword ? getPasswordStrengthColor(passwordStrength) : '#e9ecef',
-                                            borderRadius: '0.6rem',
-                                            padding: '0.75rem 1rem',
-                                            fontSize: '0.95rem',
-                                            transition: 'all 0.2s ease'
-                                        }}
-                                        onFocus={(e) => e.target.style.borderColor = newPassword ? getPasswordStrengthColor(passwordStrength) : FACULTY_THEME.colors.primary}
-                                        onBlur={(e) => e.target.style.borderColor = newPassword ? getPasswordStrengthColor(passwordStrength) : '#e9ecef'}
-                                    />
+                                    <div style={{ position: 'relative' }}>
+                                        <Form.Control
+                                            type={showNewPassword ? 'text' : 'password'}
+                                            placeholder="At least 8 characters"
+                                            value={newPassword}
+                                            onChange={handlePasswordChange}
+                                            style={{
+                                                borderColor: newPassword ? getPasswordStrengthColor(passwordStrength) : '#e9ecef',
+                                                borderRadius: '0.6rem',
+                                                padding: '0.75rem 1rem 0.75rem 1rem',
+                                                paddingRight: '2.5rem',
+                                                fontSize: '0.95rem',
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                            onFocus={(e) => e.target.style.borderColor = newPassword ? getPasswordStrengthColor(passwordStrength) : FACULTY_THEME.colors.primary}
+                                            onBlur={(e) => e.target.style.borderColor = newPassword ? getPasswordStrengthColor(passwordStrength) : '#e9ecef'}
+                                        />
+                                        {newPassword && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowNewPassword(!showNewPassword)}
+                                                style={{
+                                                    position: 'absolute',
+                                                    right: '12px',
+                                                    top: '50%',
+                                                    transform: 'translateY(-50%)',
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    color: FACULTY_THEME.colors.primary,
+                                                    padding: '0',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }}
+                                            >
+                                                {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        )}
+                                    </div>
                                     {newPassword && (
                                         <div style={{ marginTop: '0.5rem', display: 'flex', gap: '2px' }}>
                                             {[...Array(5)].map((_, i) => (
@@ -428,21 +455,46 @@ const FacultySettings = () => {
 
                                 <Form.Group className="mb-3">
                                     <Form.Label className="fw-semibold text-dark" style={{ fontSize: '0.95rem', marginBottom: '0.6rem' }}>Confirm Password</Form.Label>
-                                    <Form.Control
-                                        type="password"
-                                        placeholder="Re-enter your new password"
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        style={{
-                                            borderColor: '#e9ecef',
-                                            borderRadius: '0.6rem',
-                                            padding: '0.75rem 1rem',
-                                            fontSize: '0.95rem',
-                                            transition: 'all 0.2s ease'
-                                        }}
-                                        onFocus={(e) => e.target.style.borderColor = FACULTY_THEME.colors.primary}
-                                        onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
-                                    />
+                                    <div style={{ position: 'relative' }}>
+                                        <Form.Control
+                                            type={showConfirmPassword ? 'text' : 'password'}
+                                            placeholder="Re-enter your new password"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            style={{
+                                                borderColor: '#e9ecef',
+                                                borderRadius: '0.6rem',
+                                                padding: '0.75rem 1rem 0.75rem 1rem',
+                                                paddingRight: '2.5rem',
+                                                fontSize: '0.95rem',
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                            onFocus={(e) => e.target.style.borderColor = FACULTY_THEME.colors.primary}
+                                            onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+                                        />
+                                        {confirmPassword && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                style={{
+                                                    position: 'absolute',
+                                                    right: '12px',
+                                                    top: '50%',
+                                                    transform: 'translateY(-50%)',
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    color: FACULTY_THEME.colors.primary,
+                                                    padding: '0',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }}
+                                            >
+                                                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        )}
+                                    </div>
                                 </Form.Group>
 
                                 <Button
