@@ -86,7 +86,7 @@ const FacultySettings = () => {
                 title: 'Success!',
                 text: 'Profile updated successfully',
                 confirmButtonColor: FACULTY_THEME.colors.primary,
-                timer: 5000,
+                timer: 3000,
                 timerProgressBar: true,
                 didOpen: (modal) => {
                     modal.addEventListener('mouseenter', Swal.stopTimer);
@@ -161,7 +161,7 @@ const FacultySettings = () => {
                 title: 'Success!',
                 text: 'Password updated successfully',
                 confirmButtonColor: FACULTY_THEME.colors.primary,
-                timer: 5000,
+                timer: 3000,
                 timerProgressBar: true,
                 didOpen: (modal) => {
                     modal.addEventListener('mouseenter', Swal.stopTimer);

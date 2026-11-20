@@ -70,7 +70,7 @@ const Login = () => {
                     text: 'Login successful. Redirecting...',
                     confirmButtonColor: '#667eea',
                     allowOutsideClick: false,
-                    timer: 5000,
+                    timer: 3000,
                     timerProgressBar: true,
                     didOpen: () => {
                         setTimeout(() => {
