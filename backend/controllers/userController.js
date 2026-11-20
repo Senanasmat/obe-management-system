@@ -192,8 +192,13 @@ const registerUser = async (req, res) => {
 // @access  Private
 const updateProfile = async (req, res) => {
     try {
+        console.log('updateProfile called');
+        console.log('req.user:', req.user);
+
         const { name, email } = req.body;
         const userId = req.user._id;
+
+        console.log('Updating profile for user:', userId, 'with name:', name, 'email:', email);
 
         if (!name || !email) {
             return res.status(400).json({ message: 'Name and email are required' });
