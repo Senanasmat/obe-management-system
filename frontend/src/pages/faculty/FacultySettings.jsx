@@ -181,21 +181,23 @@ const FacultySettings = () => {
 
             <Container style={{ maxWidth: '1100px', paddingBottom: '3rem' }}>
 
-                {/* Profile Section */}
-                <div className="mb-5">
-                    <h5 className="fw-bold mb-3" style={{ color: FACULTY_THEME.colors.primary, fontSize: '1.1rem', letterSpacing: '0.3px' }}>
-                        Profile Information
-                    </h5>
+                {/* Profile & Security Sections - Side by Side */}
+                <Row className="g-4 mb-5">
+                    {/* Profile Section */}
+                    <Col lg={6}>
+                        <h5 className="fw-bold mb-3" style={{ color: FACULTY_THEME.colors.primary, fontSize: '1.1rem', letterSpacing: '0.3px' }}>
+                            Profile Information
+                        </h5>
 
-                    <Card
-                        className="border-0"
-                        style={{
-                            background: '#ffffff',
-                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-                            borderRadius: '0.75rem',
-                            overflow: 'hidden'
-                        }}
-                    >
+                        <Card
+                            className="border-0 h-100"
+                            style={{
+                                background: '#ffffff',
+                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                                borderRadius: '0.75rem',
+                                overflow: 'hidden'
+                            }}
+                        >
                         <Card.Body className="p-0">
                             {/* User Info Header */}
                             <div
@@ -288,23 +290,23 @@ const FacultySettings = () => {
                             </Form>
                         </Card.Body>
                     </Card>
-                </div>
+                    </Col>
 
-                {/* Security Section */}
-                <div className="mb-5">
-                    <h5 className="fw-bold mb-3" style={{ color: FACULTY_THEME.colors.primary, fontSize: '1.1rem', letterSpacing: '0.3px' }}>
-                        Security Settings
-                    </h5>
+                    {/* Security Section */}
+                    <Col lg={6}>
+                        <h5 className="fw-bold mb-3" style={{ color: FACULTY_THEME.colors.primary, fontSize: '1.1rem', letterSpacing: '0.3px' }}>
+                            Security Settings
+                        </h5>
 
-                    <Card
-                        className="border-0"
-                        style={{
-                            background: '#ffffff',
-                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-                            borderRadius: '0.75rem',
-                            overflow: 'hidden'
-                        }}
-                    >
+                        <Card
+                            className="border-0 h-100"
+                            style={{
+                                background: '#ffffff',
+                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                                borderRadius: '0.75rem',
+                                overflow: 'hidden'
+                            }}
+                        >
                         <Card.Body className="p-0">
                             {/* Header */}
                             <div
@@ -395,7 +397,8 @@ const FacultySettings = () => {
                             </Form>
                         </Card.Body>
                     </Card>
-                </div>
+                    </Col>
+                </Row>
 
                 {/* Session Section */}
                 <div>
