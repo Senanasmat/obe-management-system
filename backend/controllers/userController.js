@@ -187,4 +187,77 @@ const registerUser = async (req, res) => {
     }
 };
 
-module.exports = { authUser, registerUser, requestPasswordReset, resetPassword };
+// @desc    Update user profile
+// @route   PUT /api/users/profile
+// @access  Private
+const updateProfile = async (req, res) => {
+    try {
+        const { name, email } = req.body;
+        const userId = req.user._id;
+
+        if (!name || !email) {
+            return res.status(400).json({ message: 'Name and email are required' });
+        }
+
+        // Check if email already exists for another user
+        const emailExists = await User.findOne({
+            email,
+            _id: { $ne: userId }
+        });
+
+        if (emailExists) {
+            return res.status(400).json({ message: 'Email is already in use' });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { name, email },
+            { new: true, runValidators: true }
+        );
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            message: 'Profile updated successfully'
+        });
+    } catch (error) {
+        console.error('Update profile error:', error.message);
+        res.status(500).json({ message: 'Could not update profile', error: error.message });
+    }
+};
+
+// @desc    Update user password
+// @route   PUT /api/users/password
+// @access  Private
+const updatePassword = async (req, res) => {
+    try {
+        const { newPassword } = req.body;
+        const userId = req.user._id;
+
+        if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+            return res.status(400).json({ message: 'Password must be at least 8 characters' });
+        }
+
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        user.password = newPassword;
+        await user.save();
+
+        res.json({ message: 'Password updated successfully' });
+    } catch (error) {
+        console.error('Update password error:', error.message);
+        res.status(500).json({ message: 'Could not update password', error: error.message });
+    }
+};
+
+module.exports = { authUser, registerUser, requestPasswordReset, resetPassword, updateProfile, updatePassword };

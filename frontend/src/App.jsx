@@ -9,6 +9,7 @@ import Profile from './pages/Profile';
 import CourseAssignment from './pages/admin/CourseAssignment';
 
 import AdminDashboard from './pages/admin/AdminDashboard';
+import FacultySettings from './pages/faculty/FacultySettings';
 import Students from './pages/admin/Students';
 import Faculty from './pages/admin/Faculty';
 import Courses from './pages/admin/Courses';
@@ -137,6 +138,11 @@ function App() {
             <Route path="faculty/reports" element={
               <ProtectedRoute allowedRoles={['faculty']}>
                 <Reports />
+              </ProtectedRoute>
+            } />
+            <Route path="faculty/settings" element={
+              <ProtectedRoute allowedRoles={['faculty']}>
+                <FacultySettings />
               </ProtectedRoute>
             } />
 
