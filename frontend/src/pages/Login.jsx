@@ -410,7 +410,7 @@ const Login = () => {
                         <Modal.Title>Change your password</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
-                        <p className="text-muted" style={{ fontSize: ‘0.9rem’, marginBottom: ‘1.5rem’ }}>
+                        <p className="text-muted" style={{ fontSize: "0.9rem", marginBottom: "1.5rem" }}>
                             Enter your email, current password, and new password to change your account password.
                         </p>
 
@@ -424,8 +424,8 @@ const Login = () => {
                                 onChange={(e) => setForgotEmail(e.target.value)}
                                 disabled={forgotLoading}
                                 style={{
-                                    borderRadius: ‘0.6rem’,
-                                    padding: ‘0.75rem 1rem’
+                                    borderRadius: "0.6rem",
+                                    padding: "0.75rem 1rem"
                                 }}
                             />
                         </Form.Group>
@@ -433,17 +433,17 @@ const Login = () => {
                         {/* Current Password Field */}
                         <Form.Group controlId="forgotCurrentPassword" className="mb-3">
                             <Form.Label className="fw-semibold">Current Password</Form.Label>
-                            <div style={{ position: ‘relative’ }}>
+                            <div style={{ position: "relative" }}>
                                 <Form.Control
-                                    type={showForgotCurrentPassword ? ‘text’ : ‘password’}
+                                    type={showForgotCurrentPassword ? "text" : "password"}
                                     placeholder="Enter your current password"
                                     value={forgotCurrentPassword}
                                     onChange={(e) => setForgotCurrentPassword(e.target.value)}
                                     disabled={forgotLoading}
                                     style={{
-                                        borderRadius: ‘0.6rem’,
-                                        padding: ‘0.75rem 1rem’,
-                                        paddingRight: ‘2.5rem’
+                                        borderRadius: "0.6rem",
+                                        padding: "0.75rem 1rem",
+                                        paddingRight: "2.5rem"
                                     }}
                                 />
                                 {forgotCurrentPassword && (
@@ -451,18 +451,18 @@ const Login = () => {
                                         type="button"
                                         onClick={() => setShowForgotCurrentPassword(!showForgotCurrentPassword)}
                                         style={{
-                                            position: ‘absolute’,
-                                            right: ‘12px’,
-                                            top: ‘50%’,
-                                            transform: ‘translateY(-50%)’,
-                                            background: ‘none’,
-                                            border: ‘none’,
-                                            cursor: ‘pointer’,
-                                            color: ‘#667eea’,
-                                            padding: ‘0’,
-                                            display: ‘flex’,
-                                            alignItems: ‘center’,
-                                            justifyContent: ‘center’
+                                            position: "absolute",
+                                            right: "12px",
+                                            top: "50%",
+                                            transform: "translateY(-50%)",
+                                            background: "none",
+                                            border: "none",
+                                            cursor: "pointer",
+                                            color: "#667eea",
+                                            padding: "0",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center"
                                         }}
                                     >
                                         {showForgotCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -474,17 +474,17 @@ const Login = () => {
                         {/* New Password Field */}
                         <Form.Group controlId="forgotNewPassword" className="mb-3">
                             <Form.Label className="fw-semibold">New Password</Form.Label>
-                            <div style={{ position: ‘relative’ }}>
+                            <div style={{ position: "relative" }}>
                                 <Form.Control
-                                    type={showForgotNewPassword ? ‘text’ : ‘password’}
+                                    type={showForgotNewPassword ? "text" : "password"}
                                     placeholder="Enter your new password (min. 8 characters)"
                                     value={forgotNewPassword}
                                     onChange={(e) => setForgotNewPassword(e.target.value)}
                                     disabled={forgotLoading}
                                     style={{
-                                        borderRadius: ‘0.6rem’,
-                                        padding: ‘0.75rem 1rem’,
-                                        paddingRight: ‘2.5rem’
+                                        borderRadius: "0.6rem",
+                                        padding: "0.75rem 1rem",
+                                        paddingRight: "2.5rem"
                                     }}
                                 />
                                 {forgotNewPassword && (
@@ -492,18 +492,18 @@ const Login = () => {
                                         type="button"
                                         onClick={() => setShowForgotNewPassword(!showForgotNewPassword)}
                                         style={{
-                                            position: ‘absolute’,
-                                            right: ‘12px’,
-                                            top: ‘50%’,
-                                            transform: ‘translateY(-50%)’,
-                                            background: ‘none’,
-                                            border: ‘none’,
-                                            cursor: ‘pointer’,
-                                            color: ‘#667eea’,
-                                            padding: ‘0’,
-                                            display: ‘flex’,
-                                            alignItems: ‘center’,
-                                            justifyContent: ‘center’
+                                            position: "absolute",
+                                            right: "12px",
+                                            top: "50%",
+                                            transform: "translateY(-50%)",
+                                            background: "none",
+                                            border: "none",
+                                            cursor: "pointer",
+                                            color: "#667eea",
+                                            padding: "0",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center"
                                         }}
                                     >
                                         {showForgotNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
