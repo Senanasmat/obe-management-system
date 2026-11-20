@@ -178,16 +178,6 @@ const FacultyDashboard = () => {
                                         e.currentTarget.style.boxShadow = '0 6px 18px rgba(0,0,0,0.06)';
                                     }}
                                 >
-                                    {/* Avatar */}
-                                    <div className="d-flex justify-content-center mb-3" title={a.course.name}>
-                                        <div
-                                            className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
-                                            style={{ width: 68, height: 68, backgroundColor: FACULTY_THEME.colors.primary, fontSize: '1.3rem', letterSpacing: 1 }}
-                                        >
-                                            {getInitials(a.course.name) || getInitials(a.course.code) || '??'}
-                                        </div>
-                                    </div>
-
                                     {/* Course Title */}
                                     <h6
                                         className="fw-bold mb-1"

@@ -114,16 +114,6 @@ const CoursesList = () => {
                                 }}
                             >
 
-                                {/* Avatar */}
-                                <div className="d-flex justify-content-center mb-3">
-                                    <div
-                                        className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
-                                        style={{ width: 68, height: 68, backgroundColor: FACULTY_THEME.colors.primary, fontSize: '1.3rem', letterSpacing: 1 }}
-                                    >
-                                        {getInitials(user.name)}
-                                    </div>
-                                </div>
-
                                 {/* Course Title */}
                                 <h6
                                     className="fw-bold mb-1"
