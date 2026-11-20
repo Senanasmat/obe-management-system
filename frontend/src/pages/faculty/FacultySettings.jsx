@@ -43,21 +43,15 @@ const FacultySettings = () => {
 
         setUpdating(true);
         try {
-            const config = {
-                headers: {
-                    Authorization: `Bearer ${user.token}`
-                }
-            };
-
-            await api.put(
-                '/api/users/profile',
-                { name: fullName, email },
-                config
-            );
+            const response = await api.put('/api/users/profile', {
+                name: fullName,
+                email
+            });
 
             setSuccess('Profile updated successfully!');
             setTimeout(() => setSuccess(''), 3000);
         } catch (err) {
+            console.error('Profile update error:', err);
             setError(err.response?.data?.message || 'Failed to update profile');
         } finally {
             setUpdating(false);
@@ -86,23 +80,16 @@ const FacultySettings = () => {
 
         setPasswordUpdating(true);
         try {
-            const config = {
-                headers: {
-                    Authorization: `Bearer ${user.token}`
-                }
-            };
-
-            await api.put(
-                '/api/users/password',
-                { newPassword },
-                config
-            );
+            const response = await api.put('/api/users/password', {
+                newPassword
+            });
 
             setSuccess('Password updated successfully!');
             setNewPassword('');
             setConfirmPassword('');
             setTimeout(() => setSuccess(''), 3000);
         } catch (err) {
+            console.error('Password update error:', err);
             setError(err.response?.data?.message || 'Failed to update password');
         } finally {
             setPasswordUpdating(false);

@@ -199,9 +199,9 @@ const updateProfile = async (req, res) => {
             return res.status(400).json({ message: 'Name and email are required' });
         }
 
-        // Check if email already exists for another user
+        // Check if email already exists for another user (case-insensitive)
         const emailExists = await User.findOne({
-            email,
+            email: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' },
             _id: { $ne: userId }
         });
 
@@ -209,15 +209,16 @@ const updateProfile = async (req, res) => {
             return res.status(400).json({ message: 'Email is already in use' });
         }
 
-        const user = await User.findByIdAndUpdate(
-            userId,
-            { name, email },
-            { new: true, runValidators: true }
-        );
+        // Find user and update manually
+        const user = await User.findById(userId);
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+
+        user.name = name;
+        user.email = email;
+        await user.save();
 
         res.json({
             _id: user._id,
@@ -227,7 +228,7 @@ const updateProfile = async (req, res) => {
             message: 'Profile updated successfully'
         });
     } catch (error) {
-        console.error('Update profile error:', error.message);
+        console.error('Update profile error:', error);
         res.status(500).json({ message: 'Could not update profile', error: error.message });
     }
 };
@@ -244,18 +245,21 @@ const updatePassword = async (req, res) => {
             return res.status(400).json({ message: 'Password must be at least 8 characters' });
         }
 
-        const user = await User.findById(userId);
+        const user = await User.findById(userId).select('+password');
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
         user.password = newPassword;
-        await user.save();
+        const savedUser = await user.save();
 
-        res.json({ message: 'Password updated successfully' });
+        res.json({
+            message: 'Password updated successfully',
+            _id: savedUser._id
+        });
     } catch (error) {
-        console.error('Update password error:', error.message);
+        console.error('Update password error:', error);
         res.status(500).json({ message: 'Could not update password', error: error.message });
     }
 };
