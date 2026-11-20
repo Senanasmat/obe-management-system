@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Form, Button, Card, Row, Col, Alert } from 'react-bootstrap';
+import { Container, Form, Button, Card, Row, Col } from 'react-bootstrap';
 import { User, Lock, LogOut, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { FACULTY_THEME } from '../../themes/facultyTheme';
@@ -10,11 +10,8 @@ import Swal from 'sweetalert2';
 const FacultySettings = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
-    const [loading, setLoading] = useState(false);
     const [updating, setUpdating] = useState(false);
     const [passwordUpdating, setPasswordUpdating] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
 
     // Profile form
     const [fullName, setFullName] = useState('');
@@ -33,26 +30,38 @@ const FacultySettings = () => {
 
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
-        setError('');
-        setSuccess('');
 
         if (!fullName.trim() || !email.trim()) {
-            setError('Please fill in all fields');
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error',
+                text: 'Please fill in all fields',
+                confirmButtonColor: FACULTY_THEME.colors.primary
+            });
             return;
         }
 
         setUpdating(true);
         try {
-            const response = await api.put('/api/users/profile', {
+            await api.put('/api/users/profile', {
                 name: fullName,
                 email
             });
 
-            setSuccess('Profile updated successfully!');
-            setTimeout(() => setSuccess(''), 3000);
+            await Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'Profile updated successfully',
+                confirmButtonColor: FACULTY_THEME.colors.primary
+            });
         } catch (err) {
             console.error('Profile update error:', err);
-            setError(err.response?.data?.message || 'Failed to update profile');
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: err.response?.data?.message || 'Failed to update profile',
+                confirmButtonColor: FACULTY_THEME.colors.primary
+            });
         } finally {
             setUpdating(false);
         }
@@ -60,37 +69,59 @@ const FacultySettings = () => {
 
     const handleUpdatePassword = async (e) => {
         e.preventDefault();
-        setError('');
-        setSuccess('');
 
         if (!newPassword || !confirmPassword) {
-            setError('Please fill in all password fields');
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error',
+                text: 'Please fill in all password fields',
+                confirmButtonColor: FACULTY_THEME.colors.primary
+            });
             return;
         }
 
         if (newPassword.length < 8) {
-            setError('Password must be at least 8 characters');
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error',
+                text: 'Password must be at least 8 characters',
+                confirmButtonColor: FACULTY_THEME.colors.primary
+            });
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            setError('Passwords do not match');
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error',
+                text: 'Passwords do not match',
+                confirmButtonColor: FACULTY_THEME.colors.primary
+            });
             return;
         }
 
         setPasswordUpdating(true);
         try {
-            const response = await api.put('/api/users/password', {
+            await api.put('/api/users/password', {
                 newPassword
             });
 
-            setSuccess('Password updated successfully!');
+            await Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'Password updated successfully',
+                confirmButtonColor: FACULTY_THEME.colors.primary
+            });
             setNewPassword('');
             setConfirmPassword('');
-            setTimeout(() => setSuccess(''), 3000);
         } catch (err) {
             console.error('Password update error:', err);
-            setError(err.response?.data?.message || 'Failed to update password');
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: err.response?.data?.message || 'Failed to update password',
+                confirmButtonColor: FACULTY_THEME.colors.primary
+            });
         } finally {
             setPasswordUpdating(false);
         }
@@ -140,18 +171,6 @@ const FacultySettings = () => {
                     <h2 className="fw-bold mb-2" style={{ color: FACULTY_THEME.colors.primary }}>Settings</h2>
                     <p className="text-muted mb-0">Manage your profile and account security.</p>
                 </div>
-
-                {/* Alerts */}
-                {error && (
-                    <Alert variant="danger" onClose={() => setError('')} dismissible>
-                        {error}
-                    </Alert>
-                )}
-                {success && (
-                    <Alert variant="success" onClose={() => setSuccess('')} dismissible>
-                        {success}
-                    </Alert>
-                )}
 
                 <Row className="g-4">
                     {/* Profile Card */}
