@@ -148,208 +148,308 @@ const FacultySettings = () => {
         <div
             style={{
                 minHeight: '100vh',
-                backgroundColor: '#f8fafc',
-                padding: '2rem 0'
+                backgroundColor: '#f8fafc'
             }}
         >
-            <Container maxWidth="lg" className="py-4">
-                {/* Back Button */}
-                <div className="mb-4">
+            {/* Header Section with Gradient */}
+            <div
+                style={{
+                    background: `linear-gradient(135deg, ${FACULTY_THEME.colors.primary}, ${FACULTY_THEME.colors.secondary})`,
+                    padding: '3rem 0 2rem 0',
+                    marginBottom: '2rem'
+                }}
+            >
+                <Container>
                     <Button
                         variant="link"
-                        className="p-0 text-decoration-none d-flex align-items-center gap-2"
+                        className="p-0 text-decoration-none d-flex align-items-center gap-2 mb-3"
                         onClick={() => navigate('/faculty')}
-                        style={{ color: FACULTY_THEME.colors.primary }}
+                        style={{ color: 'rgba(255, 255, 255, 0.9)' }}
                     >
-                        <ArrowLeft size={20} />
-                        <span>Back to Dashboard</span>
+                        <ArrowLeft size={18} />
+                        <span style={{ fontSize: '0.95rem' }}>Back to Dashboard</span>
                     </Button>
-                </div>
 
-                {/* Header */}
+                    <h1 className="fw-bold text-white mb-2" style={{ fontSize: '2.2rem', letterSpacing: '-0.5px' }}>
+                        Settings
+                    </h1>
+                    <p className="text-white mb-0" style={{ opacity: 0.9, fontSize: '1rem' }}>
+                        Manage your profile information and account security
+                    </p>
+                </Container>
+            </div>
+
+            <Container style={{ maxWidth: '1100px', paddingBottom: '3rem' }}>
+
+                {/* Profile Section */}
                 <div className="mb-5">
-                    <h2 className="fw-bold mb-2" style={{ color: FACULTY_THEME.colors.primary }}>Settings</h2>
-                    <p className="text-muted mb-0">Manage your profile and account security.</p>
+                    <h5 className="fw-bold mb-3" style={{ color: FACULTY_THEME.colors.primary, fontSize: '1.1rem', letterSpacing: '0.3px' }}>
+                        Profile Information
+                    </h5>
+
+                    <Card
+                        className="border-0"
+                        style={{
+                            background: '#ffffff',
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                            borderRadius: '0.75rem',
+                            overflow: 'hidden'
+                        }}
+                    >
+                        <Card.Body className="p-0">
+                            {/* User Info Header */}
+                            <div
+                                style={{
+                                    padding: '1.5rem',
+                                    borderBottom: '1px solid #e9ecef',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '1rem'
+                                }}
+                            >
+                                <div
+                                    className="d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                                    style={{
+                                        width: '56px',
+                                        height: '56px',
+                                        background: `linear-gradient(135deg, ${FACULTY_THEME.colors.primary}, ${FACULTY_THEME.colors.accent})`,
+                                        borderRadius: '0.75rem',
+                                        fontSize: '1.5rem'
+                                    }}
+                                >
+                                    {user?.name?.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <p className="mb-0 fw-semibold text-dark" style={{ fontSize: '1.05rem' }}>{user?.name}</p>
+                                    <p className="mb-0 text-muted" style={{ fontSize: '0.9rem' }}>{user?.email}</p>
+                                </div>
+                            </div>
+
+                            {/* Form Section */}
+                            <Form onSubmit={handleUpdateProfile} style={{ padding: '1.5rem' }}>
+                                <Row>
+                                    <Col md={6} className="mb-3">
+                                        <Form.Group>
+                                            <Form.Label className="fw-semibold text-dark" style={{ fontSize: '0.95rem', marginBottom: '0.6rem' }}>Full Name</Form.Label>
+                                            <Form.Control
+                                                type="text"
+                                                value={fullName}
+                                                onChange={(e) => setFullName(e.target.value)}
+                                                style={{
+                                                    borderColor: '#e9ecef',
+                                                    borderRadius: '0.6rem',
+                                                    padding: '0.75rem 1rem',
+                                                    fontSize: '0.95rem',
+                                                    transition: 'all 0.2s ease'
+                                                }}
+                                                onFocus={(e) => e.target.style.borderColor = FACULTY_THEME.colors.primary}
+                                                onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+                                            />
+                                        </Form.Group>
+                                    </Col>
+                                    <Col md={6} className="mb-3">
+                                        <Form.Group>
+                                            <Form.Label className="fw-semibold text-dark" style={{ fontSize: '0.95rem', marginBottom: '0.6rem' }}>Email Address</Form.Label>
+                                            <Form.Control
+                                                type="email"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                                style={{
+                                                    borderColor: '#e9ecef',
+                                                    borderRadius: '0.6rem',
+                                                    padding: '0.75rem 1rem',
+                                                    fontSize: '0.95rem',
+                                                    transition: 'all 0.2s ease'
+                                                }}
+                                                onFocus={(e) => e.target.style.borderColor = FACULTY_THEME.colors.primary}
+                                                onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+                                            />
+                                        </Form.Group>
+                                    </Col>
+                                </Row>
+
+                                <Button
+                                    type="submit"
+                                    disabled={updating}
+                                    className="mt-3 fw-semibold border-0"
+                                    style={{
+                                        background: `linear-gradient(135deg, ${FACULTY_THEME.colors.primary}, ${FACULTY_THEME.colors.secondary})`,
+                                        borderRadius: '0.6rem',
+                                        padding: '0.75rem 2rem',
+                                        fontSize: '0.95rem',
+                                        color: 'white',
+                                        cursor: updating ? 'not-allowed' : 'pointer',
+                                        opacity: updating ? 0.7 : 1,
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                >
+                                    {updating ? '⏳ Saving Changes...' : '✓ Save Changes'}
+                                </Button>
+                            </Form>
+                        </Card.Body>
+                    </Card>
                 </div>
 
-                <Row className="g-4">
-                    {/* Profile Card */}
-                    <Col lg={6}>
-                        <Card
-                            className="border-0 shadow-lg h-100"
-                            style={{
-                                background: 'rgba(255, 255, 255, 0.95)',
-                                backdropFilter: 'blur(10px)',
-                                borderRadius: '1rem'
-                            }}
-                        >
-                            <Card.Body className="p-4">
-                                <div className="d-flex align-items-center gap-3 mb-4">
-                                    <div
-                                        className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
-                                        style={{
-                                            width: '50px',
-                                            height: '50px',
-                                            background: `linear-gradient(135deg, ${FACULTY_THEME.colors.primary}, ${FACULTY_THEME.colors.secondary})`,
-                                            fontSize: '1.5rem'
-                                        }}
-                                    >
-                                        {user?.name?.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div>
-                                        <h6 className="mb-0 fw-bold text-dark">{user?.name}</h6>
-                                        <p className="mb-0 small text-muted">{user?.email}</p>
-                                    </div>
-                                </div>
+                {/* Security Section */}
+                <div className="mb-5">
+                    <h5 className="fw-bold mb-3" style={{ color: FACULTY_THEME.colors.primary, fontSize: '1.1rem', letterSpacing: '0.3px' }}>
+                        Security Settings
+                    </h5>
 
-                                <Form onSubmit={handleUpdateProfile}>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label className="fw-semibold text-dark">Full Name</Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            placeholder="Enter your full name"
-                                            value={fullName}
-                                            onChange={(e) => setFullName(e.target.value)}
-                                            className="form-control-lg"
-                                            style={{
-                                                borderColor: '#e9ecef',
-                                                borderRadius: '0.5rem'
-                                            }}
-                                        />
-                                    </Form.Group>
-
-                                    <Form.Group className="mb-4">
-                                        <Form.Label className="fw-semibold text-dark">Email</Form.Label>
-                                        <Form.Control
-                                            type="email"
-                                            placeholder="Enter your email"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            className="form-control-lg"
-                                            style={{
-                                                borderColor: '#e9ecef',
-                                                borderRadius: '0.5rem'
-                                            }}
-                                        />
-                                    </Form.Group>
-
-                                    <Button
-                                        type="submit"
-                                        disabled={updating}
-                                        className="w-100 py-2 fw-semibold border-0"
-                                        style={{
-                                            background: `linear-gradient(135deg, ${FACULTY_THEME.colors.primary}, ${FACULTY_THEME.colors.secondary})`,
-                                            borderRadius: '0.5rem',
-                                            fontSize: '0.95rem'
-                                        }}
-                                    >
-                                        {updating ? 'Saving...' : 'Save Changes'}
-                                    </Button>
-                                </Form>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-
-                    {/* Security Card */}
-                    <Col lg={6}>
-                        <Card
-                            className="border-0 shadow-lg h-100"
-                            style={{
-                                background: 'rgba(255, 255, 255, 0.95)',
-                                backdropFilter: 'blur(10px)',
-                                borderRadius: '1rem'
-                            }}
-                        >
-                            <Card.Body className="p-4">
-                                <div className="d-flex align-items-center gap-2 mb-4">
+                    <Card
+                        className="border-0"
+                        style={{
+                            background: '#ffffff',
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                            borderRadius: '0.75rem',
+                            overflow: 'hidden'
+                        }}
+                    >
+                        <Card.Body className="p-0">
+                            {/* Header */}
+                            <div
+                                style={{
+                                    padding: '1.5rem',
+                                    borderBottom: '1px solid #e9ecef',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.75rem'
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        width: '40px',
+                                        height: '40px',
+                                        backgroundColor: '#f0f4f8',
+                                        borderRadius: '0.6rem'
+                                    }}
+                                >
                                     <Lock size={20} style={{ color: FACULTY_THEME.colors.primary }} />
-                                    <h5 className="mb-0 fw-bold text-dark">Change Password</h5>
                                 </div>
-
-                                <Form onSubmit={handleUpdatePassword}>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label className="fw-semibold text-dark">New Password</Form.Label>
-                                        <Form.Control
-                                            type="password"
-                                            placeholder="At least 8 characters"
-                                            value={newPassword}
-                                            onChange={(e) => setNewPassword(e.target.value)}
-                                            className="form-control-lg"
-                                            style={{
-                                                borderColor: '#e9ecef',
-                                                borderRadius: '0.5rem'
-                                            }}
-                                        />
-                                    </Form.Group>
-
-                                    <Form.Group className="mb-4">
-                                        <Form.Label className="fw-semibold text-dark">Confirm Password</Form.Label>
-                                        <Form.Control
-                                            type="password"
-                                            placeholder="Re-enter your new password"
-                                            value={confirmPassword}
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
-                                            className="form-control-lg"
-                                            style={{
-                                                borderColor: '#e9ecef',
-                                                borderRadius: '0.5rem'
-                                            }}
-                                        />
-                                    </Form.Group>
-
-                                    <Button
-                                        type="submit"
-                                        disabled={passwordUpdating}
-                                        className="w-100 py-2 fw-semibold border-0"
-                                        style={{
-                                            background: `linear-gradient(135deg, ${FACULTY_THEME.colors.primary}, ${FACULTY_THEME.colors.secondary})`,
-                                            borderRadius: '0.5rem',
-                                            fontSize: '0.95rem'
-                                        }}
-                                    >
-                                        {passwordUpdating ? 'Updating...' : 'Update Password'}
-                                    </Button>
-                                </Form>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                </Row>
-
-                {/* Logout Card */}
-                <Row className="g-4 mt-2">
-                    <Col lg={12}>
-                        <Card
-                            className="border-0 shadow-lg"
-                            style={{
-                                background: 'rgba(255, 255, 255, 0.95)',
-                                backdropFilter: 'blur(10px)',
-                                borderRadius: '1rem'
-                            }}
-                        >
-                            <Card.Body className="p-4">
-                                <div className="d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <h5 className="mb-1 fw-bold text-dark">Logout</h5>
-                                        <p className="mb-0 text-muted small">End your session on this device</p>
-                                    </div>
-                                    <Button
-                                        onClick={handleLogout}
-                                        className="border-0"
-                                        style={{
-                                            background: `linear-gradient(135deg, ${FACULTY_THEME.colors.primary}, ${FACULTY_THEME.colors.secondary})`,
-                                            borderRadius: '0.5rem',
-                                            padding: '0.5rem 1.5rem',
-                                            fontSize: '0.95rem'
-                                        }}
-                                    >
-                                        <LogOut size={16} className="me-2" />
-                                        Logout
-                                    </Button>
+                                <div>
+                                    <p className="mb-0 fw-semibold text-dark" style={{ fontSize: '1.05rem' }}>Change Password</p>
+                                    <p className="mb-0 text-muted" style={{ fontSize: '0.85rem' }}>Update your password to keep your account secure</p>
                                 </div>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                </Row>
+                            </div>
+
+                            {/* Form Section */}
+                            <Form onSubmit={handleUpdatePassword} style={{ padding: '1.5rem' }}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-semibold text-dark" style={{ fontSize: '0.95rem', marginBottom: '0.6rem' }}>New Password</Form.Label>
+                                    <Form.Control
+                                        type="password"
+                                        placeholder="At least 8 characters"
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        style={{
+                                            borderColor: '#e9ecef',
+                                            borderRadius: '0.6rem',
+                                            padding: '0.75rem 1rem',
+                                            fontSize: '0.95rem',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                        onFocus={(e) => e.target.style.borderColor = FACULTY_THEME.colors.primary}
+                                        onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+                                    />
+                                </Form.Group>
+
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-semibold text-dark" style={{ fontSize: '0.95rem', marginBottom: '0.6rem' }}>Confirm Password</Form.Label>
+                                    <Form.Control
+                                        type="password"
+                                        placeholder="Re-enter your new password"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        style={{
+                                            borderColor: '#e9ecef',
+                                            borderRadius: '0.6rem',
+                                            padding: '0.75rem 1rem',
+                                            fontSize: '0.95rem',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                        onFocus={(e) => e.target.style.borderColor = FACULTY_THEME.colors.primary}
+                                        onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+                                    />
+                                </Form.Group>
+
+                                <Button
+                                    type="submit"
+                                    disabled={passwordUpdating}
+                                    className="mt-2 fw-semibold border-0"
+                                    style={{
+                                        background: `linear-gradient(135deg, ${FACULTY_THEME.colors.primary}, ${FACULTY_THEME.colors.secondary})`,
+                                        borderRadius: '0.6rem',
+                                        padding: '0.75rem 2rem',
+                                        fontSize: '0.95rem',
+                                        color: 'white',
+                                        cursor: passwordUpdating ? 'not-allowed' : 'pointer',
+                                        opacity: passwordUpdating ? 0.7 : 1,
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                >
+                                    {passwordUpdating ? '⏳ Updating Password...' : '✓ Update Password'}
+                                </Button>
+                            </Form>
+                        </Card.Body>
+                    </Card>
+                </div>
+
+                {/* Session Section */}
+                <div>
+                    <h5 className="fw-bold mb-3" style={{ color: FACULTY_THEME.colors.primary, fontSize: '1.1rem', letterSpacing: '0.3px' }}>
+                        Session Management
+                    </h5>
+
+                    <Card
+                        className="border-0"
+                        style={{
+                            background: '#ffffff',
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                            borderRadius: '0.75rem',
+                            overflow: 'hidden'
+                        }}
+                    >
+                        <Card.Body className="p-0">
+                            <div
+                                style={{
+                                    padding: '1.5rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between'
+                                }}
+                            >
+                                <div>
+                                    <p className="mb-1 fw-semibold text-dark" style={{ fontSize: '1.05rem' }}>Logout from your account</p>
+                                    <p className="mb-0 text-muted" style={{ fontSize: '0.9rem' }}>End your session and logout from this device</p>
+                                </div>
+                                <Button
+                                    onClick={handleLogout}
+                                    className="border-0 fw-semibold flex-shrink-0"
+                                    style={{
+                                        backgroundColor: '#dc3545',
+                                        borderRadius: '0.6rem',
+                                        padding: '0.75rem 1.5rem',
+                                        fontSize: '0.95rem',
+                                        color: 'white',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                    onMouseEnter={(e) => e.target.style.backgroundColor = '#c82333'}
+                                    onMouseLeave={(e) => e.target.style.backgroundColor = '#dc3545'}
+                                >
+                                    <LogOut size={16} />
+                                    Logout
+                                </Button>
+                            </div>
+                        </Card.Body>
+                    </Card>
+                </div>
             </Container>
         </div>
     );
