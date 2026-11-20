@@ -135,14 +135,33 @@ const Faculty = () => {
             <Container fluid className="py-4 px-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <div className="d-flex align-items-center gap-3">
-                        <Button
-                            variant="light"
-                            onClick={() => navigate('/admin')}
-                            className="d-flex align-items-center gap-2 border-0 px-3 py-2"
-                            title="Go back to dashboard"
-                        >
-                            <ArrowLeft size={20} />
-                        </Button>
+                        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                            <Button
+                                variant="light"
+                                onClick={() => navigate('/admin')}
+                                className="d-flex align-items-center justify-content-center border-0"
+                                title="Go back to dashboard"
+                                style={{
+                                    width: '44px',
+                                    height: '44px',
+                                    borderRadius: '0.75rem',
+                                    backgroundColor: '#f3f4f6',
+                                    color: '#6d28d9',
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#e9d5ff';
+                                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(109,40,217,0.2)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+                                }}
+                            >
+                                <ArrowLeft size={22} />
+                            </Button>
+                        </motion.div>
                         <div>
                             <h2 className="mb-0 text-dark fw-bold display-6 fs-3">Faculty Management</h2>
                         </div>
