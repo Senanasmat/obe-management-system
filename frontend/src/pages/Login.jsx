@@ -70,6 +70,8 @@ const Login = () => {
                     text: 'Login successful. Redirecting...',
                     confirmButtonColor: '#667eea',
                     allowOutsideClick: false,
+                    timer: 5000,
+                    timerProgressBar: true,
                     didOpen: () => {
                         setTimeout(() => {
                             navigate(role === 'admin' ? '/admin' : '/faculty');

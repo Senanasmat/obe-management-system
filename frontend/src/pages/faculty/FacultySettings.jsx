@@ -85,7 +85,13 @@ const FacultySettings = () => {
                 icon: 'success',
                 title: 'Success!',
                 text: 'Profile updated successfully',
-                confirmButtonColor: FACULTY_THEME.colors.primary
+                confirmButtonColor: FACULTY_THEME.colors.primary,
+                timer: 5000,
+                timerProgressBar: true,
+                didOpen: (modal) => {
+                    modal.addEventListener('mouseenter', Swal.stopTimer);
+                    modal.addEventListener('mouseleave', Swal.resumeTimer);
+                }
             });
         } catch (err) {
             console.error('Profile update error:', err);
@@ -154,7 +160,13 @@ const FacultySettings = () => {
                 icon: 'success',
                 title: 'Success!',
                 text: 'Password updated successfully',
-                confirmButtonColor: FACULTY_THEME.colors.primary
+                confirmButtonColor: FACULTY_THEME.colors.primary,
+                timer: 5000,
+                timerProgressBar: true,
+                didOpen: (modal) => {
+                    modal.addEventListener('mouseenter', Swal.stopTimer);
+                    modal.addEventListener('mouseleave', Swal.resumeTimer);
+                }
             });
             setNewPassword('');
             setConfirmPassword('');
