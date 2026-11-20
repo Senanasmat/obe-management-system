@@ -3,7 +3,7 @@ import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { Container, Card, Form, Button, Table, Modal, Row, Col } from 'react-bootstrap';
 import { toast, showError, showConfirm } from '../../utils/notifications';
-import { UserPlus, User, Edit, Trash2, Shield, Lock, Mail, Upload, ArrowLeft } from 'lucide-react';
+import { UserPlus, User, Edit, Trash2, Shield, Lock, Mail, Upload, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import BulkImportModal from '../../components/BulkImportModal';
@@ -48,6 +48,7 @@ const Faculty = () => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
         fetchFaculty();
@@ -64,6 +65,7 @@ const Faculty = () => {
     };
 
     const handleOpenModal = (member = null) => {
+        setShowPassword(false);
         if (member) {
             setIsEditing(true);
             setCurrentId(member._id);
@@ -273,7 +275,7 @@ const Faculty = () => {
                                             <Form.Label className="small fw-bold text-muted">Password</Form.Label>
                                             <div className="position-relative">
                                                 <Form.Control
-                                                    type="password"
+                                                    type={showPassword ? "text" : "password"}
                                                     required
                                                     value={formData.password}
                                                     onChange={e => setFormData({ ...formData, password: e.target.value })}
@@ -281,12 +283,35 @@ const Faculty = () => {
                                                     style={{
                                                         borderColor: '#d1d5db',
                                                         backgroundColor: '#ffffff',
-                                                        fontSize: '0.95rem'
+                                                        fontSize: '0.95rem',
+                                                        paddingRight: '45px'
                                                     }}
                                                 />
                                                 <Lock className="position-absolute text-muted" size={18}
                                                     style={{ left: '12px', top: '50%', transform: 'translateY(-50%)' }}
                                                 />
+                                                {formData.password && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassword(!showPassword)}
+                                                        style={{
+                                                            position: 'absolute',
+                                                            right: '12px',
+                                                            top: '50%',
+                                                            transform: 'translateY(-50%)',
+                                                            background: 'none',
+                                                            border: 'none',
+                                                            cursor: 'pointer',
+                                                            color: '#6d28d9',
+                                                            padding: '0',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center'
+                                                        }}
+                                                    >
+                                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                    </button>
+                                                )}
                                             </div>
                                         </Form.Group>
                                     )}
