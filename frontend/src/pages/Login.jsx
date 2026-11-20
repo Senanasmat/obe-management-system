@@ -522,7 +522,7 @@ const Login = () => {
                             Cancel
                         </Button>
                         <Button type="submit" disabled={forgotLoading}>
-                            {forgotLoading ? ‘Changing…’ : ‘Change Password’}
+                            {forgotLoading ? "Changing..." : "Change Password"}
                         </Button>
                     </Modal.Footer>
                 </Form>
