@@ -1042,16 +1042,11 @@ const handleSelectCloStudent = async (student) => {
                 </Breadcrumb>
 
                 {/* Course Banner */}
-                <div className="d-flex align-items-center gap-3 mb-4">
-                    <div className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold fs-4" style={{ width: '60px', height: '60px', backgroundColor: '#637a62' }}>
-                        {getInitials(faculty?.name)}
-                    </div>
-                    <div>
-                        <h5 className="mb-1 fw-bold text-dark" style={{ color: '#4a4a4a' }}>{course.code}- {course.name}</h5>
-                        <p className="mb-0 text-muted" style={{ fontSize: '0.9rem' }}>
-                            <span style={{ color: '#a085b4' }}></span> {faculty?.name} / Semester: {assignment.academicTerm?.name}
-                        </p>
-                    </div>
+                <div className="mb-4">
+                    <h5 className="mb-1 fw-bold text-dark" style={{ color: '#4a4a4a' }}>{course.code}- {course.name}</h5>
+                    <p className="mb-0 text-muted" style={{ fontSize: '0.9rem' }}>
+                        {faculty?.name} / Semester: {assignment.academicTerm?.name}
+                    </p>
                 </div>
                 
                 {/* Tabs Navigation */}
