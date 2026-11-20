@@ -1498,8 +1498,8 @@ const handleSelectCloStudent = async (student) => {
                                         Activity Outcome
                                     </Dropdown.Toggle>
                                     <Dropdown.Menu>
-                                        <Dropdown.Item onClick={() => setActiveTab('CLOs')}>View CLO Achievement</Dropdown.Item>
-                                        <Dropdown.Item onClick={() => setActiveTab('PLOs')}>View PLO Achievement</Dropdown.Item>
+                                        <Dropdown.Item onClick={() => { setActiveTab('CLOs'); setActivePage('CLOs Attainment'); }}>View CLO Achievement</Dropdown.Item>
+                                        <Dropdown.Item onClick={() => { setActiveTab('PLOs'); setActivePage('PLOs Attainment'); }}>View PLO Achievement</Dropdown.Item>
                                     </Dropdown.Menu>
                                 </Dropdown>
 
