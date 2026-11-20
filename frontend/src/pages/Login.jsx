@@ -16,29 +16,64 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
     const [showForgotModal, setShowForgotModal] = useState(false);
     const [forgotEmail, setForgotEmail] = useState('');
+    const [forgotCurrentPassword, setForgotCurrentPassword] = useState('');
+    const [forgotNewPassword, setForgotNewPassword] = useState('');
     const [forgotLoading, setForgotLoading] = useState(false);
+    const [showForgotCurrentPassword, setShowForgotCurrentPassword] = useState(false);
+    const [showForgotNewPassword, setShowForgotNewPassword] = useState(false);
 
     const handleForgotPassword = async (e) => {
         e.preventDefault();
+
+        if (!forgotEmail || !forgotCurrentPassword || !forgotNewPassword) {
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error',
+                text: 'Please fill in all fields',
+                confirmButtonColor: '#667eea'
+            });
+            return;
+        }
+
+        if (forgotNewPassword.length < 8) {
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error',
+                text: 'New password must be at least 8 characters',
+                confirmButtonColor: '#667eea'
+            });
+            return;
+        }
+
         setForgotLoading(true);
 
         try {
-            const { data } = await api.post('/api/users/forgot-password', {
-                email: forgotEmail
+            const { data } = await api.post('/api/users/change-password', {
+                email: forgotEmail,
+                currentPassword: forgotCurrentPassword,
+                newPassword: forgotNewPassword
             });
             await Swal.fire({
                 icon: 'success',
                 title: 'Success!',
                 text: data.message,
-                confirmButtonColor: '#667eea'
+                confirmButtonColor: '#667eea',
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (modal) => {
+                    modal.addEventListener('mouseenter', Swal.stopTimer);
+                    modal.addEventListener('mouseleave', Swal.resumeTimer);
+                }
             });
             setShowForgotModal(false);
             setForgotEmail('');
+            setForgotCurrentPassword('');
+            setForgotNewPassword('');
         } catch (err) {
             await Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: err.response?.data?.message || 'Could not send a reset link. Please try again.',
+                text: err.response?.data?.message || 'Could not change password. Please try again.',
                 confirmButtonColor: '#667eea'
             });
         } finally {
@@ -312,8 +347,8 @@ const Login = () => {
                                 type="button"
                                 onClick={() => {
                                     setForgotEmail(email);
-                                    setForgotMessage('');
-                                    setForgotError('');
+                                    setForgotCurrentPassword('');
+                                    setForgotNewPassword('');
                                     setShowForgotModal(true);
                                 }}
                                 style={{
@@ -372,23 +407,109 @@ const Login = () => {
             >
                 <Form onSubmit={handleForgotPassword}>
                     <Modal.Header closeButton={!forgotLoading}>
-                        <Modal.Title>Reset your password</Modal.Title>
+                        <Modal.Title>Change your password</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
-                        <p className="text-muted">
-                            Enter the email address registered to your account. We’ll email you a secure link to choose a new password.
+                        <p className="text-muted" style={{ fontSize: ‘0.9rem’, marginBottom: ‘1.5rem’ }}>
+                            Enter your email, current password, and new password to change your account password.
                         </p>
-                        <Form.Group controlId="forgotPasswordEmail">
-                            <Form.Label>Registered email</Form.Label>
+
+                        {/* Email Field */}
+                        <Form.Group controlId="forgotPasswordEmail" className="mb-3">
+                            <Form.Label className="fw-semibold">Email Address</Form.Label>
                             <Form.Control
                                 type="email"
-                                autoComplete="email"
-                                required
+                                placeholder="name@example.com"
                                 value={forgotEmail}
                                 onChange={(e) => setForgotEmail(e.target.value)}
-                                placeholder="name@example.com"
                                 disabled={forgotLoading}
+                                style={{
+                                    borderRadius: ‘0.6rem’,
+                                    padding: ‘0.75rem 1rem’
+                                }}
                             />
+                        </Form.Group>
+
+                        {/* Current Password Field */}
+                        <Form.Group controlId="forgotCurrentPassword" className="mb-3">
+                            <Form.Label className="fw-semibold">Current Password</Form.Label>
+                            <div style={{ position: ‘relative’ }}>
+                                <Form.Control
+                                    type={showForgotCurrentPassword ? ‘text’ : ‘password’}
+                                    placeholder="Enter your current password"
+                                    value={forgotCurrentPassword}
+                                    onChange={(e) => setForgotCurrentPassword(e.target.value)}
+                                    disabled={forgotLoading}
+                                    style={{
+                                        borderRadius: ‘0.6rem’,
+                                        padding: ‘0.75rem 1rem’,
+                                        paddingRight: ‘2.5rem’
+                                    }}
+                                />
+                                {forgotCurrentPassword && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowForgotCurrentPassword(!showForgotCurrentPassword)}
+                                        style={{
+                                            position: ‘absolute’,
+                                            right: ‘12px’,
+                                            top: ‘50%’,
+                                            transform: ‘translateY(-50%)’,
+                                            background: ‘none’,
+                                            border: ‘none’,
+                                            cursor: ‘pointer’,
+                                            color: ‘#667eea’,
+                                            padding: ‘0’,
+                                            display: ‘flex’,
+                                            alignItems: ‘center’,
+                                            justifyContent: ‘center’
+                                        }}
+                                    >
+                                        {showForgotCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                )}
+                            </div>
+                        </Form.Group>
+
+                        {/* New Password Field */}
+                        <Form.Group controlId="forgotNewPassword" className="mb-3">
+                            <Form.Label className="fw-semibold">New Password</Form.Label>
+                            <div style={{ position: ‘relative’ }}>
+                                <Form.Control
+                                    type={showForgotNewPassword ? ‘text’ : ‘password’}
+                                    placeholder="Enter your new password (min. 8 characters)"
+                                    value={forgotNewPassword}
+                                    onChange={(e) => setForgotNewPassword(e.target.value)}
+                                    disabled={forgotLoading}
+                                    style={{
+                                        borderRadius: ‘0.6rem’,
+                                        padding: ‘0.75rem 1rem’,
+                                        paddingRight: ‘2.5rem’
+                                    }}
+                                />
+                                {forgotNewPassword && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowForgotNewPassword(!showForgotNewPassword)}
+                                        style={{
+                                            position: ‘absolute’,
+                                            right: ‘12px’,
+                                            top: ‘50%’,
+                                            transform: ‘translateY(-50%)’,
+                                            background: ‘none’,
+                                            border: ‘none’,
+                                            cursor: ‘pointer’,
+                                            color: ‘#667eea’,
+                                            padding: ‘0’,
+                                            display: ‘flex’,
+                                            alignItems: ‘center’,
+                                            justifyContent: ‘center’
+                                        }}
+                                    >
+                                        {showForgotNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                )}
+                            </div>
                         </Form.Group>
                     </Modal.Body>
                     <Modal.Footer>
@@ -398,10 +519,10 @@ const Login = () => {
                             onClick={() => setShowForgotModal(false)}
                             disabled={forgotLoading}
                         >
-                            Close
+                            Cancel
                         </Button>
                         <Button type="submit" disabled={forgotLoading}>
-                            {forgotLoading ? 'Sending…' : 'Send reset link'}
+                            {forgotLoading ? ‘Changing…’ : ‘Change Password’}
                         </Button>
                     </Modal.Footer>
                 </Form>

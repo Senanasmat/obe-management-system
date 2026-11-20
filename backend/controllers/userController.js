@@ -269,4 +269,45 @@ const updatePassword = async (req, res) => {
     }
 };
 
-module.exports = { authUser, registerUser, requestPasswordReset, resetPassword, updateProfile, updatePassword };
+// @desc    Change password without being logged in (forgot password flow)
+// @route   POST /api/users/change-password
+// @access  Public
+const changePasswordForgot = async (req, res) => {
+    try {
+        const { email, currentPassword, newPassword } = req.body;
+
+        // Validation
+        if (!email || !currentPassword || !newPassword) {
+            return res.status(400).json({ message: 'Email, current password, and new password are required' });
+        }
+
+        if (typeof newPassword !== 'string' || newPassword.length < 8) {
+            return res.status(400).json({ message: 'New password must be at least 8 characters' });
+        }
+
+        // Find user by email
+        const user = await User.findOne({
+            email: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' }
+        }).select('+password');
+
+        if (!user) {
+            return res.status(401).json({ message: 'User account not found' });
+        }
+
+        // Verify current password
+        if (!(await user.matchPassword(currentPassword))) {
+            return res.status(401).json({ message: 'Current password is incorrect' });
+        }
+
+        // Update password
+        user.password = newPassword;
+        await user.save();
+
+        return res.json({ message: 'Password changed successfully' });
+    } catch (error) {
+        console.error('Change password error:', error);
+        return res.status(500).json({ message: 'Could not change password', error: error.message });
+    }
+};
+
+module.exports = { authUser, registerUser, requestPasswordReset, resetPassword, updateProfile, updatePassword, changePasswordForgot };

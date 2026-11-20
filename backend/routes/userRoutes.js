@@ -6,13 +6,15 @@ const {
     requestPasswordReset,
     resetPassword,
     updateProfile,
-    updatePassword
+    updatePassword,
+    changePasswordForgot
 } = require('../controllers/userController');
 const { protect, admin } = require('../middleware/authMiddleware');
 
 router.post('/login', authUser);
 router.post('/forgot-password', requestPasswordReset);
 router.post('/reset-password', resetPassword);
+router.post('/change-password', changePasswordForgot);
 router.put('/profile', protect, updateProfile);
 router.put('/password', protect, updatePassword);
 router.route('/').post(protect, admin, registerUser);
