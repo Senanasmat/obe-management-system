@@ -130,7 +130,7 @@ const FacultySettings = () => {
         <div
             style={{
                 minHeight: '100vh',
-                background: `linear-gradient(135deg, ${FACULTY_THEME.colors.primary} 0%, ${FACULTY_THEME.colors.secondary} 100%)`,
+                backgroundColor: '#f8fafc',
                 padding: '2rem 0'
             }}
         >
@@ -141,7 +141,7 @@ const FacultySettings = () => {
                         variant="link"
                         className="p-0 text-decoration-none d-flex align-items-center gap-2"
                         onClick={() => navigate('/faculty')}
-                        style={{ color: 'white' }}
+                        style={{ color: FACULTY_THEME.colors.primary }}
                     >
                         <ArrowLeft size={20} />
                         <span>Back to Dashboard</span>
@@ -150,8 +150,8 @@ const FacultySettings = () => {
 
                 {/* Header */}
                 <div className="mb-5">
-                    <h2 className="fw-bold text-white mb-2">Settings</h2>
-                    <p className="text-white-50 mb-0">Manage your profile and account security.</p>
+                    <h2 className="fw-bold mb-2" style={{ color: FACULTY_THEME.colors.primary }}>Settings</h2>
+                    <p className="text-muted mb-0">Manage your profile and account security.</p>
                 </div>
 
                 {/* Alerts */}
