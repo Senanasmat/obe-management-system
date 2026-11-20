@@ -6,7 +6,7 @@ import { FACULTY_THEME } from '../../themes/facultyTheme';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Container, Card, Row, Col, Button, Spinner, Badge, Dropdown, Table, Breadcrumb, Modal, Form } from 'react-bootstrap';
-import { PlusCircle, FileText, ClipboardList, ChevronDown, XCircle, CheckCircle, Plus, Pencil, Trash2, Edit2, Users, Search, Check } from 'lucide-react';
+import { PlusCircle, FileText, ClipboardList, ChevronDown, XCircle, CheckCircle, Plus, Pencil, Trash2, Edit2, Users, Search, Check, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
@@ -1028,9 +1028,17 @@ const handleSelectCloStudent = async (student) => {
     return (
         <motion.div initial="hidden" animate="visible" variants={containerVariants} className="bg-white min-vh-100">
             <Container fluid className="px-4 py-3">
-                
-                {/* Header Title */}
-                <div className="mb-2">
+
+                {/* Header with Back Button */}
+                <div className="d-flex align-items-center gap-2 mb-2">
+                    <Button
+                        variant="link"
+                        className="p-0 text-decoration-none"
+                        onClick={() => navigate('/faculty/courses')}
+                        style={{ color: FACULTY_THEME.colors.primary }}
+                    >
+                        <ArrowLeft size={20} />
+                    </Button>
                     <h4 className="fw-normal text-dark mb-0">Course Section</h4>
                 </div>
 
