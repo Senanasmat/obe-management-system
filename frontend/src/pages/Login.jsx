@@ -1,17 +1,15 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Form, Button, Alert, ButtonGroup, ToggleButton, Modal } from 'react-bootstrap';
+import { Form, Button, ButtonGroup, ToggleButton, Modal } from 'react-bootstrap';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
-import Toast from '../components/Toast';
+import Swal from 'sweetalert2';
 import api from '../utils/api';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [role, setRole] = useState('faculty');
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const { login, logout } = useAuth();
     const navigate = useNavigate();
@@ -19,25 +17,30 @@ const Login = () => {
     const [showForgotModal, setShowForgotModal] = useState(false);
     const [forgotEmail, setForgotEmail] = useState('');
     const [forgotLoading, setForgotLoading] = useState(false);
-    const [forgotMessage, setForgotMessage] = useState('');
-    const [forgotError, setForgotError] = useState('');
 
     const handleForgotPassword = async (e) => {
         e.preventDefault();
         setForgotLoading(true);
-        setForgotMessage('');
-        setForgotError('');
 
         try {
             const { data } = await api.post('/api/users/forgot-password', {
                 email: forgotEmail
             });
-            setForgotMessage(data.message);
+            await Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: data.message,
+                confirmButtonColor: '#667eea'
+            });
+            setShowForgotModal(false);
+            setForgotEmail('');
         } catch (err) {
-            setForgotError(
-                err.response?.data?.message ||
-                'Could not send a reset link. Please try again.'
-            );
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: err.response?.data?.message || 'Could not send a reset link. Please try again.',
+                confirmButtonColor: '#667eea'
+            });
         } finally {
             setForgotLoading(false);
         }
@@ -45,8 +48,6 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
-        setSuccess('');
         setLoading(true);
 
         try {
@@ -54,28 +55,49 @@ const Login = () => {
             if (res.success) {
                 if (res.data.role !== role) {
                     logout();
-                    setError(`Access Denied: Account role mismatch. Please login as ${res.data.role === 'admin' ? 'Super Admin' : 'Faculty'}.`);
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Access Denied',
+                        text: `Account role mismatch. Please login as ${res.data.role === 'admin' ? 'Super Admin' : 'Faculty'}.`,
+                        confirmButtonColor: '#667eea'
+                    });
                     setLoading(false);
                     return;
                 }
-                setSuccess('Login Successful! Redirecting...');
-                setTimeout(() => {
-                    navigate(role === 'admin' ? '/admin' : '/faculty');
-                }, 1500);
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Welcome!',
+                    text: 'Login successful. Redirecting...',
+                    confirmButtonColor: '#667eea',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        setTimeout(() => {
+                            navigate(role === 'admin' ? '/admin' : '/faculty');
+                        }, 1200);
+                    }
+                });
             } else {
-                setError(res.message);
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Login Failed',
+                    text: res.message,
+                    confirmButtonColor: '#667eea'
+                });
                 setLoading(false);
             }
         } catch (err) {
-            setError('An unexpected error occurred.');
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'An unexpected error occurred.',
+                confirmButtonColor: '#667eea'
+            });
             setLoading(false);
         }
     };
 
     return (
-        <>
-            {success && <Toast message={success} type="success" duration={3000} />}
-            <div style={{
+        <div style={{
                 minHeight: '100vh',
                 background: 'rgba(224, 234, 252, 0.5)',
                 backdropFilter: 'blur(10px)',
@@ -115,12 +137,6 @@ const Login = () => {
                         marginBottom: '24px',
                         fontWeight: '500'
                     }}>Access your OBE Management System</p>
-
-                    {error && (
-                        <Alert variant="danger" className="border-0 bg-danger-subtle text-danger py-2 d-flex align-items-center mb-3" style={{ fontSize: '0.85rem' }}>
-                            <Lock size={16} className="me-2" /> {error}
-                        </Alert>
-                    )}
 
                     <Form onSubmit={handleSubmit}>
                         {/* Role Selection */}
@@ -358,8 +374,6 @@ const Login = () => {
                         <p className="text-muted">
                             Enter the email address registered to your account. We’ll email you a secure link to choose a new password.
                         </p>
-                        {forgotMessage && <Alert variant="success">{forgotMessage}</Alert>}
-                        {forgotError && <Alert variant="danger">{forgotError}</Alert>}
                         <Form.Group controlId="forgotPasswordEmail">
                             <Form.Label>Registered email</Form.Label>
                             <Form.Control
@@ -388,7 +402,7 @@ const Login = () => {
                     </Modal.Footer>
                 </Form>
             </Modal>
-        </>
+        </div>
     );
 };
 
