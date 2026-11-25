@@ -211,50 +211,53 @@ const FacultySettings = () => {
             <div
                 style={{
                     background: `linear-gradient(135deg, ${FACULTY_THEME.colors.primary}, ${FACULTY_THEME.colors.secondary})`,
-                    padding: '3rem 2rem 2rem 2rem',
+                    padding: '1.5rem 2rem',
                     marginBottom: '2rem',
                     marginLeft: '-15px',
                     marginRight: '-15px'
                 }}
             >
                 <Container style={{ maxWidth: '1100px', paddingLeft: '1rem', paddingRight: '1rem' }}>
-                    <Button
-                        variant="link"
-                        className="p-0 text-decoration-none d-flex align-items-center gap-2 mb-3"
-                        onClick={() => navigate('/faculty')}
-                        style={{ color: 'rgba(255, 255, 255, 0.9)', transition: 'all 0.2s ease' }}
-                        onMouseEnter={(e) => e.target.style.color = 'rgba(255, 255, 255, 1)'}
-                        onMouseLeave={(e) => e.target.style.color = 'rgba(255, 255, 255, 0.9)'}
-                    >
-                        <ArrowLeft size={18} />
-                        <span style={{ fontSize: '0.95rem' }}>Back to Dashboard</span>
-                    </Button>
-
-                    <h1 className="fw-bold text-white mb-2" style={{ fontSize: '2.2rem', letterSpacing: '-0.5px' }}>
-                        Settings
-                    </h1>
-                    <p className="text-white mb-0" style={{ opacity: 0.95, fontSize: '0.95rem', maxWidth: '500px' }}>
-                        Manage your profile information and account security
-                    </p>
+                    <div className="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h2 className="fw-bold text-white mb-1" style={{ fontSize: '1.6rem', letterSpacing: '-0.5px' }}>
+                                Settings
+                            </h2>
+                            <p className="text-white mb-0" style={{ opacity: 0.9, fontSize: '0.85rem' }}>
+                                Profile & Security
+                            </p>
+                        </div>
+                        <Button
+                            variant="link"
+                            className="p-0 text-decoration-none d-flex align-items-center gap-2"
+                            onClick={() => navigate('/faculty')}
+                            style={{ color: 'rgba(255, 255, 255, 0.9)', transition: 'all 0.2s ease' }}
+                            onMouseEnter={(e) => e.target.style.color = 'rgba(255, 255, 255, 1)'}
+                            onMouseLeave={(e) => e.target.style.color = 'rgba(255, 255, 255, 0.9)'}
+                        >
+                            <ArrowLeft size={16} />
+                            <span style={{ fontSize: '0.85rem' }}>Back</span>
+                        </Button>
+                    </div>
                 </Container>
             </div>
 
-            <Container style={{ maxWidth: '1100px', paddingBottom: '3rem' }}>
+            <Container style={{ maxWidth: '1100px', paddingBottom: '2rem' }}>
 
                 {/* Profile & Security Sections - Side by Side */}
-                <Row className="g-4 mb-5">
+                <Row className="g-3 mb-3">
                     {/* Profile Section */}
                     <Col lg={6}>
-                        <h5 className="fw-bold mb-3" style={{ color: FACULTY_THEME.colors.primary, fontSize: '1.1rem', letterSpacing: '0.3px' }}>
+                        <h6 className="fw-bold mb-2" style={{ color: FACULTY_THEME.colors.primary, fontSize: '0.95rem', letterSpacing: '0.3px' }}>
                             Profile Information
-                        </h5>
+                        </h6>
 
                         <Card
                             className="border-0 h-100"
                             style={{
                                 background: '#ffffff',
-                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-                                borderRadius: '0.75rem',
+                                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+                                borderRadius: '0.6rem',
                                 overflow: 'hidden'
                             }}
                         >
@@ -262,11 +265,11 @@ const FacultySettings = () => {
                             {/* User Info Header */}
                             <div
                                 style={{
-                                    padding: '1.5rem',
+                                    padding: '1rem',
                                     borderBottom: '1px solid #e9ecef',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '1rem'
+                                    gap: '0.75rem'
                                 }}
                             >
                                 <div
@@ -288,7 +291,7 @@ const FacultySettings = () => {
                             </div>
 
                             {/* Form Section */}
-                            <Form onSubmit={handleUpdateProfile} style={{ padding: '1.5rem' }}>
+                            <Form onSubmit={handleUpdateProfile} style={{ padding: '1rem' }}>
                                 <Row>
                                     <Col md={6} className="mb-3">
                                         <Form.Group>
@@ -354,9 +357,9 @@ const FacultySettings = () => {
 
                     {/* Security Section */}
                     <Col lg={6}>
-                        <h5 className="fw-bold mb-3" style={{ color: FACULTY_THEME.colors.primary, fontSize: '1.1rem', letterSpacing: '0.3px' }}>
+                        <h6 className="fw-bold mb-2" style={{ color: FACULTY_THEME.colors.primary, fontSize: '0.95rem', letterSpacing: '0.3px' }}>
                             Security Settings
-                        </h5>
+                        </h6>
 
                         <Card
                             className="border-0 h-100"
