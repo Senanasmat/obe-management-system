@@ -146,12 +146,12 @@ const Login = () => {
                     text: 'Login successful. Redirecting...',
                     confirmButtonColor: '#667eea',
                     allowOutsideClick: false,
-                    timer: 3000,
+                    timer: 2000,
                     timerProgressBar: true,
                     didOpen: () => {
                         setTimeout(() => {
                             navigate(role === 'admin' ? '/admin' : '/faculty');
-                        }, 1200);
+                        }, 600);
                     }
                 });
             } else {
