@@ -1,12 +1,10 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { useAuth } from '../context/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const Layout = () => {
     const { user } = useAuth();
-    const location = useLocation();
 
     if (!user) {
         return <Outlet />;
@@ -18,18 +16,9 @@ const Layout = () => {
             <div className="d-flex flex-column flex-grow-1" style={{ overflow: 'hidden' }}>
                 <Navbar user={user} />
                 <main className="flex-grow-1" style={{ overflowY: 'auto', position: 'relative', scrollbarGutter: 'stable' }}>
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={location.pathname}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2, ease: "easeOut" }}
-                            className="p-4"
-                        >
-                            <Outlet />
-                        </motion.div>
-                    </AnimatePresence>
+                    <div className="p-4" style={{ height: '100%' }}>
+                        <Outlet />
+                    </div>
                 </main>
             </div>
         </div>
