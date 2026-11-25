@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Container, Card, Table, Badge, Form, InputGroup } from 'react-bootstrap';
 import { motion } from 'framer-motion';
-import { Activity, Search, RefreshCw } from 'lucide-react';
+import { History, Search, RefreshCw } from 'lucide-react';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -85,7 +85,7 @@ const ActivityLog = () => {
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <div className="d-flex align-items-center gap-2">
                         <div className="rounded-circle p-2" style={{ backgroundColor: '#ede9fe' }}>
-                            <Activity size={22} style={{ color: '#6d28d9' }} />
+                            <History size={22} style={{ color: '#6d28d9' }} />
                         </div>
                         <div>
                             <h2 className="mb-0 fw-bold fs-3 text-dark">Activity Log</h2>
@@ -136,7 +136,7 @@ const ActivityLog = () => {
                     <Table hover responsive className="mb-0">
                         <thead className="bg-light border-bottom">
                             <tr>
-                                <th className="px-4 py-3 text-muted small text-uppercase">Faculty</th>
+                                <th className="px-4 py-3 text-muted small text-uppercase">User</th>
                                 <th className="px-4 py-3 text-muted small text-uppercase">Action</th>
                                 <th className="px-4 py-3 text-muted small text-uppercase">Details</th>
                                 <th className="px-4 py-3 text-muted small text-uppercase">Type</th>
