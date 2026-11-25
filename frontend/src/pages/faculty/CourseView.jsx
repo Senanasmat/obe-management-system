@@ -1136,7 +1136,6 @@ const handleSelectCloStudent = async (student) => {
                                     }}
                                 >
                                     {tab}
-                                    <ChevronDown size={14} />
                                 </Dropdown.Toggle>
 
                                 <Dropdown.Menu onMouseEnter={() => prefetchTabData(tab)}>
