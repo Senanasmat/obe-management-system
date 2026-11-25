@@ -1,10 +1,11 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { useAuth } from '../context/AuthContext';
 
 const Layout = () => {
     const { user } = useAuth();
+    const location = useLocation();
 
     if (!user) {
         return <Outlet />;
@@ -16,7 +17,25 @@ const Layout = () => {
             <div className="d-flex flex-column flex-grow-1" style={{ overflow: 'hidden' }}>
                 <Navbar user={user} />
                 <main className="flex-grow-1" style={{ overflowY: 'auto', position: 'relative', scrollbarGutter: 'stable' }}>
-                    <div className="p-4" style={{ height: '100%' }}>
+                    <div
+                        key={location.pathname}
+                        className="p-4"
+                        style={{
+                            height: '100%',
+                            animation: 'fadeIn 0.3s ease-in-out',
+                            animationFillMode: 'both'
+                        }}
+                    >
+                        <style>{`
+                            @keyframes fadeIn {
+                                from {
+                                    opacity: 0;
+                                }
+                                to {
+                                    opacity: 1;
+                                }
+                            }
+                        `}</style>
                         <Outlet />
                     </div>
                 </main>
