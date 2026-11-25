@@ -400,11 +400,11 @@ const CourseView = () => {
     };
 
     useEffect(() => {
-        // Auto-set the first page option when tab changes
-        if (dropdownOptions[activeTab] && !activePage) {
+        // Auto-set the first page option when tab changes to a dropdown tab
+        if (dropdownOptions[activeTab]) {
             setActivePage(dropdownOptions[activeTab][0]);
         }
-    }, [activeTab, activePage]);
+    }, [activeTab]);
 
     useEffect(() => {
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
