@@ -227,17 +227,37 @@ const FacultySettings = () => {
                                 Profile & Security
                             </p>
                         </div>
-                        <Button
-                            variant="link"
-                            className="p-0 text-decoration-none d-flex align-items-center gap-2"
-                            onClick={() => navigate('/faculty')}
-                            style={{ color: 'rgba(255, 255, 255, 0.9)', transition: 'all 0.2s ease' }}
-                            onMouseEnter={(e) => e.target.style.color = 'rgba(255, 255, 255, 1)'}
-                            onMouseLeave={(e) => e.target.style.color = 'rgba(255, 255, 255, 0.9)'}
-                        >
-                            <ArrowLeft size={16} />
-                            <span style={{ fontSize: '0.85rem' }}>Back</span>
-                        </Button>
+                        <div className="d-flex align-items-center gap-2">
+                            <Button
+                                onClick={handleLogout}
+                                className="border-0 fw-semibold d-flex align-items-center gap-2"
+                                style={{
+                                    backgroundColor: '#dc3545',
+                                    borderRadius: '0.5rem',
+                                    padding: '0.6rem 1rem',
+                                    fontSize: '0.8rem',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease'
+                                }}
+                                onMouseEnter={(e) => e.target.style.backgroundColor = '#c82333'}
+                                onMouseLeave={(e) => e.target.style.backgroundColor = '#dc3545'}
+                            >
+                                <LogOut size={14} />
+                                Logout
+                            </Button>
+                            <Button
+                                variant="link"
+                                className="p-0 text-decoration-none d-flex align-items-center gap-2"
+                                onClick={() => navigate('/faculty')}
+                                style={{ color: 'rgba(255, 255, 255, 0.9)', transition: 'all 0.2s ease' }}
+                                onMouseEnter={(e) => e.target.style.color = 'rgba(255, 255, 255, 1)'}
+                                onMouseLeave={(e) => e.target.style.color = 'rgba(255, 255, 255, 0.9)'}
+                            >
+                                <ArrowLeft size={16} />
+                                <span style={{ fontSize: '0.85rem' }}>Back</span>
+                            </Button>
+                        </div>
                     </div>
                 </Container>
             </div>
@@ -538,60 +558,6 @@ const FacultySettings = () => {
                     </Card>
                     </Col>
                 </Row>
-
-                {/* Session Section */}
-                <div>
-                    <h5 className="fw-bold mb-3" style={{ color: FACULTY_THEME.colors.primary, fontSize: '1.1rem', letterSpacing: '0.3px' }}>
-                        Session Management
-                    </h5>
-
-                    <Card
-                        className="border-0"
-                        style={{
-                            background: '#ffffff',
-                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-                            borderRadius: '0.75rem',
-                            overflow: 'hidden'
-                        }}
-                    >
-                        <Card.Body className="p-0">
-                            <div
-                                style={{
-                                    padding: '1.5rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between'
-                                }}
-                            >
-                                <div>
-                                    <p className="mb-1 fw-semibold text-dark" style={{ fontSize: '1.05rem' }}>Logout from your account</p>
-                                    <p className="mb-0 text-muted" style={{ fontSize: '0.9rem' }}>End your session and logout from this device</p>
-                                </div>
-                                <Button
-                                    onClick={handleLogout}
-                                    className="border-0 fw-semibold flex-shrink-0"
-                                    style={{
-                                        backgroundColor: '#dc3545',
-                                        borderRadius: '0.6rem',
-                                        padding: '0.75rem 1.5rem',
-                                        fontSize: '0.95rem',
-                                        color: 'white',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.5rem',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                    onMouseEnter={(e) => e.target.style.backgroundColor = '#c82333'}
-                                    onMouseLeave={(e) => e.target.style.backgroundColor = '#dc3545'}
-                                >
-                                    <LogOut size={16} />
-                                    Logout
-                                </Button>
-                            </div>
-                        </Card.Body>
-                    </Card>
-                </div>
             </Container>
         </div>
     );
