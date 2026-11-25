@@ -1105,58 +1105,53 @@ const handleSelectCloStudent = async (student) => {
                         }
 
                         return (
-                            <div key={tab}
-                                onMouseEnter={() => {
-                                    prefetchTabData(tab);
-                                    document.getElementById(`dropdown-toggle-${tab}`)?.click();
+                            <Dropdown
+                                key={tab}
+                                onToggle={(isOpen) => {
+                                    if (isOpen) {
+                                        setActiveTab(tab);
+                                        prefetchTabData(tab);
+                                    }
                                 }}
-                                onMouseLeave={() => {
-                                    setTimeout(() => {
-                                        document.getElementById(`dropdown-toggle-${tab}`)?.click();
-                                    }, 200);
+                                onSelect={(option) => {
+                                    setActiveTab(tab);
+                                    setActivePage(option);
                                 }}
                             >
-                                <Dropdown
-                                    onSelect={(option) => {
-                                        setActiveTab(tab);
-                                        setActivePage(option);
+                                <Dropdown.Toggle
+                                    variant="link"
+                                    className={`py-2 px-3 d-flex align-items-center gap-1 text-decoration-none ${
+                                        isActive ? 'bg-light' : ''
+                                    }`}
+                                    onMouseEnter={() => prefetchTabData(tab)}
+                                    style={{
+                                        ...tabStyle,
+                                        borderTop: 'none',
+                                        borderLeft: 'none',
+                                        borderRight: 'none',
+                                        borderBottom: 'none',
+                                        boxShadow: 'none',
+                                        background: isActive ? '#f8f9fa' : 'transparent',
+                                        cursor: 'pointer'
                                     }}
                                 >
-                                    <Dropdown.Toggle
-                                        id={`dropdown-toggle-${tab}`}
-                                        variant="link"
-                                        className={`py-2 px-3 d-flex align-items-center gap-1 text-decoration-none ${
-                                            isActive ? 'bg-light' : ''
-                                        }`}
-                                        style={{
-                                            ...tabStyle,
-                                            borderTop: 'none',
-                                            borderLeft: 'none',
-                                            borderRight: 'none',
-                                            borderBottom: 'none',
-                                            boxShadow: 'none',
-                                            background: isActive ? '#f8f9fa' : 'transparent',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        {tab}
-                                        <ChevronDown size={14} />
-                                    </Dropdown.Toggle>
+                                    {tab}
+                                    <ChevronDown size={14} />
+                                </Dropdown.Toggle>
 
-                                    <Dropdown.Menu onMouseEnter={() => prefetchTabData(tab)}>
-                                        {dropdownOptions[tab].map((option) => (
-                                            <Dropdown.Item
-                                                key={option}
-                                                eventKey={option}
-                                                active={activePage === option}
-                                                onMouseEnter={() => prefetchTabData(tab)}
-                                            >
-                                                {option}
-                                            </Dropdown.Item>
-                                        ))}
-                                    </Dropdown.Menu>
-                                </Dropdown>
-                            </div>
+                                <Dropdown.Menu onMouseEnter={() => prefetchTabData(tab)}>
+                                    {dropdownOptions[tab].map((option) => (
+                                        <Dropdown.Item
+                                            key={option}
+                                            eventKey={option}
+                                            active={activePage === option}
+                                            onMouseEnter={() => prefetchTabData(tab)}
+                                        >
+                                            {option}
+                                        </Dropdown.Item>
+                                    ))}
+                                </Dropdown.Menu>
+                            </Dropdown>
                         );
                     })}
                 </div>
