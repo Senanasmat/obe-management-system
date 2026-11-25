@@ -211,16 +211,20 @@ const FacultySettings = () => {
             <div
                 style={{
                     background: `linear-gradient(135deg, ${FACULTY_THEME.colors.primary}, ${FACULTY_THEME.colors.secondary})`,
-                    padding: '3rem 0 2rem 0',
-                    marginBottom: '2rem'
+                    padding: '3rem 2rem 2rem 2rem',
+                    marginBottom: '2rem',
+                    marginLeft: '-15px',
+                    marginRight: '-15px'
                 }}
             >
-                <Container>
+                <Container style={{ maxWidth: '1100px', paddingLeft: '1rem', paddingRight: '1rem' }}>
                     <Button
                         variant="link"
                         className="p-0 text-decoration-none d-flex align-items-center gap-2 mb-3"
                         onClick={() => navigate('/faculty')}
-                        style={{ color: 'rgba(255, 255, 255, 0.9)' }}
+                        style={{ color: 'rgba(255, 255, 255, 0.9)', transition: 'all 0.2s ease' }}
+                        onMouseEnter={(e) => e.target.style.color = 'rgba(255, 255, 255, 1)'}
+                        onMouseLeave={(e) => e.target.style.color = 'rgba(255, 255, 255, 0.9)'}
                     >
                         <ArrowLeft size={18} />
                         <span style={{ fontSize: '0.95rem' }}>Back to Dashboard</span>
@@ -229,7 +233,7 @@ const FacultySettings = () => {
                     <h1 className="fw-bold text-white mb-2" style={{ fontSize: '2.2rem', letterSpacing: '-0.5px' }}>
                         Settings
                     </h1>
-                    <p className="text-white mb-0" style={{ opacity: 0.9, fontSize: '1rem' }}>
+                    <p className="text-white mb-0" style={{ opacity: 0.95, fontSize: '0.95rem', maxWidth: '500px' }}>
                         Manage your profile information and account security
                     </p>
                 </Container>

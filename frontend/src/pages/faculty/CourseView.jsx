@@ -1053,7 +1053,7 @@ const handleSelectCloStudent = async (student) => {
                 <div className="mb-4">
                     <h5 className="mb-1 fw-bold text-dark" style={{ color: '#4a4a4a' }}>{course.code}- {course.name}</h5>
                     <p className="mb-0 text-muted" style={{ fontSize: '0.9rem' }}>
-                        {faculty?.name} / Semester: {assignment.academicTerm?.name}
+                        {faculty?.name} / Academic Term: {assignment.academicTerm?.name}
                     </p>
                 </div>
                 
@@ -1105,52 +1105,58 @@ const handleSelectCloStudent = async (student) => {
                         }
 
                         return (
-                            <Dropdown
-                                key={tab}
-                                onToggle={(isOpen) => {
-                                    if (isOpen) {
-                                        setActiveTab(tab);
-                                        prefetchTabData(tab);
-                                    }
+                            <div key={tab}
+                                onMouseEnter={() => {
+                                    prefetchTabData(tab);
+                                    document.getElementById(`dropdown-toggle-${tab}`)?.click();
                                 }}
-                                onSelect={(option) => {
-                                    setActiveTab(tab);
-                                    setActivePage(option);
+                                onMouseLeave={() => {
+                                    setTimeout(() => {
+                                        document.getElementById(`dropdown-toggle-${tab}`)?.click();
+                                    }, 200);
                                 }}
                             >
-                                <Dropdown.Toggle
-                                    variant="link"
-                                    className={`py-2 px-3 d-flex align-items-center gap-1 text-decoration-none ${
-                                        isActive ? 'bg-light' : ''
-                                    }`}
-                                    onMouseEnter={() => prefetchTabData(tab)}
-                                    style={{
-                                        ...tabStyle,
-                                        borderTop: 'none',
-                                        borderLeft: 'none',
-                                        borderRight: 'none',
-                                        borderBottom: 'none',
-                                        boxShadow: 'none',
-                                        background: isActive ? '#f8f9fa' : 'transparent',
-                                        cursor: 'pointer'
+                                <Dropdown
+                                    onSelect={(option) => {
+                                        setActiveTab(tab);
+                                        setActivePage(option);
                                     }}
                                 >
-                                    {tab}
-                                </Dropdown.Toggle>
+                                    <Dropdown.Toggle
+                                        id={`dropdown-toggle-${tab}`}
+                                        variant="link"
+                                        className={`py-2 px-3 d-flex align-items-center gap-1 text-decoration-none ${
+                                            isActive ? 'bg-light' : ''
+                                        }`}
+                                        style={{
+                                            ...tabStyle,
+                                            borderTop: 'none',
+                                            borderLeft: 'none',
+                                            borderRight: 'none',
+                                            borderBottom: 'none',
+                                            boxShadow: 'none',
+                                            background: isActive ? '#f8f9fa' : 'transparent',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        {tab}
+                                        <ChevronDown size={14} />
+                                    </Dropdown.Toggle>
 
-                                <Dropdown.Menu onMouseEnter={() => prefetchTabData(tab)}>
-                                    {dropdownOptions[tab].map((option) => (
-                                        <Dropdown.Item
-                                            key={option}
-                                            eventKey={option}
-                                            active={activePage === option}
-                                            onMouseEnter={() => prefetchTabData(tab)}
-                                        >
-                                            {option}
-                                        </Dropdown.Item>
-                                    ))}
-                                </Dropdown.Menu>
-                            </Dropdown>
+                                    <Dropdown.Menu onMouseEnter={() => prefetchTabData(tab)}>
+                                        {dropdownOptions[tab].map((option) => (
+                                            <Dropdown.Item
+                                                key={option}
+                                                eventKey={option}
+                                                active={activePage === option}
+                                                onMouseEnter={() => prefetchTabData(tab)}
+                                            >
+                                                {option}
+                                            </Dropdown.Item>
+                                        ))}
+                                    </Dropdown.Menu>
+                                </Dropdown>
+                            </div>
                         );
                     })}
                 </div>
@@ -1183,7 +1189,7 @@ const handleSelectCloStudent = async (student) => {
                                             <td style={{ width: '30%', color: 'FACULTY_THEME.colors.primary', fontWeight: 500 }}>{course.code}</td>
                                         </tr>
                                         <tr className="border-bottom">
-                                            <td className="fw-semibold text-muted" style={{ backgroundColor: '#f4f5f7' }}>Semester</td>
+                                            <td className="fw-semibold text-muted" style={{ backgroundColor: '#f4f5f7' }}>Academic Term</td>
                                             <td>{assignment.academicTerm?.name}</td>
                                             <td className="fw-semibold text-muted" style={{ backgroundColor: '#f4f5f7' }}>Credit Hours</td>
                                             <td>{course.creditHours}</td>
