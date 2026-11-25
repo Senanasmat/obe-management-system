@@ -207,11 +207,7 @@ const FacultySettings = () => {
                 text: 'You have been logged out successfully!',
                 confirmButtonColor: FACULTY_THEME.colors.primary,
                 timer: 2000,
-                timerProgressBar: true,
-                didOpen: (modal) => {
-                    modal.addEventListener('mouseenter', Swal.stopTimer);
-                    modal.addEventListener('mouseleave', Swal.resumeTimer);
-                }
+                timerProgressBar: true
             });
             navigate('/login');
         }

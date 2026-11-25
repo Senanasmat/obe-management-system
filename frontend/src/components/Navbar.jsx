@@ -26,11 +26,7 @@ const Navbar = ({ user }) => {
             text: 'You have been logged out successfully!',
             timer: 2000,
             timerProgressBar: true,
-            showConfirmButton: false,
-            didOpen: (modal) => {
-                modal.addEventListener('mouseenter', Swal.stopTimer);
-                modal.addEventListener('mouseleave', Swal.resumeTimer);
-            }
+            showConfirmButton: false
         });
         navigate('/');
     };
