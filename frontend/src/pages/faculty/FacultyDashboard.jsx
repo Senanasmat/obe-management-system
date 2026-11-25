@@ -170,11 +170,11 @@ const FacultyDashboard = () => {
                                         backgroundColor: '#fff',
                                         cursor: 'pointer',
                                         transition: 'all 0.3s ease',
-                                        minHeight: '300px',
+                                        minHeight: '240px',
                                         display: 'flex',
                                         flexDirection: 'column',
                                         borderRadius: '12px',
-                                        padding: '2rem 1.5rem'
+                                        padding: '1.5rem 1.2rem'
                                     }}
                                     onMouseEnter={(e) => {
                                         e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
@@ -184,61 +184,61 @@ const FacultyDashboard = () => {
                                     }}
                                 >
                                     {/* Course Code - Main Title */}
-                                    <h4
+                                    <h5
                                         className="fw-bold mb-1"
                                         style={{
                                             color: FACULTY_THEME.colors.primary,
-                                            fontSize: '1.4rem'
+                                            fontSize: '1.1rem'
                                         }}>
                                         {a.course.code}
-                                    </h4>
+                                    </h5>
 
                                     {/* Course Name */}
-                                    <p className="mb-2" style={{ color: '#6b7280', fontSize: '0.9rem', fontWeight: '500' }}>
+                                    <p className="mb-1" style={{ color: '#6b7280', fontSize: '0.8rem', fontWeight: '500' }}>
                                         {a.course.name}
                                     </p>
 
                                     {/* Academic Term */}
-                                    <p className="mb-3" style={{ color: FACULTY_THEME.colors.primary, fontSize: '0.9rem', fontWeight: '600' }}>
+                                    <p className="mb-2" style={{ color: FACULTY_THEME.colors.primary, fontSize: '0.8rem', fontWeight: '600' }}>
                                         {a.academicTerm?.name}
                                     </p>
 
                                     {/* Faculty Name */}
-                                    <p className="mb-1 fw-semibold text-dark" style={{ fontSize: '0.9rem' }}>
+                                    <p className="mb-0 fw-semibold text-dark" style={{ fontSize: '0.8rem' }}>
                                         {user.name}
                                     </p>
 
                                     {/* Department */}
-                                    <p className="text-muted mb-4" style={{ fontSize: '0.8rem' }}>
+                                    <p className="text-muted" style={{ fontSize: '0.75rem', marginBottom: '1rem' }}>
                                         {user.department || 'No Department'}
                                     </p>
 
                                     {/* Buttons */}
-                                    <div className="d-flex gap-2 mb-4" onClick={(e) => e.stopPropagation()} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                    <div className="d-flex gap-2" onClick={(e) => e.stopPropagation()} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                                         <Button
                                             onClick={() => navigate(`/faculty/courses/${a.course._id}?tab=Activities`)}
-                                            style={{ backgroundColor: FACULTY_THEME.colors.primary, border: 'none', borderRadius: '8px', fontSize: '0.9rem', padding: '0.65rem 1rem', color: 'white', flex: 1 }}
+                                            style={{ backgroundColor: FACULTY_THEME.colors.primary, border: 'none', borderRadius: '6px', fontSize: '0.8rem', padding: '0.5rem 0.75rem', color: 'white', flex: 1 }}
                                         >
                                             Activities
                                         </Button>
 
                                         <Button
                                             onClick={() => navigate(`/faculty/courses/${a.course._id}?tab=Reports`)}
-                                            style={{ backgroundColor: FACULTY_THEME.colors.accent, border: 'none', borderRadius: '8px', fontSize: '0.9rem', padding: '0.65rem 1rem', color: 'white', flex: 1 }}
+                                            style={{ backgroundColor: FACULTY_THEME.colors.accent, border: 'none', borderRadius: '6px', fontSize: '0.8rem', padding: '0.5rem 0.75rem', color: 'white', flex: 1 }}
                                         >
                                             Reports
                                         </Button>
                                     </div>
 
                                     {/* Stats */}
-                                    <div className="d-flex justify-content-around" style={{ color: FACULTY_THEME.colors.accent, fontSize: '0.85rem', paddingTop: '0.75rem', borderTop: '1px solid #e5e7eb' }}>
+                                    <div className="d-flex justify-content-around" style={{ color: FACULTY_THEME.colors.accent, fontSize: '0.75rem', paddingTop: '0.5rem', marginTop: '0.75rem', borderTop: '1px solid #e5e7eb' }}>
                                         <div className="d-flex align-items-center gap-1">
-                                            <Users size={16} />
-                                            <span>{a.course.studentsCount ?? 0} Students</span>
+                                            <Users size={14} />
+                                            <span>{a.course.studentsCount ?? 0}</span>
                                         </div>
                                         <div className="d-flex align-items-center gap-1">
-                                            <FileText size={16} />
-                                            <span>{a.course.closCount ?? 0} CLOs</span>
+                                            <FileText size={14} />
+                                            <span>{a.course.closCount ?? 0}</span>
                                         </div>
                                     </div>
 
