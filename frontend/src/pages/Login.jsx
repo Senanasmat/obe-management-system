@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Form, Button, ButtonGroup, ToggleButton, Modal } from 'react-bootstrap';
-import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import Swal from 'sweetalert2';
 import api from '../utils/api';
 
@@ -21,6 +21,34 @@ const Login = () => {
     const [forgotLoading, setForgotLoading] = useState(false);
     const [showForgotCurrentPassword, setShowForgotCurrentPassword] = useState(false);
     const [showForgotNewPassword, setShowForgotNewPassword] = useState(false);
+    const [logoutCooldownActive, setLogoutCooldownActive] = useState(false);
+    const [cooldownRemaining, setCooldownRemaining] = useState(0);
+
+    // Check for logout cooldown
+    useEffect(() => {
+        const checkLogoutCooldown = () => {
+            const logoutTime = localStorage.getItem('logoutTime');
+            const cooldownDuration = localStorage.getItem('logoutCooldown');
+
+            if (logoutTime && cooldownDuration) {
+                const elapsed = Date.now() - parseInt(logoutTime);
+                const remaining = Math.max(0, parseInt(cooldownDuration) - elapsed);
+
+                if (remaining > 0) {
+                    setLogoutCooldownActive(true);
+                    setCooldownRemaining(Math.ceil(remaining / 1000));
+                } else {
+                    setLogoutCooldownActive(false);
+                    localStorage.removeItem('logoutTime');
+                    localStorage.removeItem('logoutCooldown');
+                }
+            }
+        };
+
+        checkLogoutCooldown();
+        const interval = setInterval(checkLogoutCooldown, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     const handleForgotPassword = async (e) => {
         e.preventDefault();
@@ -83,6 +111,19 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Check if logout cooldown is still active
+        if (logoutCooldownActive) {
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Cooldown Active',
+                text: `Please wait ${cooldownRemaining} second${cooldownRemaining !== 1 ? 's' : ''} before logging in again.`,
+                confirmButtonColor: '#667eea',
+                allowOutsideClick: false
+            });
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -162,6 +203,23 @@ const Login = () => {
                         WebkitBackdropFilter: 'blur(10px)',
                         width: '100%'
                     }}>
+                    {logoutCooldownActive && (
+                        <div style={{
+                            background: '#fff3cd',
+                            border: '1px solid #ffc107',
+                            borderRadius: '8px',
+                            padding: '12px 16px',
+                            marginBottom: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px'
+                        }}>
+                            <AlertCircle size={18} style={{ color: '#ff9800', flexShrink: 0 }} />
+                            <div style={{ color: '#856404', fontSize: '13px', fontWeight: '500' }}>
+                                Cooldown active: Please wait <strong>{cooldownRemaining}s</strong> before logging in again
+                            </div>
+                        </div>
+                    )}
                     <h3 style={{
                         fontSize: '24px',
                         fontWeight: '700',
@@ -368,22 +426,22 @@ const Login = () => {
                             variant="primary"
                             type="submit"
                             className="w-100"
-                            disabled={loading}
+                            disabled={loading || logoutCooldownActive}
                             style={{
                                 padding: '12px 20px',
                                 fontSize: '14px',
                                 fontWeight: '600',
                                 borderRadius: '10px',
-                                background: '#667eea',
+                                background: loading || logoutCooldownActive ? '#ccc' : '#667eea',
                                 border: 'none',
                                 marginBottom: '16px',
-                                cursor: loading ? 'not-allowed' : 'pointer',
+                                cursor: loading || logoutCooldownActive ? 'not-allowed' : 'pointer',
                                 transition: 'all 0.3s'
                             }}
-                            onMouseEnter={(e) => !loading && (e.target.style.background = '#5568d3')}
-                            onMouseLeave={(e) => !loading && (e.target.style.background = '#667eea')}
+                            onMouseEnter={(e) => !loading && !logoutCooldownActive && (e.target.style.background = '#5568d3')}
+                            onMouseLeave={(e) => !loading && !logoutCooldownActive && (e.target.style.background = '#667eea')}
                         >
-                            {loading ? 'Signing In...' : 'Sign In'} {!loading && '→'}
+                            {logoutCooldownActive ? `Wait ${cooldownRemaining}s...` : loading ? 'Signing In...' : 'Sign In'} {!loading && !logoutCooldownActive && '→'}
                         </Button>
 
                         {/* Sign Up Link */}

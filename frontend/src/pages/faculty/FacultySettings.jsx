@@ -196,16 +196,35 @@ const FacultySettings = () => {
 
         if (result.isConfirmed) {
             logout();
+            const logoutTime = Date.now();
+            const cooldownDuration = 5000; // 5 seconds
+            localStorage.setItem('logoutTime', logoutTime.toString());
+            localStorage.setItem('logoutCooldown', cooldownDuration.toString());
+
+            let remainingTime = 5;
+            const countdownInterval = setInterval(() => {
+                remainingTime--;
+                Swal.update({
+                    text: `You have been logged out successfully! You can login again in ${remainingTime} second${remainingTime !== 1 ? 's' : ''}.`
+                });
+                if (remainingTime <= 0) {
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+
             await Swal.fire({
                 icon: 'success',
                 title: 'Logged Out',
-                text: 'You have been logged out successfully!',
+                text: 'You have been logged out successfully! You can login again in 5 seconds.',
                 confirmButtonColor: FACULTY_THEME.colors.primary,
-                timer: 2000,
+                timer: 5000,
                 timerProgressBar: true,
                 didOpen: (modal) => {
                     modal.addEventListener('mouseenter', Swal.stopTimer);
                     modal.addEventListener('mouseleave', Swal.resumeTimer);
+                },
+                willClose: () => {
+                    clearInterval(countdownInterval);
                 }
             });
             navigate('/login');
