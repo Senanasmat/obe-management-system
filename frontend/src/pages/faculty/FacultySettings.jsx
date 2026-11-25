@@ -207,7 +207,9 @@ const FacultySettings = () => {
                 text: 'You have been logged out successfully!',
                 confirmButtonColor: FACULTY_THEME.colors.primary,
                 timer: 2000,
-                timerProgressBar: true
+                timerProgressBar: true,
+                allowOutsideClick: false,
+                showConfirmButton: false
             });
             navigate('/login');
         }

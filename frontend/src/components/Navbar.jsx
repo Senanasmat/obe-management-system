@@ -26,7 +26,8 @@ const Navbar = ({ user }) => {
             text: 'You have been logged out successfully!',
             timer: 2000,
             timerProgressBar: true,
-            showConfirmButton: false
+            showConfirmButton: false,
+            allowOutsideClick: false
         });
         navigate('/');
     };
