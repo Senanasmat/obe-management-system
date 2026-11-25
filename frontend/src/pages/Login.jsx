@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Form, Button, ButtonGroup, ToggleButton, Modal } from 'react-bootstrap';
-import { Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 import Swal from 'sweetalert2';
 import api from '../utils/api';
 
@@ -116,8 +116,8 @@ const Login = () => {
         if (logoutCooldownActive) {
             await Swal.fire({
                 icon: 'warning',
-                title: 'Cooldown Active',
-                text: `Please wait ${cooldownRemaining} second${cooldownRemaining !== 1 ? 's' : ''} before logging in again.`,
+                title: 'Please Wait',
+                text: 'You need to wait a moment before logging in again.',
                 confirmButtonColor: '#667eea',
                 allowOutsideClick: false
             });
@@ -203,23 +203,6 @@ const Login = () => {
                         WebkitBackdropFilter: 'blur(10px)',
                         width: '100%'
                     }}>
-                    {logoutCooldownActive && (
-                        <div style={{
-                            background: '#fff3cd',
-                            border: '1px solid #ffc107',
-                            borderRadius: '8px',
-                            padding: '12px 16px',
-                            marginBottom: '20px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px'
-                        }}>
-                            <AlertCircle size={18} style={{ color: '#ff9800', flexShrink: 0 }} />
-                            <div style={{ color: '#856404', fontSize: '13px', fontWeight: '500' }}>
-                                Cooldown active: Please wait <strong>{cooldownRemaining}s</strong> before logging in again
-                            </div>
-                        </div>
-                    )}
                     <h3 style={{
                         fontSize: '24px',
                         fontWeight: '700',
@@ -441,7 +424,7 @@ const Login = () => {
                             onMouseEnter={(e) => !loading && !logoutCooldownActive && (e.target.style.background = '#5568d3')}
                             onMouseLeave={(e) => !loading && !logoutCooldownActive && (e.target.style.background = '#667eea')}
                         >
-                            {logoutCooldownActive ? `Wait ${cooldownRemaining}s...` : loading ? 'Signing In...' : 'Sign In'} {!loading && !logoutCooldownActive && '→'}
+                            {loading ? 'Signing In...' : 'Sign In'} {!loading && !logoutCooldownActive && '→'}
                         </Button>
 
                         {/* Sign Up Link */}
