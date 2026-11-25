@@ -6,18 +6,28 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
 import Toast from './Toast';
+import Swal from 'sweetalert2';
 
 const Navbar = ({ user }) => {
     const { logout } = useAuth();
     const navigate = useNavigate();
     const [showLogoutToast, setShowLogoutToast] = useState(false);
 
-    const handleLogout = () => {
-        setShowLogoutToast(true);
+    const handleLogout = async () => {
         logout();
-        setTimeout(() => {
-            navigate('/');
-        }, 1500);
+        await Swal.fire({
+            icon: 'success',
+            title: 'Logged Out',
+            text: 'You have been logged out successfully!',
+            timer: 2000,
+            timerProgressBar: true,
+            showConfirmButton: false,
+            didOpen: (modal) => {
+                modal.addEventListener('mouseenter', Swal.stopTimer);
+                modal.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });
+        navigate('/');
     };
 
     return (

@@ -196,6 +196,18 @@ const FacultySettings = () => {
 
         if (result.isConfirmed) {
             logout();
+            await Swal.fire({
+                icon: 'success',
+                title: 'Logged Out',
+                text: 'You have been logged out successfully!',
+                confirmButtonColor: FACULTY_THEME.colors.primary,
+                timer: 2000,
+                timerProgressBar: true,
+                didOpen: (modal) => {
+                    modal.addEventListener('mouseenter', Swal.stopTimer);
+                    modal.addEventListener('mouseleave', Swal.resumeTimer);
+                }
+            });
             navigate('/login');
         }
     };
