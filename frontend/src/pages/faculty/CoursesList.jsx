@@ -127,7 +127,7 @@ const CoursesList = () => {
 
                                 {/* Code + Semester */}
                                 <p className="mb-1" style={{ color: FACULTY_THEME.colors.secondary, fontSize: '0.82rem' }}>
-                                    {a.course.code} - {a.academicTerm?.name}
+                                    Semester: {a.academicTerm?.name}
                                 </p>
 
                                 {/* Faculty Name */}
